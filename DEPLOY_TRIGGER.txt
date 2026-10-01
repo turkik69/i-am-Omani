@@ -1,2 +1,2 @@
-Deploy trigger for Railway v24
+Deploy trigger for Railway v24 binary assets
 2026-10-01
