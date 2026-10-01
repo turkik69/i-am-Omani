@@ -28,8 +28,7 @@
   const displayBrand = q('#displayScreen .display-head b');
   if (displayBrand) displayBrand.textContent = 'أنا عُماني — تحدّي المعرفة';
 
-  // The approved premium landmark artwork is embedded in oman-premium.css.
-  // Remove the old simplified SVG overlays so the realistic artwork can show unobstructed.
+  // Premium landmark artwork is supplied by oman-premium.css.
   qa('.floating-trophy').forEach(el => { el.innerHTML=''; el.setAttribute('aria-label','برج الصحوة'); });
   qa('.landmark-art').forEach(el => el.remove());
   document.body.classList.add('premium-oman-v2');
@@ -43,4 +42,67 @@
     btn.textContent='🎵';
     topActions.prepend(btn);
   }
+
+  class OmaniMusic {
+    constructor(){
+      this.enabled=localStorage.getItem('iamOmaniMusic')!=='off';
+      this.audio=null;
+      this.menuVolume=.085;
+      this.questionVolume=.032;
+      this.fadeTimer=null;
+    }
+    isQuestion(){ return q('.screen.active')?.id==='questionScreen'; }
+    ensure(){
+      if(!this.enabled || !window.OMAN_MUSIC_SRC) return;
+      if(!this.audio){
+        this.audio=new Audio(window.OMAN_MUSIC_SRC);
+        this.audio.loop=true;
+        this.audio.preload='auto';
+        this.audio.volume=this.isQuestion()?this.questionVolume:this.menuVolume;
+      }
+      const promise=this.audio.play();
+      if(promise?.catch) promise.catch(()=>{});
+    }
+    setEnabled(on){
+      this.enabled=on;
+      localStorage.setItem('iamOmaniMusic',on?'on':'off');
+      if(on) this.ensure();
+      else this.audio?.pause();
+    }
+    setQuestionMode(active){
+      if(!this.audio) return;
+      const target=active?this.questionVolume:this.menuVolume;
+      const start=this.audio.volume;
+      let step=0;
+      clearInterval(this.fadeTimer);
+      this.fadeTimer=setInterval(()=>{
+        step++;
+        this.audio.volume=Math.max(0,Math.min(1,start+(target-start)*(step/12)));
+        if(step>=12) clearInterval(this.fadeTimer);
+      },35);
+    }
+  }
+
+  const music=new OmaniMusic();
+  const musicBtn=q('#musicBtn');
+  const refreshMusicButton=()=>{
+    if(!musicBtn) return;
+    musicBtn.textContent=music.enabled?'🎵':'🎶';
+    musicBtn.classList.toggle('music-on',music.enabled);
+    musicBtn.title=music.enabled?'إيقاف الموسيقى العُمانية':'تشغيل الموسيقى العُمانية';
+  };
+  refreshMusicButton();
+  musicBtn?.addEventListener('click',e=>{
+    e.stopPropagation();
+    music.setEnabled(!music.enabled);
+    refreshMusicButton();
+  });
+
+  // Safari/iOS only permits media playback after the first user gesture.
+  const unlock=()=>music.ensure();
+  document.addEventListener('pointerdown',unlock,{once:true,passive:true});
+  document.addEventListener('keydown',unlock,{once:true});
+
+  const observer=new MutationObserver(()=>music.setQuestionMode(music.isQuestion()));
+  qa('.screen').forEach(s=>observer.observe(s,{attributes:true,attributeFilter:['class']}));
 })();
