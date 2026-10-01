@@ -16,6 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/approval-flow.css" />
 </head>
 <body>
   <div class="ambient"><i></i><i></i><i></i><i></i></div>
@@ -49,12 +50,12 @@
       <div class="mode-grid">
         <button class="mode-card host-card" data-open="hostCreate">
           <span class="mode-icon purple">🏰</span>
-          <div><strong>أنشئ مسابقة</strong><small>أنشئ ساحة وادعُ اللاعبين</small></div>
+          <div><strong>أنشئ مسابقة</strong><small>اختر الولاية والمجلس وأدر طلبات الدخول</small></div>
           <span class="arrow">←</span>
         </button>
         <button class="mode-card player-card" data-open="join">
           <span class="mode-icon cyan">🧭</span>
-          <div><strong>انضم للمسابقة</strong><small>أدخل الرمز وادخل مجلس التحدي</small></div>
+          <div><strong>انضم للمسابقة</strong><small>اختر مجلسًا نشطًا واطلب الانضمام</small></div>
           <span class="arrow">←</span>
         </button>
         <button class="mode-card display-card" data-open="displayJoin">
@@ -70,7 +71,7 @@
         <button class="back" data-go="home">→ رجوع</button>
         <div class="panel-icon">🏰</div>
         <h2>إنشاء مسابقة جديدة</h2>
-        <p>سيتم منح المسابقة ساحة ولاية ومجلس قرية تلقائيًا.</p>
+        <p>اختر الولاية والمجلس الذي تريد إقامة المسابقة باسمه.</p>
         <label>اسم المسابقة</label>
         <input id="quizTitle" maxlength="28" placeholder="مثال: تحدي القلاع" value="تحدي الأبطال" />
         <button id="createRoomBtn" class="primary-btn"><span>🚀</span> إنشاء الساحة</button>
@@ -82,6 +83,7 @@
         <button class="back" data-go="home">→ رجوع</button>
         <div class="panel-icon">🧭</div>
         <h2>الانضمام إلى أنا عُماني</h2>
+        <p>اختر مجلسًا من المجالس النشطة أو استخدم رمز الدعوة، ثم انتظر موافقة المشرف.</p>
         <label>رمز المسابقة</label>
         <input id="joinCode" class="code-input" inputmode="numeric" maxlength="6" placeholder="000000" />
         <label>اسمك</label>
@@ -90,7 +92,7 @@
         <div id="avatars" class="avatars">
           <button class="avatar selected">🦁</button><button class="avatar">🦅</button><button class="avatar">🐪</button><button class="avatar">🐬</button><button class="avatar">⛰️</button><button class="avatar">🏰</button><button class="avatar">🗡️</button><button class="avatar">⛵</button>
         </div>
-        <button id="joinRoomBtn" class="primary-btn cyan-btn"><span>⚡</span> دخول المجلس</button>
+        <button id="joinRoomBtn" class="primary-btn cyan-btn"><span>🛡️</span> إرسال طلب الانضمام</button>
       </div>
     </section>
 
@@ -107,13 +109,13 @@
 
     <section id="hostLobbyScreen" class="screen">
       <div class="game-head">
-        <div><small>أنت المضيف</small><h2 id="hostRoomTitle">المسابقة</h2></div>
+        <div><small>أنت المضيف والمشرف</small><h2 id="hostRoomTitle">المسابقة</h2></div>
         <div class="room-code"><small>رمز الدخول</small><b id="hostCode">------</b><button id="copyCodeBtn">نسخ</button></div>
       </div>
       <div class="dashboard-grid">
         <div class="panel">
-          <div class="section-title"><h3>👥 اللاعبون</h3><span id="hostPlayersCount" class="pill">0</span></div>
-          <div id="hostPlayers" class="players-grid empty-state">بانتظار اللاعبين…</div>
+          <div class="section-title"><h3>👥 اللاعبون المقبولون</h3><span id="hostPlayersCount" class="pill">0</span></div>
+          <div id="hostPlayers" class="players-grid empty-state">بانتظار قبول اللاعبين…</div>
         </div>
         <div class="panel">
           <div class="section-title"><h3>📚 بنك الأسئلة</h3><button id="toggleEditorBtn" class="mini-btn">تعديل</button></div>
@@ -133,7 +135,7 @@
       <div class="panel lobby-player">
         <div id="myAvatar" class="big-avatar">🏰</div>
         <div class="pulse-ring"></div>
-        <h2>أنت داخل المجلس!</h2>
+        <h2>تم قبولك في المجلس!</h2>
         <p id="myName">جاهز للتحدي؟</p>
         <div class="waiting"><span></span> بانتظار المضيف لبدء المسابقة</div>
         <div class="room-code slim"><small>رمز الساحة</small><b id="playerCode">------</b></div>
@@ -183,5 +185,6 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/app.js"></script>
   <script src="/oman-identity.js"></script>
+  <script src="/approval-flow.js"></script>
 </body>
 </html>
