@@ -1,32 +1,30 @@
 (() => {
   const q=s=>document.querySelector(s);
   const qa=s=>[...document.querySelectorAll(s)];
-  const V='24';
-  const SHEET=`/assets/omani-landmarks-sheet.webp?v=${V}`;
+  const V='25';
+  const PARTS=[1,2,3,4,5].map(n=>`/assets/v25/landmarks.${String(n).padStart(2,'0')}.b64?v=${V}`);
 
-  function injectStyles(){
-    if(q('#oman-v24-sprite-style')) return;
-    const s=document.createElement('style');
-    s.id='oman-v24-sprite-style';
+  function injectStyles(sheet){
+    let s=q('#oman-v25-sprite-style');
+    if(!s){s=document.createElement('style');s.id='oman-v25-sprite-style';document.head.appendChild(s)}
     s.textContent=`
-      .floating-trophy{background:none!important;overflow:visible!important}
-      .oman-landmark-sprite{display:block!important;background-image:url('${SHEET}')!important;background-repeat:no-repeat!important;background-size:200% 200%!important;pointer-events:none!important;filter:drop-shadow(0 20px 30px rgba(0,0,0,.48)) drop-shadow(0 0 18px rgba(245,190,90,.20))}
+      #homeScreen .floating-trophy{display:block!important;opacity:1!important;visibility:visible!important;background:none!important;overflow:hidden!important;width:min(390px,92vw)!important;height:min(260px,61vw)!important;top:18px!important}
+      .oman-landmark-sprite{display:block!important;background-image:url("${sheet}")!important;background-repeat:no-repeat!important;background-size:200% 200%!important;pointer-events:none!important;filter:drop-shadow(0 18px 28px rgba(0,0,0,.48)) drop-shadow(0 0 18px rgba(245,190,90,.22))}
       .oman-landmark-sprite.sahwa{background-position:0% 0%!important}
       .oman-landmark-sprite.municipality{background-position:100% 0%!important}
       .oman-landmark-sprite.opera{background-position:0% 100%!important}
       .oman-landmark-sprite.riyam{background-position:100% 100%!important}
       .floating-trophy .oman-landmark-sprite{width:100%!important;height:100%!important}
-      #homeScreen .floating-trophy{display:block!important;opacity:1!important;visibility:visible!important}
       .mode-card{overflow:visible!important;position:relative!important}
       .mode-card::before{display:none!important}
-      .mode-card .oman-card-landmark{position:absolute!important;z-index:2!important;top:-88px!important;right:10px!important;width:285px!important;height:190px!important}
-      .mode-card.display-card .oman-card-landmark{width:210px!important;height:205px!important;top:-100px!important;right:30px!important}
+      .mode-card .oman-card-landmark{position:absolute!important;z-index:2!important;top:-78px!important;right:14px!important;width:260px!important;height:174px!important}
+      .mode-card.display-card .oman-card-landmark{width:220px!important;height:147px!important;top:-72px!important;right:28px!important}
       @media(max-width:760px){
-        .mode-card .oman-card-landmark{width:245px!important;height:165px!important;top:-76px!important;right:8px!important}
-        .mode-card.display-card .oman-card-landmark{width:178px!important;height:185px!important;top:-90px!important;right:26px!important}
+        #homeScreen .floating-trophy{width:min(345px,90vw)!important;height:min(230px,60vw)!important;top:18px!important}
+        .mode-card .oman-card-landmark{width:245px!important;height:164px!important;top:-74px!important;right:8px!important}
+        .mode-card.display-card .oman-card-landmark{width:205px!important;height:137px!important;top:-68px!important;right:24px!important}
       }
     `;
-    document.head.appendChild(s);
   }
 
   function putSprite(host,type,cls,label){
@@ -39,16 +37,33 @@
     host.prepend(el);
   }
 
-  function applyVisualAssets(){
-    injectStyles();
-    qa('.floating-trophy').forEach(el=>{
-      el.innerHTML='';
-      putSprite(el,'sahwa','','برج الصحوة');
-    });
-    putSprite(q('.mode-card.host-card'),'municipality','oman-card-landmark','مبنى بلدية مسقط');
-    putSprite(q('.mode-card.player-card'),'opera','oman-card-landmark','دار الأوبرا السلطانية');
-    putSprite(q('.mode-card.display-card'),'riyam','oman-card-landmark','مبخرة ريام');
-    document.documentElement.dataset.omanAssets='ready';
+  async function getSheet(){
+    const parts=await Promise.all(PARTS.map(async path=>{
+      const r=await fetch(path,{cache:'no-store'});
+      if(!r.ok) throw new Error(`${path} ${r.status}`);
+      return (await r.text()).replace(/\s+/g,'');
+    }));
+    const raw=parts.join('');
+    if(!raw.startsWith('/9j/') || !raw.endsWith('/2Q==')) throw new Error('invalid JPEG base64');
+    const url=`data:image/jpeg;base64,${raw}`;
+    await new Promise((resolve,reject)=>{const img=new Image();img.onload=resolve;img.onerror=()=>reject(new Error('JPEG decode failed'));img.src=url});
+    return url;
+  }
+
+  async function applyVisualAssets(){
+    document.documentElement.dataset.omanAssets='loading';
+    try{
+      const sheet=await getSheet();
+      injectStyles(sheet);
+      qa('.floating-trophy').forEach(el=>{el.innerHTML='';putSprite(el,'sahwa','','برج الصحوة')});
+      putSprite(q('.mode-card.host-card'),'municipality','oman-card-landmark','مبنى بلدية مسقط');
+      putSprite(q('.mode-card.player-card'),'opera','oman-card-landmark','دار الأوبرا السلطانية');
+      putSprite(q('.mode-card.display-card'),'riyam','oman-card-landmark','مبخرة ريام');
+      document.documentElement.dataset.omanAssets='ready';
+    }catch(err){
+      console.error('Omani v25 assets failed',err);
+      document.documentElement.dataset.omanAssets='error';
+    }
   }
 
   document.title='أنا عُماني';
@@ -66,8 +81,8 @@
   const hero=q('#homeScreen .hero h1'); if(hero) hero.innerHTML='<span>أنا عُماني</span>';
   const eyebrow=q('#homeScreen .eyebrow'); if(eyebrow) eyebrow.textContent='I AM OMANI • LIVE GAMES';
   const heroP=q('#homeScreen .hero p'); if(heroP) heroP.textContent='العب، نافس، واكتشف عُمان… في ساحات الولايات ومجالس القرى.';
-  document.body.classList.remove('oman-v20','oman-v21','oman-v22','oman-v23');
-  document.body.classList.add('premium-oman-final','oman-v24');
+  document.body.classList.remove('oman-v20','oman-v21','oman-v22','oman-v23','oman-v24');
+  document.body.classList.add('premium-oman-final','oman-v25');
   const top=q('.top-actions'); if(top&&!q('#musicBtn')){const b=document.createElement('button');b.id='musicBtn';b.className='icon-btn';b.title='الموسيقى العُمانية';b.textContent='🎵';top.prepend(b)}
 
   applyVisualAssets();
