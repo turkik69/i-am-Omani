@@ -9,16 +9,16 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="أنا عُماني" />
   <title>أنا عُماني</title>
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icon.svg?v=4" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="/icon.svg?v=4" />
+  <link rel="manifest" href="/manifest.json?v=6" />
+  <link rel="icon" href="/icon.svg?v=6" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icon.svg?v=6" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/approval-flow.css" />
   <link rel="stylesheet" href="/progression-ui.css" />
-  <link rel="stylesheet" href="/oman-premium.css?v=1" />
+  <link rel="stylesheet" href="/oman-premium.css?v=6" />
 </head>
 <body>
   <div class="ambient"><i></i><i></i><i></i><i></i></div>
@@ -38,7 +38,7 @@
   <main id="app">
     <section id="homeScreen" class="screen active">
       <div class="hero">
-        <div class="floating-trophy">🏰</div>
+        <div class="floating-trophy" aria-label="برج الصحوة"></div>
         <div class="eyebrow">I AM OMANI • LIVE QUIZ</div>
         <h1><span>أنا عُماني</span></h1>
         <p>اعرف عُمان... وتحدَّ غيرك في ساحات الولايات ومجالس القرى.</p>
@@ -179,14 +179,15 @@
 
     <section id="displayScreen" class="screen display-screen">
       <div class="display-head"><span class="logo3d small">ع</span><div><small id="displayTitle">أنا عُماني</small><b>I Am Omani — تحدّي المعرفة</b></div><div class="room-code slim"><small>CODE</small><b id="displayRoomCode">------</b></div></div>
-      <div id="displayStage" class="display-stage"><div class="display-wait"><div class="floating-trophy">🏰</div><h1>استعدوا للتحدي!</h1><p>بانتظار بدء المسابقة</p><div id="displayPlayers" class="display-players"></div></div></div>
+      <div id="displayStage" class="display-stage"><div class="display-wait"><div class="floating-trophy" aria-label="برج الصحوة"></div><h1>استعدوا للتحدي!</h1><p>بانتظار بدء المسابقة</p><div id="displayPlayers" class="display-players"></div></div></div>
     </section>
   </main>
 
   <div id="toast" class="toast"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/app.js"></script>
-  <script src="/oman-identity.js"></script>
+  <script src="/oman-identity.js?v=6"></script>
+  <script src="/oman-audio-v2.js?v=1"></script>
   <script src="/oman-villages.js?v=1"></script>
   <script src="/approval-flow.js"></script>
   <script src="/village-directory-ui.js?v=1"></script>
