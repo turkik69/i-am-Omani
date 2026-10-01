@@ -1,2 +1,2 @@
-Deploy trigger for Railway v23
+Deploy trigger for Railway v24
 2026-10-01
