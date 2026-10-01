@@ -1,48 +1,71 @@
-/* أنا عُماني — الهوية العُمانية الفوتوغرافية النهائية */
-:root{--oman-gold:#e8bd6a;--oman-ink:#07111f;--oman-glass:rgba(8,18,34,.76);--oman-home-bg:none}
+/* أنا عُماني — الهوية العُمانية الفوتوغرافية المعتمدة */
+:root{
+  --oman-gold:#e8bd6a;
+  --oman-ink:#07111f;
+  --oman-glass:rgba(8,18,34,.78);
+  --oman-home-bg:none;
+  --oman-sahwa-photo:url('/sahwa-tower.svg?v=8');
+  --oman-municipality-photo:url('/muscat-municipality.svg?v=8');
+  --oman-opera-photo:url('/royal-opera.svg?v=8');
+  --oman-riyam-photo:url('/riyam.svg?v=8');
+}
+*{box-sizing:border-box}
 .ambient,.ambient i{display:none!important}
 body{background:#06101d!important}
 .topbar{background:rgba(4,9,22,.92)!important;border-bottom:1px solid rgba(232,189,106,.22)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-.topbar .logo3d{background:linear-gradient(145deg,#966cff,#5532c7)!important;box-shadow:0 8px 26px rgba(74,42,181,.38)!important}
+.topbar .logo3d{background:linear-gradient(145deg,#9b78ff,#5a36cf)!important;box-shadow:0 8px 26px rgba(74,42,181,.38)!important}
+
+/* الصفحة الرئيسية */
 #homeScreen{position:relative;isolation:isolate;overflow:hidden!important;min-height:100vh;padding-bottom:100px;background:#06101d!important}
-#homeScreen::before{content:"";position:absolute;inset:0;z-index:-3;background-image:linear-gradient(180deg,rgba(3,8,22,.18) 0%,rgba(4,10,24,.30) 35%,rgba(3,11,22,.70) 72%,#06101d 100%),var(--oman-home-bg);background-position:center top;background-size:cover;background-repeat:no-repeat;filter:saturate(.98) contrast(1.04)}
-#homeScreen::after{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(5,9,25,.16),transparent 35%,transparent 65%,rgba(5,9,25,.18)),linear-gradient(180deg,transparent 50%,rgba(2,8,18,.82) 88%);pointer-events:none}
-#homeScreen .hero{position:relative;min-height:650px;padding:22px 18px 34px!important;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;text-align:center}
+#homeScreen::before{content:"";position:absolute;inset:0;z-index:-3;background-image:linear-gradient(180deg,rgba(3,8,22,.10) 0%,rgba(4,10,24,.24) 35%,rgba(3,11,22,.62) 72%,#06101d 100%),var(--oman-home-bg);background-position:center top;background-size:cover;background-repeat:no-repeat;filter:saturate(1.02) contrast(1.04)}
+#homeScreen::after{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(5,9,25,.10),transparent 35%,transparent 65%,rgba(5,9,25,.12)),linear-gradient(180deg,transparent 52%,rgba(2,8,18,.84) 88%);pointer-events:none}
+#homeScreen .hero{position:relative;min-height:670px;padding:24px 18px 34px!important;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;text-align:center}
 #homeScreen .hero::before{display:none!important}
-#homeScreen .floating-trophy{position:absolute!important;top:18px!important;left:50%!important;transform:translateX(-50%)!important;width:min(390px,86vw)!important;height:390px!important;margin:0!important;background:url('/assets/sahwa-hero.webp?v=14') center/contain no-repeat!important;filter:drop-shadow(0 22px 30px rgba(0,0,0,.48)) drop-shadow(0 0 24px rgba(239,185,87,.28))!important;animation:none!important;z-index:2}
+#homeScreen .floating-trophy{position:absolute!important;top:8px!important;left:50%!important;transform:translateX(-50%)!important;width:min(430px,90vw)!important;height:410px!important;margin:0!important;background-image:var(--oman-sahwa-photo)!important;background-position:center bottom!important;background-size:contain!important;background-repeat:no-repeat!important;filter:drop-shadow(0 22px 32px rgba(0,0,0,.46)) drop-shadow(0 0 24px rgba(239,185,87,.28))!important;animation:omanHeroFloat 5.2s ease-in-out infinite!important;z-index:2}
 #homeScreen .floating-trophy::before,#homeScreen .floating-trophy::after{display:none!important}
-#homeScreen .eyebrow{position:relative;z-index:3;margin-top:0!important;background:rgba(8,13,35,.68)!important;border:1px solid rgba(232,189,106,.48)!important;color:#f5e5c3!important;box-shadow:0 12px 34px rgba(0,0,0,.32)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+@keyframes omanHeroFloat{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-7px)}}
+#homeScreen .eyebrow{position:relative;z-index:3;background:rgba(8,13,35,.68)!important;border:1px solid rgba(232,189,106,.52)!important;color:#f5e5c3!important;box-shadow:0 12px 34px rgba(0,0,0,.32)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 #homeScreen .hero h1{position:relative;z-index:3;margin:16px 0 10px!important;font-size:clamp(48px,9vw,82px)!important;line-height:1!important}
 #homeScreen .hero h1 span{background:linear-gradient(90deg,#8f72ff,#47d8ff 38%,#f56ebc 70%,#f6d29a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
-#homeScreen .hero p{position:relative;z-index:3;color:#f1f3f7!important;text-shadow:0 2px 12px rgba(0,0,0,.85);max-width:680px;font-size:18px!important;line-height:1.9}
+#homeScreen .hero p{position:relative;z-index:3;color:#f4f6fa!important;text-shadow:0 2px 12px rgba(0,0,0,.88);max-width:680px;font-size:18px!important;line-height:1.9}
 #homeScreen .hero-stats{position:relative;z-index:3;margin-top:18px!important}
-#homeScreen .hero-stats>div{background:rgba(8,17,31,.66)!important;border:1px solid rgba(255,255,255,.14)!important;backdrop-filter:blur(10px)}
-.mode-grid{position:relative;z-index:4;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px!important;margin:44px auto 0!important;max-width:1180px;padding:0 24px 60px!important}
-.mode-card{position:relative!important;min-height:245px!important;padding:118px 28px 28px!important;border-radius:30px!important;overflow:visible!important;border:1px solid rgba(232,189,106,.30)!important;background:linear-gradient(145deg,rgba(8,20,36,.88),rgba(18,16,43,.80))!important;box-shadow:0 26px 60px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.06)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);isolation:isolate}
-.mode-card::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(0,0,0,.18));pointer-events:none}
-.mode-card::before{content:""!important;position:absolute!important;z-index:2!important;top:-90px!important;right:8px!important;width:285px!important;height:195px!important;background-position:center bottom!important;background-size:contain!important;background-repeat:no-repeat!important;filter:drop-shadow(0 18px 21px rgba(0,0,0,.50))!important;transition:transform .25s ease!important}
-.mode-card:active::before{transform:translateY(-3px) scale(1.01)}
-.mode-card.host-card::before{background-image:url('/assets/municipality-card.webp?v=14')!important}
-.mode-card.player-card::before{background-image:url('/assets/opera-card.webp?v=14')!important}
-.mode-card.display-card::before{background-image:url('/assets/riyam-card.webp?v=14')!important;width:210px!important;right:30px!important;top:-105px!important;height:215px!important}
+#homeScreen .hero-stats>div{background:rgba(8,17,31,.68)!important;border:1px solid rgba(255,255,255,.14)!important;backdrop-filter:blur(10px)}
+
+/* بطاقات المعالم المرجعية */
+.mode-grid{position:relative;z-index:4;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px!important;margin:46px auto 0!important;max-width:1180px;padding:0 24px 60px!important}
+.mode-card{position:relative!important;min-height:250px!important;padding:126px 28px 30px!important;border-radius:30px!important;overflow:visible!important;border:1px solid rgba(232,189,106,.32)!important;background:linear-gradient(145deg,rgba(8,20,36,.90),rgba(18,16,43,.83))!important;box-shadow:0 28px 64px rgba(0,0,0,.40),inset 0 1px 0 rgba(255,255,255,.07)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);isolation:isolate}
+.mode-card::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(0,0,0,.20));pointer-events:none}
+.mode-card::before{content:""!important;position:absolute!important;z-index:2!important;top:-92px!important;right:8px!important;width:300px!important;height:200px!important;background-position:center bottom!important;background-size:contain!important;background-repeat:no-repeat!important;filter:drop-shadow(0 18px 22px rgba(0,0,0,.52)) drop-shadow(0 0 12px rgba(232,189,106,.20))!important;transition:transform .25s ease!important}
+.mode-card:active::before{transform:translateY(-4px) scale(1.01)}
+.mode-card.host-card::before{background-image:var(--oman-municipality-photo)!important}
+.mode-card.player-card::before{background-image:var(--oman-opera-photo)!important}
+.mode-card.display-card::before{background-image:var(--oman-riyam-photo)!important;width:220px!important;right:36px!important;top:-106px!important;height:225px!important}
 .mode-card .mode-icon{display:none!important}
 .mode-card strong{font-size:28px!important;color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.55)}
 .mode-card small{font-size:15px!important;color:#d4deeb!important;line-height:1.85}
 .mode-card .arrow{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:none!important;color:#fff!important}
-/* بقية الصفحات: خلفية عُمانية هادئة وثيم زجاجي */
-.screen:not(#homeScreen){background:radial-gradient(circle at 50% 0,rgba(49,39,105,.26),transparent 42%),linear-gradient(180deg,#081326,#06101d 70%)!important}
-.panel,.question-card,.game-head,.display-stage{border-color:rgba(232,189,106,.20)!important;background:linear-gradient(145deg,rgba(12,24,42,.90),rgba(15,18,39,.86))!important}
+
+/* بقية الصفحات تحمل نفس الهوية العُمانية بهدوء */
+.screen:not(#homeScreen){position:relative;background:linear-gradient(180deg,rgba(5,12,26,.83),rgba(6,16,29,.94))!important}
+.screen:not(#homeScreen)::before{content:"";position:absolute;inset:0;z-index:-2;background-image:linear-gradient(rgba(5,12,26,.72),rgba(5,12,26,.90)),var(--oman-home-bg);background-size:cover;background-position:center 26%;background-repeat:no-repeat;opacity:.52;pointer-events:none}
+.panel,.question-card,.game-head,.display-stage{border-color:rgba(232,189,106,.24)!important;background:linear-gradient(145deg,rgba(12,24,42,.91),rgba(15,18,39,.87))!important;box-shadow:0 18px 42px rgba(0,0,0,.28)}
+.primary-btn{box-shadow:0 16px 30px rgba(0,0,0,.22)!important}
+
 @media(max-width:760px){
  #homeScreen{padding-bottom:70px}
  #homeScreen::before{background-position:center top}
- #homeScreen .hero{min-height:610px;padding-top:8px!important}
- #homeScreen .floating-trophy{width:min(330px,82vw)!important;height:335px!important;top:8px!important}
+ #homeScreen .hero{min-height:625px;padding-top:8px!important}
+ #homeScreen .floating-trophy{width:min(350px,88vw)!important;height:350px!important;top:8px!important}
  #homeScreen .hero h1{font-size:54px!important}
  #homeScreen .hero p{font-size:16px!important;padding:0 10px}
- .mode-grid{grid-template-columns:1fr!important;gap:58px!important;margin-top:54px!important;padding:0 18px 46px!important}
- .mode-card{min-height:205px!important;padding:105px 22px 24px!important;border-radius:28px!important}
- .mode-card::before{width:245px!important;height:170px!important;right:8px!important;top:-78px!important}
- .mode-card.display-card::before{width:170px!important;height:185px!important;right:30px!important;top:-92px!important}
+ .mode-grid{grid-template-columns:1fr!important;gap:64px!important;margin-top:58px!important;padding:0 18px 46px!important}
+ .mode-card{min-height:210px!important;padding:110px 22px 24px!important;border-radius:28px!important}
+ .mode-card::before{width:255px!important;height:176px!important;right:8px!important;top:-80px!important}
+ .mode-card.display-card::before{width:178px!important;height:190px!important;right:30px!important;top:-96px!important}
  .mode-card strong{font-size:25px!important}
 }
-@media(max-width:390px){#homeScreen .hero{min-height:585px}.floating-trophy{height:305px!important}.mode-card{min-height:195px!important;padding-top:98px!important}}
+@media(max-width:390px){
+ #homeScreen .hero{min-height:600px}
+ #homeScreen .floating-trophy{height:315px!important;width:270px!important}
+ .mode-card{min-height:198px!important;padding-top:102px!important}
+}
