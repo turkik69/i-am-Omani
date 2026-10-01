@@ -16,9 +16,11 @@
       <label>اختر الولاية</label>
       <select id="hostWilaya" class="oman-select"><option value="">اختر الولاية</option></select>
       <label>اختر المجلس / القرية</label>
-      <input id="hostMajlis" maxlength="50" list="majlisSuggestions" placeholder="مثال: الحرادي" />
-      <datalist id="majlisSuggestions"></datalist>
-      <small class="field-note">يمكنك اختيار اسم من القائمة أو كتابة اسم المجلس الذي تريده.</small>
+      <select id="hostMajlis" class="oman-select" disabled>
+        <option value="">اختر الولاية أولًا</option>
+      </select>
+      <input id="hostMajlisOther" class="hidden" maxlength="50" placeholder="اكتب اسم المجلس أو القرية" />
+      <small class="field-note">تتغير قائمة القرى تلقائيًا حسب الولاية، ويمكن اختيار «أخرى» إذا لم يظهر الاسم.</small>
     </div>
   `);
 
@@ -54,7 +56,7 @@
 
   const hostWilaya = document.querySelector('#hostWilaya');
   const hostMajlis = document.querySelector('#hostMajlis');
-  const majlisSuggestions = document.querySelector('#majlisSuggestions');
+  const hostMajlisOther = document.querySelector('#hostMajlisOther');
   const activeCouncils = document.querySelector('#activeCouncils');
   const refreshCouncils = document.querySelector('#refreshCouncils');
   const pendingRequests = document.querySelector('#pendingRequests');
@@ -77,12 +79,26 @@
     }
   }
 
-  function updateMajlisSuggestions() {
+  function updateMajlisOptions() {
     const item = locations.find(x => x.wilayat === hostWilaya.value);
-    majlisSuggestions.innerHTML = (item?.villages || []).map(v => `<option value="${esc(v)}"></option>`).join('');
-    if (item?.villages?.length && !hostMajlis.value) hostMajlis.placeholder = `مثال: ${item.villages[0]}`;
+    const villages = item?.villages || [];
+    hostMajlis.disabled = !hostWilaya.value;
+    hostMajlisOther.classList.add('hidden');
+    hostMajlisOther.value = '';
+    if (!hostWilaya.value) {
+      hostMajlis.innerHTML = '<option value="">اختر الولاية أولًا</option>';
+      return;
+    }
+    hostMajlis.innerHTML = '<option value="">اختر المجلس / القرية</option>' +
+      villages.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('') +
+      '<option value="__other__">أخرى…</option>';
   }
-  hostWilaya.addEventListener('change', updateMajlisSuggestions);
+  hostWilaya.addEventListener('change', updateMajlisOptions);
+  hostMajlis.addEventListener('change', () => {
+    const other = hostMajlis.value === '__other__';
+    hostMajlisOther.classList.toggle('hidden', !other);
+    if (other) setTimeout(() => hostMajlisOther.focus(), 30);
+  });
 
   function renderCouncils(list) {
     councils = Array.isArray(list) ? list : [];
@@ -114,9 +130,9 @@
   createButton.onclick = () => {
     const title = quizTitle.value.trim();
     const wilayat = hostWilaya.value.trim();
-    const village = hostMajlis.value.trim();
+    const village = hostMajlis.value === '__other__' ? hostMajlisOther.value.trim() : hostMajlis.value.trim();
     if (!wilayat) return toast('اختر الولاية أولًا');
-    if (!village) return toast('اكتب اسم المجلس أو القرية');
+    if (!village) return toast('اختر المجلس أو القرية');
     socket.emit('host:create', { title, wilayat, village }, res => {
       if (!res.ok) return toast(res.error || 'تعذر إنشاء المسابقة');
       setRole('host');
