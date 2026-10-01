@@ -1,0 +1,1 @@
+Baloot / الورقة icon is supplied from the user's uploaded reference artwork and stored as public/baloot-icon.png in the repository.
