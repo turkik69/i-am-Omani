@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
   <meta name="theme-color" content="#0b3554" />
-  <meta name="description" content="ساحة عُمان | تحدّي المعرفة — منصة مسابقات عُمانية حية متعددة اللاعبين" />
+  <meta name="description" content="أنا عُماني | I Am Omani — مسابقات حية بهوية عُمانية، ساحات الولايات ومجالس القرى" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="ساحة عُمان" />
-  <title>ساحة عُمان | تحدّي المعرفة</title>
+  <meta name="apple-mobile-web-app-title" content="أنا عُماني" />
+  <title>أنا عُماني | I Am Omani</title>
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/icon.svg" />
@@ -24,7 +24,7 @@
   <header class="topbar">
     <button class="brand" data-go="home" aria-label="الرئيسية">
       <span class="logo3d">ع</span>
-      <span><b>SAHAT OMAN</b><small>ساحة عُمان</small></span>
+      <span><b>I AM OMANI</b><small>أنا عُماني</small></span>
     </button>
     <div class="top-actions">
       <button id="soundBtn" class="icon-btn" title="الصوت">🔊</button>
@@ -36,9 +36,9 @@
     <section id="homeScreen" class="screen active">
       <div class="hero">
         <div class="floating-trophy">🏰</div>
-        <div class="eyebrow">تحديات حية بهوية عُمانية</div>
-        <h1>ادخل <span>ساحة عُمان</span></h1>
-        <p>ساحات الولايات، مجالس القرى، أسئلة مباشرة، نقاط وترتيب لحظي في تجربة مستوحاة من عُمان.</p>
+        <div class="eyebrow">I AM OMANI • LIVE QUIZ</div>
+        <h1><span>أنا عُماني</span></h1>
+        <p>اعرف عُمان... وتحدَّ غيرك في ساحات الولايات ومجالس القرى.</p>
         <div class="hero-stats">
           <div><b>🏯</b><span>عُماني</span></div>
           <div><b>⚡</b><span>مباشر</span></div>
@@ -81,7 +81,7 @@
       <div class="panel glow-panel">
         <button class="back" data-go="home">→ رجوع</button>
         <div class="panel-icon">🧭</div>
-        <h2>الانضمام إلى ساحة عُمان</h2>
+        <h2>الانضمام إلى أنا عُماني</h2>
         <label>رمز المسابقة</label>
         <input id="joinCode" class="code-input" inputmode="numeric" maxlength="6" placeholder="000000" />
         <label>اسمك</label>
@@ -165,7 +165,7 @@
 
     <section id="finalScreen" class="screen">
       <div class="final-wrap">
-        <div class="final-title">🏆<h1>أبطال ساحة عُمان</h1><p>انتهت المسابقة… وهذه هي النتائج النهائية</p></div>
+        <div class="final-title">🏆<h1>أبطال أنا عُماني</h1><p>انتهت المسابقة… وهذه هي النتائج النهائية</p></div>
         <div id="finalPodium" class="final-podium"></div>
         <div id="finalBoard" class="leaderboard final-board"></div>
         <div class="host-controls host-only hidden"><button id="resetQuizBtn" class="primary-btn">🔄 مسابقة جديدة</button></div>
@@ -174,7 +174,7 @@
     </section>
 
     <section id="displayScreen" class="screen display-screen">
-      <div class="display-head"><span class="logo3d small">ع</span><div><small id="displayTitle">ساحة عُمان</small><b>تحدّي المعرفة المباشر</b></div><div class="room-code slim"><small>CODE</small><b id="displayRoomCode">------</b></div></div>
+      <div class="display-head"><span class="logo3d small">ع</span><div><small id="displayTitle">أنا عُماني</small><b>I Am Omani — تحدّي المعرفة</b></div><div class="room-code slim"><small>CODE</small><b id="displayRoomCode">------</b></div></div>
       <div id="displayStage" class="display-stage"><div class="display-wait"><div class="floating-trophy">🏰</div><h1>استعدوا للتحدي!</h1><p>بانتظار بدء المسابقة</p><div id="displayPlayers" class="display-players"></div></div></div>
     </section>
   </main>
@@ -182,5 +182,6 @@
   <div id="toast" class="toast"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/app.js"></script>
+  <script src="/oman-identity.js"></script>
 </body>
 </html>
