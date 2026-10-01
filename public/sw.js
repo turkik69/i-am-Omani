@@ -1,5 +1,5 @@
-const CACHE='iam-omani-v15';
-const CORE=['/','/index.html','/styles.css','/app.js','/manifest.json','/icon.svg','/oman-identity.js?v=15','/oman-home-v2.css?v=15','/oman-heritage-bg.b64?v=15','/sahwa-photo.b64?v=15','/municipality-photo.b64?v=15','/opera-photo.b64?v=15','/riyam-photo.b64?v=15','/oman-audio-v2.js?v=1','/omani-bg10.b64?v=1','/oman-villages.js?v=1','/oman-wilayat-themes.js?v=1','/game-catalog.js?v=1','/game-catalog.css?v=1','/baloot-icon.svg?v=1','/approval-flow.js','/village-directory-ui.js?v=1','/progression-ui.js','/progression-ui.css'];
+const CACHE='iam-omani-v16';
+const CORE=['/','/index.html','/styles.css','/app.js','/manifest.json','/icon.svg','/oman-identity.js?v=16','/oman-home-v2.css?v=16','/oman-heritage-bg.b64?v=16','/sahwa-photo.b64?v=16','/municipality-photo.b64?v=16','/opera-photo.b64?v=16','/riyam-photo.b64?v=16','/oman-audio-v2.js?v=1','/omani-bg10.b64?v=1','/oman-villages.js?v=1','/oman-wilayat-themes.js?v=1','/game-catalog.js?v=1','/game-catalog.css?v=1','/baloot-icon.svg?v=1','/approval-flow.js','/village-directory-ui.js?v=1','/progression-ui.js','/progression-ui.css'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)));self.skipWaiting()});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
