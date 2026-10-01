@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="أنا عُماني" />
   <title>أنا عُماني</title>
-  <link rel="manifest" href="/manifest.json?v=19" />
-  <link rel="icon" href="/icon.svg?v=19" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="/icon.svg?v=19" />
+  <link rel="manifest" href="/manifest.json?v=20" />
+  <link rel="icon" href="/assets/sahwa-hero.webp?v=20" type="image/webp" />
+  <link rel="apple-touch-icon" href="/assets/sahwa-hero.webp?v=20" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
@@ -24,12 +24,10 @@
 <body>
   <div class="ambient"><i></i><i></i><i></i><i></i></div>
   <div id="confetti" class="confetti" aria-hidden="true"></div>
-
   <header class="topbar">
     <button class="brand" data-go="home" aria-label="الرئيسية"><span class="logo3d">ع</span><span><b>I AM OMANI</b><small>أنا عُماني</small></span></button>
     <div class="top-actions"><button id="musicBtn" class="icon-btn" title="الموسيقى العُمانية">🎵</button><button id="soundBtn" class="icon-btn" title="الصوت">🔊</button><button id="installBtn" class="icon-btn" title="تثبيت التطبيق">⬇️</button></div>
   </header>
-
   <main id="app">
     <section id="homeScreen" class="screen active"><div class="hero"><div class="floating-trophy" aria-label="برج الصحوة"></div><div class="eyebrow">I AM OMANI • LIVE QUIZ</div><h1><span>أنا عُماني</span></h1><p>اعرف عُمان... وتحدَّ غيرك في ساحات الولايات ومجالس القرى.</p><div class="hero-stats"><div><b>🏯</b><span>عُماني</span></div><div><b>⚡</b><span>مباشر</span></div><div><b>🏅</b><span>تنافسي</span></div></div></div><div class="mode-grid"><button class="mode-card host-card" data-open="hostCreate"><span class="mode-icon purple">🏰</span><div><strong>أنشئ مسابقة</strong><small>اختر الولاية والمجلس وأدر طلبات الدخول</small></div><span class="arrow">←</span></button><button class="mode-card player-card" data-open="join"><span class="mode-icon cyan">🧭</span><div><strong>انضم للمسابقة</strong><small>اختر مجلسًا نشطًا واطلب الانضمام</small></div><span class="arrow">←</span></button><button class="mode-card display-card" data-open="displayJoin"><span class="mode-icon pink">📺</span><div><strong>شاشة العرض</strong><small>للتلفزيون أو البروجكتر</small></div><span class="arrow">←</span></button></div></section>
     <section id="hostCreateScreen" class="screen compact-screen"><div class="panel glow-panel"><button class="back" data-go="home">→ رجوع</button><div class="panel-icon">🏰</div><h2>إنشاء مسابقة جديدة</h2><p>اختر نوع المسابقة ثم الولاية والمجلس الذي تريد إقامة التحدي باسمه.</p><label>اسم المسابقة</label><input id="quizTitle" maxlength="28" placeholder="مثال: تحدي القلاع" value="تحدي الأبطال" /><button id="createRoomBtn" class="primary-btn"><span>🚀</span> إنشاء الساحة</button></div></section>
@@ -43,6 +41,6 @@
     <section id="displayScreen" class="screen display-screen"><div class="display-head"><span class="logo3d small">ع</span><div><small id="displayTitle">أنا عُماني</small><b>I Am Omani — تحدّي المعرفة</b></div><div class="room-code slim"><small>CODE</small><b id="displayRoomCode">------</b></div></div><div id="displayStage" class="display-stage"><div class="display-wait"><div class="floating-trophy" aria-label="برج الصحوة"></div><h1>استعدوا للتحدي!</h1><p>بانتظار بدء المسابقة</p><div id="displayPlayers" class="display-players"></div></div></div></section>
   </main>
   <div id="toast" class="toast"></div>
-  <script src="/socket.io/socket.io.js"></script><script src="/app.js?v=19"></script><script src="/oman-identity.js?v=18"></script><script src="/oman-audio-v2.js?v=19"></script><script src="/oman-villages.js?v=1"></script><script src="/approval-flow.js"></script><script src="/village-directory-ui.js?v=1"></script><script src="/progression-ui.js"></script><script src="/firebase-auth-ui.js?v=2"></script>
+  <script src="/socket.io/socket.io.js"></script><script src="/app.js?v=20"></script><script src="/oman-identity.js?v=20"></script><script src="/oman-audio-v2.js?v=20"></script><script src="/oman-villages.js?v=1"></script><script src="/approval-flow.js"></script><script src="/village-directory-ui.js?v=1"></script><script src="/progression-ui.js"></script><script src="/firebase-auth-ui.js?v=2"></script>
 </body>
 </html>
