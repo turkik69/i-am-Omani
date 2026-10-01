@@ -22,7 +22,8 @@ function loadStats() {
 }
 let persistent = loadStats();
 function saveStats() {
-  try { fs.writeFileSync(STATS_FILE, JSON.stringify(persistent, null, 2)); } catch (e) { console.error('stats save failed', e.message); }
+  try { fs.writeFileSync(STATS_FILE, JSON.stringify(persistent, null, 2)); }
+  catch (e) { console.error('stats save failed', e.message); }
 }
 
 const DEFAULT_QUESTIONS = [
@@ -36,7 +37,8 @@ const DEFAULT_QUESTIONS = [
 
 const rooms = new Map();
 const roomCode = () => String(Math.floor(100000 + Math.random() * 900000));
-const sanitizeName = (v='') => String(v).trim().replace(/[<>]/g,'').slice(0, 28);
+const clean = (v='', max=180) => String(v).trim().replace(/[<>]/g,'').slice(0, max);
+const sanitizeName = v => clean(v, 28);
 
 function publicRoom(room) {
   return {
@@ -59,7 +61,7 @@ function scoreAnswer(elapsedMs, limitMs, rank) {
 }
 
 function sendQuestion(room) {
-  if (room.currentQuestionIndex >= room.questions.length) return finishQuiz(room);
+  if (!room || room.currentQuestionIndex >= room.questions.length) return finishQuiz(room);
   clearTimeout(room.timer);
   room.answers.clear();
   room.status = 'question';
@@ -87,33 +89,52 @@ function revealAnswer(room) {
   const correct = [...room.answers.entries()]
     .filter(([,a]) => a.answer === q.correct)
     .sort((a,b)=>a[1].elapsed-b[1].elapsed);
+
   correct.forEach(([id,a], rank) => {
     const p = room.players.get(id); if (!p) return;
     const pts = scoreAnswer(a.elapsed, q.time * 1000, rank);
     p.score += pts; p.correct += 1; p.lastPoints = pts;
   });
+
   room.status = 'result';
   const podium = correct.map(([id,a],rank)=>{
-    const p=room.players.get(id); return p ? {rank:rank+1,name:p.name,avatar:p.avatar,points:p.lastPoints,time:(a.elapsed/1000).toFixed(2)} : null;
+    const p=room.players.get(id);
+    return p ? {rank:rank+1,name:p.name,avatar:p.avatar,points:p.lastPoints,time:(a.elapsed/1000).toFixed(2)} : null;
   }).filter(Boolean);
-  io.to(room.code).emit('quiz:result', { correctIndex:q.correct, correctText:q.options[q.correct], podium, leaderboard:publicRoom(room).leaderboard });
+
+  io.to(room.code).emit('quiz:result', {
+    correctIndex:q.correct,
+    correctText:q.options[q.correct],
+    podium,
+    leaderboard:publicRoom(room).leaderboard
+  });
   emitRoom(room);
 }
 
 function finishQuiz(room) {
+  if (!room) return;
   clearTimeout(room.timer);
-  room.status = 'finished';
   const board = publicRoom(room).leaderboard;
-  const now = new Date().toISOString();
-  board.forEach(p => {
-    const key = p.name.toLowerCase();
-    const s = persistent.players[key] || { name:p.name, avatar:p.avatar, games:0, wins:0, totalScore:0, bestScore:0, correct:0 };
-    s.name=p.name; s.avatar=p.avatar; s.games++; s.totalScore+=p.score; s.bestScore=Math.max(s.bestScore,p.score); s.correct+=p.correct; if(p.rank===1)s.wins++;
-    persistent.players[key]=s;
-  });
-  persistent.games.unshift({ id:randomUUID(), room:room.code, title:room.title, date:now, players:board.length, winner:board[0]?.name || null });
-  persistent.games = persistent.games.slice(0,100);
-  saveStats();
+  if (room.status === 'finished' && room.persisted) {
+    io.to(room.code).emit('quiz:finished', board);
+    return;
+  }
+  room.status = 'finished';
+
+  if (!room.persisted) {
+    const now = new Date().toISOString();
+    board.forEach(p => {
+      const key = p.name.toLowerCase();
+      const s = persistent.players[key] || { name:p.name, avatar:p.avatar, games:0, wins:0, totalScore:0, bestScore:0, correct:0 };
+      s.name=p.name; s.avatar=p.avatar; s.games++; s.totalScore+=p.score; s.bestScore=Math.max(s.bestScore,p.score); s.correct+=p.correct; if(p.rank===1)s.wins++;
+      persistent.players[key]=s;
+    });
+    persistent.games.unshift({ id:randomUUID(), room:room.code, title:room.title, date:now, players:board.length, winner:board[0]?.name || null });
+    persistent.games = persistent.games.slice(0,100);
+    room.persisted = true;
+    saveStats();
+  }
+
   io.to(room.code).emit('quiz:finished', board);
   emitRoom(room);
 }
@@ -123,55 +144,97 @@ io.on('connection', socket => {
     let code; do { code = roomCode(); } while (rooms.has(code));
     const title = sanitizeName(payload.title) || 'مسابقة حية';
     const hostToken = randomUUID();
-    const room = { code, title, hostToken, hostSocketId:socket.id, status:'lobby', questions:DEFAULT_QUESTIONS.map(q=>({...q, options:[...q.options]})), currentQuestionIndex:0, players:new Map(), answers:new Map(), timer:null, startedAt:null };
+    const room = {
+      code, title, hostToken, hostSocketId:socket.id,
+      status:'lobby', questions:DEFAULT_QUESTIONS.map(q=>({...q, options:[...q.options]})),
+      currentQuestionIndex:0, players:new Map(), answers:new Map(), timer:null,
+      startedAt:null, persisted:false
+    };
     rooms.set(code, room); socket.join(code); socket.data.roomCode=code; socket.data.role='host';
     ack({ok:true, code, hostToken, room:publicRoom(room)}); emitRoom(room);
   });
 
   socket.on('host:reconnect', ({code,hostToken}={}, ack=()=>{}) => {
-    const room=getRoom(code); if(!room || room.hostToken!==hostToken) return ack({ok:false,error:'تعذر استعادة جلسة المضيف'});
-    room.hostSocketId=socket.id; socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='host'; ack({ok:true,room:publicRoom(room)}); emitRoom(room);
+    const room=getRoom(code);
+    if(!room || room.hostToken!==hostToken) return ack({ok:false,error:'تعذر استعادة جلسة المضيف'});
+    room.hostSocketId=socket.id; socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='host';
+    ack({ok:true,room:publicRoom(room)}); emitRoom(room);
   });
 
   socket.on('player:join', (payload={}, ack=()=>{}) => {
-    const room=getRoom(payload.code); if(!room) return ack({ok:false,error:'رمز المسابقة غير صحيح'});
+    const room=getRoom(payload.code);
+    if(!room) return ack({ok:false,error:'رمز المسابقة غير صحيح'});
     if(room.status!=='lobby') return ack({ok:false,error:'المسابقة بدأت بالفعل'});
-    const name=sanitizeName(payload.name); if(!name) return ack({ok:false,error:'اكتب اسم اللاعب'});
+    const name=sanitizeName(payload.name);
+    if(!name) return ack({ok:false,error:'اكتب اسم اللاعب'});
     if([...room.players.values()].some(p=>p.name.toLowerCase()===name.toLowerCase())) return ack({ok:false,error:'هذا الاسم مستخدم في الغرفة'});
-    const id=socket.id; const player={id,name,avatar:String(payload.avatar||'🎮').slice(0,8),score:0,correct:0,answered:false,lastPoints:0};
+    const id=socket.id;
+    const player={id,name,avatar:clean(payload.avatar||'🎮',8),score:0,correct:0,answered:false,lastPoints:0};
     room.players.set(id,player); socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='player';
     ack({ok:true,player,room:publicRoom(room)}); emitRoom(room); io.to(room.code).emit('fx:join',{name:player.name,avatar:player.avatar});
   });
 
   socket.on('display:join', ({code}={},ack=()=>{}) => {
-    const room=getRoom(code); if(!room) return ack({ok:false,error:'الغرفة غير موجودة'});
-    socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='display'; ack({ok:true,room:publicRoom(room)});
+    const room=getRoom(code);
+    if(!room) return ack({ok:false,error:'الغرفة غير موجودة'});
+    socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='display';
+    ack({ok:true,room:publicRoom(room)});
   });
 
   socket.on('host:setQuestions', ({questions}={},ack=()=>{}) => {
-    const room=getRoom(socket.data.roomCode); if(!isHost(socket,room)||room.status!=='lobby') return ack({ok:false});
+    const room=getRoom(socket.data.roomCode);
+    if(!isHost(socket,room)||room.status!=='lobby') return ack({ok:false,error:'لا يمكن تعديل الأسئلة بعد بدء المسابقة'});
     if(!Array.isArray(questions)||questions.length<1||questions.length>50) return ack({ok:false,error:'عدد الأسئلة يجب أن يكون بين 1 و50'});
-    const cleaned=questions.map((q,i)=>({id:i+1,question:sanitizeName(q.question).slice(0,180),options:(q.options||[]).map(x=>String(x).trim().slice(0,100)).slice(0,6),correct:Number(q.correct),category:sanitizeName(q.category)||'عام',difficulty:sanitizeName(q.difficulty)||'متوسط',time:Math.min(60,Math.max(5,Number(q.time)||15))})).filter(q=>q.question&&q.options.length>=2&&q.correct>=0&&q.correct<q.options.length);
+
+    const cleaned=questions.map((q,i)=>({
+      id:i+1,
+      question:clean(q.question,180),
+      options:(q.options||[]).map(x=>clean(x,100)).filter(Boolean).slice(0,6),
+      correct:Number(q.correct),
+      category:clean(q.category,30)||'عام',
+      difficulty:clean(q.difficulty,20)||'متوسط',
+      time:Math.min(60,Math.max(5,Number(q.time)||15))
+    })).filter(q=>q.question&&q.options.length>=2&&q.correct>=0&&q.correct<q.options.length);
+
     if(!cleaned.length) return ack({ok:false,error:'لم يتم العثور على أسئلة صالحة'});
     room.questions=cleaned; ack({ok:true,count:cleaned.length}); emitRoom(room);
   });
 
   socket.on('host:start', (_,ack=()=>{}) => {
-    const room=getRoom(socket.data.roomCode); if(!isHost(socket,room)) return ack({ok:false,error:'غير مصرح'});
+    const room=getRoom(socket.data.roomCode);
+    if(!isHost(socket,room)) return ack({ok:false,error:'غير مصرح'});
+    if(room.status!=='lobby') return ack({ok:false,error:'المسابقة قيد التشغيل'});
     if(room.players.size<1) return ack({ok:false,error:'يلزم لاعب واحد على الأقل'});
-    room.currentQuestionIndex=0; for(const p of room.players.values()){p.score=0;p.correct=0;}
+    room.currentQuestionIndex=0; room.persisted=false;
+    for(const p of room.players.values()){p.score=0;p.correct=0;}
     ack({ok:true}); sendQuestion(room);
   });
-  socket.on('host:reveal', () => { const room=getRoom(socket.data.roomCode); if(isHost(socket,room)) revealAnswer(room); });
-  socket.on('host:next', () => { const room=getRoom(socket.data.roomCode); if(!isHost(socket,room)||room.status!=='result')return; room.currentQuestionIndex++; sendQuestion(room); });
-  socket.on('host:finish', () => { const room=getRoom(socket.data.roomCode); if(isHost(socket,room)) finishQuiz(room); });
-  socket.on('host:reset', () => { const room=getRoom(socket.data.roomCode); if(!isHost(socket,room))return; clearTimeout(room.timer); room.status='lobby'; room.currentQuestionIndex=0; room.answers.clear(); for(const p of room.players.values()){p.score=0;p.correct=0;p.answered=false;} io.to(room.code).emit('quiz:reset'); emitRoom(room); });
+
+  socket.on('host:reveal', () => {
+    const room=getRoom(socket.data.roomCode); if(isHost(socket,room)) revealAnswer(room);
+  });
+  socket.on('host:next', () => {
+    const room=getRoom(socket.data.roomCode);
+    if(!isHost(socket,room)||room.status!=='result')return;
+    room.currentQuestionIndex++; sendQuestion(room);
+  });
+  socket.on('host:finish', () => {
+    const room=getRoom(socket.data.roomCode); if(isHost(socket,room)) finishQuiz(room);
+  });
+  socket.on('host:reset', () => {
+    const room=getRoom(socket.data.roomCode); if(!isHost(socket,room))return;
+    clearTimeout(room.timer); room.status='lobby'; room.currentQuestionIndex=0; room.answers.clear(); room.persisted=false;
+    for(const p of room.players.values()){p.score=0;p.correct=0;p.answered=false;p.lastPoints=0;}
+    io.to(room.code).emit('quiz:reset'); emitRoom(room);
+  });
 
   socket.on('player:answer', ({answer}={},ack=()=>{}) => {
     const room=getRoom(socket.data.roomCode); const p=room?.players.get(socket.id);
     if(!room||!p||room.status!=='question'||p.answered) return ack({ok:false});
-    const q=room.questions[room.currentQuestionIndex]; const idx=Number(answer); if(idx<0||idx>=q.options.length)return ack({ok:false});
-    const elapsed=Math.max(0,Date.now()-room.startedAt); p.answered=true; room.answers.set(socket.id,{answer:idx,elapsed});
+    const q=room.questions[room.currentQuestionIndex]; const idx=Number(answer);
+    if(!Number.isInteger(idx)||idx<0||idx>=q.options.length)return ack({ok:false});
+    const elapsed=Math.max(0,Date.now()-room.startedAt);
+    p.answered=true; room.answers.set(socket.id,{answer:idx,elapsed});
     ack({ok:true}); io.to(room.code).emit('quiz:progress',{answered:room.answers.size,total:room.players.size}); emitRoom(room);
     if(room.answers.size===room.players.size) setTimeout(()=>revealAnswer(room),450);
   });
@@ -179,7 +242,9 @@ io.on('connection', socket => {
   socket.on('disconnect', () => {
     const room=getRoom(socket.data.roomCode); if(!room)return;
     if(socket.data.role==='player'){ room.players.delete(socket.id); room.answers.delete(socket.id); emitRoom(room); }
-    if(room.players.size===0 && room.status==='finished') setTimeout(()=>{ if(rooms.get(room.code)===room) rooms.delete(room.code); }, 30*60*1000);
+    if(room.players.size===0 && room.status==='finished') setTimeout(()=>{
+      if(rooms.get(room.code)===room) rooms.delete(room.code);
+    }, 30*60*1000);
   });
 });
 
