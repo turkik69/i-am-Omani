@@ -50,10 +50,26 @@
       this.menuVolume=.085;
       this.questionVolume=.032;
       this.fadeTimer=null;
+      this.loadPromise=null;
     }
     isQuestion(){ return q('.screen.active')?.id==='questionScreen'; }
-    ensure(){
-      if(!this.enabled || !window.OMAN_MUSIC_SRC) return;
+    loadAsset(){
+      if(window.OMAN_MUSIC_SRC) return Promise.resolve();
+      if(this.loadPromise) return this.loadPromise;
+      this.loadPromise=new Promise(resolve=>{
+        const s=document.createElement('script');
+        s.src='/oman-music.js?v=1';
+        s.async=true;
+        s.onload=resolve;
+        s.onerror=resolve;
+        document.head.appendChild(s);
+      });
+      return this.loadPromise;
+    }
+    async ensure(){
+      if(!this.enabled) return;
+      await this.loadAsset();
+      if(!window.OMAN_MUSIC_SRC) return;
       if(!this.audio){
         this.audio=new Audio(window.OMAN_MUSIC_SRC);
         this.audio.loop=true;
