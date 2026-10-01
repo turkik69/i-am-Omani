@@ -1,344 +1,191 @@
 const express = require('express');
 const http = require('http');
-const socketIO = require('socket.io');
-const cors = require('cors');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const { randomUUID } = require('crypto');
+const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] }
-});
+const io = new Server(server, { transports: ['websocket', 'polling'] });
 
-app.use(cors());
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
 
-// ==================== تخزين البيانات ====================
-const playersDatabase = {}; // لحفظ بيانات المشاركين
-const quizState = {
-  currentQuestionIndex: -1,
-  isActive: false,
-  startTime: null,
-  questionTime: 15000, // 15 ثانية
-  players: {},
-  currentAnswers: {},
-  leaderboard: [],
-  quiz: []
-};
+const DATA_DIR = path.join(__dirname, 'data');
+const STATS_FILE = path.join(DATA_DIR, 'stats.json');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-const QUIZ_DATA = [
-  {
-    id: 1,
-    question: "كم عدد قارات العالم؟",
-    options: ["5 قارات", "6 قارات", "7 قارات", "8 قارات"],
-    correct: 2,
-    category: "جغرافيا"
-  },
-  {
-    id: 2,
-    question: "من هو أول رئيس للولايات المتحدة الأمريكية؟",
-    options: ["جورج واشنطن", "توماس جيفرسون", "جون آدامز", "فرانكلين روزفلت"],
-    correct: 0,
-    category: "التاريخ"
-  },
-  {
-    id: 3,
-    question: "كم عدد سور الصين العظيم؟",
-    options: ["واحد فقط", "عدة جدران", "3 جدران", "5 جدران"],
-    correct: 1,
-    category: "معالم تاريخية"
-  },
-  {
-    id: 4,
-    question: "ما هي أكبر دولة في العالم من حيث المساحة؟",
-    options: ["كندا", "الصين", "روسيا", "الولايات المتحدة"],
-    correct: 2,
-    category: "جغرافيا"
-  },
-  {
-    id: 5,
-    question: "كم عدد فقرات العمود الفقري للإنسان؟",
-    options: ["30 فقرة", "33 فقرة", "36 فقرة", "40 فقرة"],
-    correct: 1,
-    category: "العلوم"
-  },
-  {
-    id: 6,
-    question: "ما هو أعمق محيط في العالم؟",
-    options: ["المحيط الأطلسي", "المحيط الهندي", "المحيط المتجمد الشمالي", "المحيط الهادئ"],
-    correct: 3,
-    category: "جغرافيا"
-  },
-  {
-    id: 7,
-    question: "كم عدد دول الاتحاد الأوروبي؟",
-    options: ["25 دولة", "27 دولة", "30 دولة", "35 دولة"],
-    correct: 1,
-    category: "السياسة"
-  },
-  {
-    id: 8,
-    question: "من كتب رواية 'الحرب والسلام'؟",
-    options: ["تولستوي", "دوستويفسكي", "تشيخوف", "بوشكين"],
-    correct: 0,
-    category: "الأدب"
-  },
-  {
-    id: 9,
-    question: "في أي سنة سقطت جدار برلين؟",
-    options: ["1987", "1988", "1989", "1990"],
-    correct: 2,
-    category: "التاريخ"
-  },
-  {
-    id: 10,
-    question: "ما هو أكبر حيوان في العالم؟",
-    options: ["الفيل", "الحوت الأزرق", "الزرافة", "فرس النهر"],
-    correct: 1,
-    category: "الحيوانات"
-  }
+function loadStats() {
+  try { return JSON.parse(fs.readFileSync(STATS_FILE, 'utf8')); }
+  catch { return { players: {}, games: [] }; }
+}
+let persistent = loadStats();
+function saveStats() {
+  try { fs.writeFileSync(STATS_FILE, JSON.stringify(persistent, null, 2)); } catch (e) { console.error('stats save failed', e.message); }
+}
+
+const DEFAULT_QUESTIONS = [
+  { id: 1, question: 'كم عدد محافظات سلطنة عُمان؟', options: ['9','10','11','12'], correct: 2, category: 'عُمان', difficulty: 'متوسط', time: 15 },
+  { id: 2, question: 'ما أكبر دولة في العالم من حيث المساحة؟', options: ['كندا','الصين','روسيا','الولايات المتحدة'], correct: 2, category: 'جغرافيا', difficulty: 'سهل', time: 15 },
+  { id: 3, question: 'ما الكوكب المعروف بالكوكب الأحمر؟', options: ['الزهرة','المريخ','عطارد','المشتري'], correct: 1, category: 'علوم', difficulty: 'سهل', time: 12 },
+  { id: 4, question: 'من كتب رواية الحرب والسلام؟', options: ['تولستوي','دوستويفسكي','تشيخوف','بوشكين'], correct: 0, category: 'أدب', difficulty: 'متوسط', time: 15 },
+  { id: 5, question: 'في أي عام سقط جدار برلين؟', options: ['1987','1988','1989','1990'], correct: 2, category: 'تاريخ', difficulty: 'متوسط', time: 15 },
+  { id: 6, question: 'ما أكبر حيوان حي على الأرض؟', options: ['الفيل','الحوت الأزرق','الزرافة','فرس النهر'], correct: 1, category: 'طبيعة', difficulty: 'سهل', time: 12 }
 ];
 
-quizState.quiz = QUIZ_DATA;
+const rooms = new Map();
+const roomCode = () => String(Math.floor(100000 + Math.random() * 900000));
+const sanitizeName = (v='') => String(v).trim().replace(/[<>]/g,'').slice(0, 28);
 
-// ==================== دوال مساعدة ====================
-function calculatePoints(rank) {
-  const pointsTable = { 0: 100, 1: 80, 2: 60 };
-  return pointsTable[rank] !== undefined ? pointsTable[rank] : 20;
+function publicRoom(room) {
+  return {
+    code: room.code,
+    title: room.title,
+    status: room.status,
+    currentQuestionIndex: room.currentQuestionIndex,
+    totalQuestions: room.questions.length,
+    players: [...room.players.values()].map(({token, ...p}) => p),
+    leaderboard: [...room.players.values()].sort((a,b)=>b.score-a.score).map(({token, ...p},i)=>({...p,rank:i+1}))
+  };
+}
+function emitRoom(room) { io.to(room.code).emit('room:update', publicRoom(room)); }
+function getRoom(code) { return rooms.get(String(code || '').trim()); }
+function isHost(socket, room) { return room && room.hostSocketId === socket.id; }
+
+function scoreAnswer(elapsedMs, limitMs, rank) {
+  const speed = Math.max(0, 1 - elapsedMs / limitMs);
+  return Math.round(500 + speed * 500 + Math.max(0, 150 - rank * 50));
 }
 
-function updateLeaderboard() {
-  quizState.leaderboard = Object.values(quizState.players).sort((a, b) => b.totalScore - a.totalScore);
-}
-
-function resetRound() {
-  quizState.currentAnswers = {};
-  Object.keys(quizState.players).forEach(playerId => {
-    quizState.players[playerId].currentAnswer = null;
-    quizState.players[playerId].answered = false;
-    quizState.players[playerId].answerTime = null;
+function sendQuestion(room) {
+  if (room.currentQuestionIndex >= room.questions.length) return finishQuiz(room);
+  clearTimeout(room.timer);
+  room.answers.clear();
+  room.status = 'question';
+  room.startedAt = Date.now();
+  const q = room.questions[room.currentQuestionIndex];
+  for (const p of room.players.values()) { p.answered = false; p.lastPoints = 0; }
+  io.to(room.code).emit('quiz:question', {
+    number: room.currentQuestionIndex + 1,
+    total: room.questions.length,
+    question: q.question,
+    options: q.options,
+    category: q.category,
+    difficulty: q.difficulty,
+    timeLimit: q.time * 1000,
+    startedAt: room.startedAt
   });
+  emitRoom(room);
+  room.timer = setTimeout(() => revealAnswer(room), q.time * 1000);
 }
 
-// حفظ بيانات المشارك في قاعدة البيانات
-function savePlayerData(playerName, playerData) {
-  if (!playersDatabase[playerName]) {
-    playersDatabase[playerName] = {
-      name: playerName,
-      avatar: playerData.avatar,
-      totalGamesPlayed: 0,
-      totalScore: 0,
-      highestScore: 0,
-      correctAnswersTotal: 0,
-      lastPlayedDate: new Date().toISOString(),
-      gamesHistory: []
-    };
-  }
-  playersDatabase[playerName].lastPlayedDate = new Date().toISOString();
+function revealAnswer(room) {
+  if (!room || room.status !== 'question') return;
+  clearTimeout(room.timer);
+  const q = room.questions[room.currentQuestionIndex];
+  const correct = [...room.answers.entries()]
+    .filter(([,a]) => a.answer === q.correct)
+    .sort((a,b)=>a[1].elapsed-b[1].elapsed);
+  correct.forEach(([id,a], rank) => {
+    const p = room.players.get(id); if (!p) return;
+    const pts = scoreAnswer(a.elapsed, q.time * 1000, rank);
+    p.score += pts; p.correct += 1; p.lastPoints = pts;
+  });
+  room.status = 'result';
+  const podium = correct.map(([id,a],rank)=>{
+    const p=room.players.get(id); return p ? {rank:rank+1,name:p.name,avatar:p.avatar,points:p.lastPoints,time:(a.elapsed/1000).toFixed(2)} : null;
+  }).filter(Boolean);
+  io.to(room.code).emit('quiz:result', { correctIndex:q.correct, correctText:q.options[q.correct], podium, leaderboard:publicRoom(room).leaderboard });
+  emitRoom(room);
 }
 
-// ==================== Socket Events ====================
-io.on('connection', (socket) => {
-  console.log(`✅ لاعب جديد متصل: ${socket.id}`);
+function finishQuiz(room) {
+  clearTimeout(room.timer);
+  room.status = 'finished';
+  const board = publicRoom(room).leaderboard;
+  const now = new Date().toISOString();
+  board.forEach(p => {
+    const key = p.name.toLowerCase();
+    const s = persistent.players[key] || { name:p.name, avatar:p.avatar, games:0, wins:0, totalScore:0, bestScore:0, correct:0 };
+    s.name=p.name; s.avatar=p.avatar; s.games++; s.totalScore+=p.score; s.bestScore=Math.max(s.bestScore,p.score); s.correct+=p.correct; if(p.rank===1)s.wins++;
+    persistent.players[key]=s;
+  });
+  persistent.games.unshift({ id:randomUUID(), room:room.code, title:room.title, date:now, players:board.length, winner:board[0]?.name || null });
+  persistent.games = persistent.games.slice(0,100);
+  saveStats();
+  io.to(room.code).emit('quiz:finished', board);
+  emitRoom(room);
+}
 
-  socket.on('join', (playerData) => {
-    const playerId = socket.id;
-    
-    // حفظ بيانات المشارك
-    savePlayerData(playerData.name, playerData);
-    
-    quizState.players[playerId] = {
-      id: playerId,
-      name: playerData.name,
-      avatar: playerData.avatar,
-      totalScore: 0,
-      roundScore: 0,
-      currentAnswer: null,
-      answered: false,
-      answerTime: null,
-      correctAnswers: 0
-    };
-
-    socket.emit('joinSuccess', {
-      playerId,
-      players: Object.values(quizState.players),
-      leaderboard: quizState.leaderboard,
-      playerStats: playersDatabase[playerData.name] || {}
-    });
-
-    io.emit('playersUpdate', Object.values(quizState.players));
-    console.log(`👥 عدد اللاعبين: ${Object.keys(quizState.players).length}`);
+io.on('connection', socket => {
+  socket.on('host:create', (payload={}, ack=()=>{}) => {
+    let code; do { code = roomCode(); } while (rooms.has(code));
+    const title = sanitizeName(payload.title) || 'مسابقة حية';
+    const hostToken = randomUUID();
+    const room = { code, title, hostToken, hostSocketId:socket.id, status:'lobby', questions:DEFAULT_QUESTIONS.map(q=>({...q, options:[...q.options]})), currentQuestionIndex:0, players:new Map(), answers:new Map(), timer:null, startedAt:null };
+    rooms.set(code, room); socket.join(code); socket.data.roomCode=code; socket.data.role='host';
+    ack({ok:true, code, hostToken, room:publicRoom(room)}); emitRoom(room);
   });
 
-  socket.on('startQuiz', () => {
-    if (!quizState.isActive) {
-      quizState.isActive = true;
-      quizState.currentQuestionIndex = 0;
-      resetRound();
-      sendQuestion();
-    }
+  socket.on('host:reconnect', ({code,hostToken}={}, ack=()=>{}) => {
+    const room=getRoom(code); if(!room || room.hostToken!==hostToken) return ack({ok:false,error:'تعذر استعادة جلسة المضيف'});
+    room.hostSocketId=socket.id; socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='host'; ack({ok:true,room:publicRoom(room)}); emitRoom(room);
   });
 
-  socket.on('answer', (data) => {
-    const playerId = socket.id;
-    if (quizState.players[playerId] && !quizState.players[playerId].answered) {
-      const answerTime = Date.now() - quizState.startTime;
-      quizState.players[playerId].currentAnswer = data.answer;
-      quizState.players[playerId].answered = true;
-      quizState.players[playerId].answerTime = answerTime;
-      quizState.currentAnswers[playerId] = { answer: data.answer, time: answerTime };
+  socket.on('player:join', (payload={}, ack=()=>{}) => {
+    const room=getRoom(payload.code); if(!room) return ack({ok:false,error:'رمز المسابقة غير صحيح'});
+    if(room.status!=='lobby') return ack({ok:false,error:'المسابقة بدأت بالفعل'});
+    const name=sanitizeName(payload.name); if(!name) return ack({ok:false,error:'اكتب اسم اللاعب'});
+    if([...room.players.values()].some(p=>p.name.toLowerCase()===name.toLowerCase())) return ack({ok:false,error:'هذا الاسم مستخدم في الغرفة'});
+    const id=socket.id; const player={id,name,avatar:String(payload.avatar||'🎮').slice(0,8),score:0,correct:0,answered:false,lastPoints:0};
+    room.players.set(id,player); socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='player';
+    ack({ok:true,player,room:publicRoom(room)}); emitRoom(room); io.to(room.code).emit('fx:join',{name:player.name,avatar:player.avatar});
+  });
 
-      io.emit('answerSubmitted', {
-        playerId,
-        playerName: quizState.players[playerId].name,
-        answeredCount: Object.keys(quizState.currentAnswers).length,
-        totalPlayers: Object.keys(quizState.players).length
-      });
-    }
+  socket.on('display:join', ({code}={},ack=()=>{}) => {
+    const room=getRoom(code); if(!room) return ack({ok:false,error:'الغرفة غير موجودة'});
+    socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='display'; ack({ok:true,room:publicRoom(room)});
+  });
+
+  socket.on('host:setQuestions', ({questions}={},ack=()=>{}) => {
+    const room=getRoom(socket.data.roomCode); if(!isHost(socket,room)||room.status!=='lobby') return ack({ok:false});
+    if(!Array.isArray(questions)||questions.length<1||questions.length>50) return ack({ok:false,error:'عدد الأسئلة يجب أن يكون بين 1 و50'});
+    const cleaned=questions.map((q,i)=>({id:i+1,question:sanitizeName(q.question).slice(0,180),options:(q.options||[]).map(x=>String(x).trim().slice(0,100)).slice(0,6),correct:Number(q.correct),category:sanitizeName(q.category)||'عام',difficulty:sanitizeName(q.difficulty)||'متوسط',time:Math.min(60,Math.max(5,Number(q.time)||15))})).filter(q=>q.question&&q.options.length>=2&&q.correct>=0&&q.correct<q.options.length);
+    if(!cleaned.length) return ack({ok:false,error:'لم يتم العثور على أسئلة صالحة'});
+    room.questions=cleaned; ack({ok:true,count:cleaned.length}); emitRoom(room);
+  });
+
+  socket.on('host:start', (_,ack=()=>{}) => {
+    const room=getRoom(socket.data.roomCode); if(!isHost(socket,room)) return ack({ok:false,error:'غير مصرح'});
+    if(room.players.size<1) return ack({ok:false,error:'يلزم لاعب واحد على الأقل'});
+    room.currentQuestionIndex=0; for(const p of room.players.values()){p.score=0;p.correct=0;}
+    ack({ok:true}); sendQuestion(room);
+  });
+  socket.on('host:reveal', () => { const room=getRoom(socket.data.roomCode); if(isHost(socket,room)) revealAnswer(room); });
+  socket.on('host:next', () => { const room=getRoom(socket.data.roomCode); if(!isHost(socket,room)||room.status!=='result')return; room.currentQuestionIndex++; sendQuestion(room); });
+  socket.on('host:finish', () => { const room=getRoom(socket.data.roomCode); if(isHost(socket,room)) finishQuiz(room); });
+  socket.on('host:reset', () => { const room=getRoom(socket.data.roomCode); if(!isHost(socket,room))return; clearTimeout(room.timer); room.status='lobby'; room.currentQuestionIndex=0; room.answers.clear(); for(const p of room.players.values()){p.score=0;p.correct=0;p.answered=false;} io.to(room.code).emit('quiz:reset'); emitRoom(room); });
+
+  socket.on('player:answer', ({answer}={},ack=()=>{}) => {
+    const room=getRoom(socket.data.roomCode); const p=room?.players.get(socket.id);
+    if(!room||!p||room.status!=='question'||p.answered) return ack({ok:false});
+    const q=room.questions[room.currentQuestionIndex]; const idx=Number(answer); if(idx<0||idx>=q.options.length)return ack({ok:false});
+    const elapsed=Math.max(0,Date.now()-room.startedAt); p.answered=true; room.answers.set(socket.id,{answer:idx,elapsed});
+    ack({ok:true}); io.to(room.code).emit('quiz:progress',{answered:room.answers.size,total:room.players.size}); emitRoom(room);
+    if(room.answers.size===room.players.size) setTimeout(()=>revealAnswer(room),450);
   });
 
   socket.on('disconnect', () => {
-    const playerName = quizState.players[socket.id]?.name;
-    if (playerName && playersDatabase[playerName]) {
-      playersDatabase[playerName].lastPlayedDate = new Date().toISOString();
-    }
-    delete quizState.players[socket.id];
-    io.emit('playersUpdate', Object.values(quizState.players));
-    console.log(`❌ لاعب غادر: ${socket.id}`);
+    const room=getRoom(socket.data.roomCode); if(!room)return;
+    if(socket.data.role==='player'){ room.players.delete(socket.id); room.answers.delete(socket.id); emitRoom(room); }
+    if(room.players.size===0 && room.status==='finished') setTimeout(()=>{ if(rooms.get(room.code)===room) rooms.delete(room.code); }, 30*60*1000);
   });
 });
 
-// ==================== منطق اللعبة ====================
-function sendQuestion() {
-  if (quizState.currentQuestionIndex >= quizState.quiz.length) {
-    endQuiz();
-    return;
-  }
+app.get('/api/health', (req,res)=>res.json({ok:true,rooms:rooms.size,time:new Date().toISOString()}));
+app.get('/api/leaderboard', (req,res)=>res.json(Object.values(persistent.players).sort((a,b)=>b.totalScore-a.totalScore).slice(0,50)));
+app.get('*', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 
-  const currentQuestion = quizState.quiz[quizState.currentQuestionIndex];
-  quizState.startTime = Date.now();
-  resetRound();
-
-  io.emit('questionSent', {
-    questionNumber: quizState.currentQuestionIndex + 1,
-    totalQuestions: quizState.quiz.length,
-    question: currentQuestion.question,
-    options: currentQuestion.options,
-    category: currentQuestion.category,
-    timeLimit: quizState.questionTime
-  });
-
-  setTimeout(processAnswers, quizState.questionTime);
-}
-
-function processAnswers() {
-  const currentQuestion = quizState.quiz[quizState.currentQuestionIndex];
-  const correctAnswer = currentQuestion.correct;
-  
-  // ترتيب الإجابات الصحيحة حسب السرعة
-  const correctAnswers = Object.keys(quizState.currentAnswers)
-    .filter(playerId => quizState.currentAnswers[playerId].answer === correctAnswer)
-    .sort((a, b) => quizState.currentAnswers[a].time - quizState.currentAnswers[b].time);
-
-  // حساب النقاط
-  correctAnswers.forEach((playerId, rank) => {
-    const points = calculatePoints(rank);
-    quizState.players[playerId].totalScore += points;
-    quizState.players[playerId].correctAnswers++;
-  });
-
-  updateLeaderboard();
-
-  // بيانات النتائج
-  const results = {
-    correctAnswerIndex: correctAnswer,
-    correctAnswerText: currentQuestion.options[correctAnswer],
-    rankings: correctAnswers.map((playerId, rank) => ({
-      rank: rank + 1,
-      name: quizState.players[playerId].name,
-      avatar: quizState.players[playerId].avatar,
-      points: calculatePoints(rank),
-      responseTime: (quizState.currentAnswers[playerId].time / 1000).toFixed(2)
-    }))
-  };
-
-  io.emit('results', results);
-  io.emit('leaderboardUpdate', quizState.leaderboard);
-
-  // الانتقال للسؤال التالي
-  quizState.currentQuestionIndex++;
-  setTimeout(() => {
-    if (quizState.currentQuestionIndex < quizState.quiz.length) {
-      sendQuestion();
-    } else {
-      endQuiz();
-    }
-  }, 4000);
-}
-
-function endQuiz() {
-  quizState.isActive = false;
-  updateLeaderboard();
-
-  const finalResults = quizState.leaderboard.map((player, index) => ({
-    rank: index + 1,
-    name: player.name,
-    avatar: player.avatar,
-    totalScore: player.totalScore,
-    correctAnswers: player.correctAnswers,
-    medal: index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : ''
-  }));
-
-  // حفظ نتائج اللعبة في قاعدة البيانات
-  finalResults.forEach(result => {
-    if (playersDatabase[result.name]) {
-      playersDatabase[result.name].totalGamesPlayed++;
-      playersDatabase[result.name].totalScore += result.totalScore;
-      playersDatabase[result.name].correctAnswersTotal += result.correctAnswers;
-      
-      if (result.totalScore > playersDatabase[result.name].highestScore) {
-        playersDatabase[result.name].highestScore = result.totalScore;
-      }
-      
-      playersDatabase[result.name].gamesHistory.push({
-        date: new Date().toISOString(),
-        score: result.totalScore,
-        correctAnswers: result.correctAnswers,
-        rank: result.rank
-      });
-    }
-  });
-
-  io.emit('quizEnded', finalResults);
-  console.log('🏁 انتهت المسابقة!');
-}
-
-// ==================== الروابط الإضافية ====================
-// الحصول على إحصائيات المشارك
-app.get('/api/player-stats/:playerName', (req, res) => {
-  const playerName = req.params.playerName;
-  const stats = playersDatabase[playerName];
-  
-  if (stats) {
-    res.json(stats);
-  } else {
-    res.status(404).json({ error: 'اللاعب غير موجود' });
-  }
-});
-
-// الحصول على جميع المشاركين
-app.get('/api/all-players', (req, res) => {
-  const allPlayers = Object.values(playersDatabase).sort((a, b) => b.totalScore - a.totalScore);
-  res.json(allPlayers);
-});
-
-// ==================== التشغيل ====================
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`\n🎮 ═══════════════════════════════════════`);
-  console.log(`   تطبيق المسابقات الحية يعمل على:`);
-  console.log(`   🌐 http://localhost:${PORT}`);
-  console.log(`🎮 ═══════════════════════════════════════\n`);
-});
+const PORT=process.env.PORT||3000;
+server.listen(PORT,'0.0.0.0',()=>console.log(`🎮 Quiz Arena running on ${PORT}`));
