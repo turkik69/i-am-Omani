@@ -1,71 +1,102 @@
-/* أنا عُماني — الهوية العُمانية الفوتوغرافية المعتمدة */
+/* أنا عُماني — الهوية البصرية العُمانية المعتمدة لكل الشاشات */
 :root{
   --oman-gold:#e8bd6a;
-  --oman-ink:#07111f;
-  --oman-glass:rgba(8,18,34,.78);
+  --oman-gold-2:#ffcf78;
+  --oman-ink:#06101d;
+  --oman-navy:#071426;
+  --oman-violet:#3d286f;
+  --oman-cyan:#23d5e8;
+  --oman-pink:#ef6bb0;
   --oman-home-bg:none;
-  --oman-sahwa-photo:url('/sahwa-tower.svg?v=8');
-  --oman-municipality-photo:url('/muscat-municipality.svg?v=8');
-  --oman-opera-photo:url('/royal-opera.svg?v=8');
-  --oman-riyam-photo:url('/riyam.svg?v=8');
+  --oman-sahwa-photo:url('/assets/sahwa-hero.webp?v=18');
+  --oman-municipality-photo:url('/assets/municipality-card.webp?v=18');
+  --oman-opera-photo:url('/assets/opera-card.webp?v=18');
+  --oman-riyam-photo:url('/assets/riyam-card.webp?v=18');
 }
 *{box-sizing:border-box}
+html,body{background:#06101d!important}
+body{overflow-x:hidden}
 .ambient,.ambient i{display:none!important}
-body{background:#06101d!important}
-.topbar{background:rgba(4,9,22,.92)!important;border-bottom:1px solid rgba(232,189,106,.22)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-.topbar .logo3d{background:linear-gradient(145deg,#9b78ff,#5a36cf)!important;box-shadow:0 8px 26px rgba(74,42,181,.38)!important}
+.topbar{background:rgba(3,9,20,.93)!important;border-bottom:1px solid rgba(232,189,106,.26)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 35px rgba(0,0,0,.22)}
+.topbar .logo3d{background:linear-gradient(145deg,#a482ff,#5d38d1)!important;border:1px solid rgba(255,255,255,.2)!important;box-shadow:0 10px 26px rgba(84,52,190,.42)!important}
+.topbar .brand b{letter-spacing:.18em}
 
-/* الصفحة الرئيسية */
-#homeScreen{position:relative;isolation:isolate;overflow:hidden!important;min-height:100vh;padding-bottom:100px;background:#06101d!important}
-#homeScreen::before{content:"";position:absolute;inset:0;z-index:-3;background-image:linear-gradient(180deg,rgba(3,8,22,.10) 0%,rgba(4,10,24,.24) 35%,rgba(3,11,22,.62) 72%,#06101d 100%),var(--oman-home-bg);background-position:center top;background-size:cover;background-repeat:no-repeat;filter:saturate(1.02) contrast(1.04)}
-#homeScreen::after{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(5,9,25,.10),transparent 35%,transparent 65%,rgba(5,9,25,.12)),linear-gradient(180deg,transparent 52%,rgba(2,8,18,.84) 88%);pointer-events:none}
-#homeScreen .hero{position:relative;min-height:670px;padding:24px 18px 34px!important;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;text-align:center}
+.screen{isolation:isolate}
+.screen::after{content:"";position:absolute;inset:0;z-index:-3;pointer-events:none;background:radial-gradient(circle at 20% 15%,rgba(35,213,232,.11),transparent 30%),radial-gradient(circle at 82% 20%,rgba(239,107,176,.1),transparent 28%),linear-gradient(180deg,rgba(6,16,29,.06),rgba(6,16,29,.55) 70%,#06101d)}
+
+/* الرئيسية */
+#homeScreen{position:relative;min-height:100vh;padding-bottom:95px!important;overflow:hidden!important;background:#06101d!important}
+#homeScreen::before{content:"";position:absolute;inset:0;z-index:-4;background-image:linear-gradient(180deg,rgba(2,8,18,.08),rgba(2,8,18,.28) 45%,rgba(2,8,18,.82) 78%,#06101d 100%),var(--oman-home-bg);background-size:cover;background-position:center top;background-repeat:no-repeat;filter:saturate(1.08) contrast(1.02)}
+#homeScreen .hero{position:relative;min-height:680px;padding:28px 18px 34px!important;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;text-align:center}
 #homeScreen .hero::before{display:none!important}
-#homeScreen .floating-trophy{position:absolute!important;top:8px!important;left:50%!important;transform:translateX(-50%)!important;width:min(430px,90vw)!important;height:410px!important;margin:0!important;background-image:var(--oman-sahwa-photo)!important;background-position:center bottom!important;background-size:contain!important;background-repeat:no-repeat!important;filter:drop-shadow(0 22px 32px rgba(0,0,0,.46)) drop-shadow(0 0 24px rgba(239,185,87,.28))!important;animation:omanHeroFloat 5.2s ease-in-out infinite!important;z-index:2}
+#homeScreen .floating-trophy{position:absolute!important;top:4px!important;left:50%!important;transform:translateX(-50%)!important;width:min(470px,92vw)!important;height:430px!important;background:var(--oman-sahwa-photo) center bottom/contain no-repeat!important;filter:drop-shadow(0 22px 38px rgba(0,0,0,.5)) drop-shadow(0 0 24px rgba(255,194,91,.22))!important;animation:omanFloat 5.4s ease-in-out infinite!important;z-index:2}
 #homeScreen .floating-trophy::before,#homeScreen .floating-trophy::after{display:none!important}
-@keyframes omanHeroFloat{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-7px)}}
-#homeScreen .eyebrow{position:relative;z-index:3;background:rgba(8,13,35,.68)!important;border:1px solid rgba(232,189,106,.52)!important;color:#f5e5c3!important;box-shadow:0 12px 34px rgba(0,0,0,.32)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-#homeScreen .hero h1{position:relative;z-index:3;margin:16px 0 10px!important;font-size:clamp(48px,9vw,82px)!important;line-height:1!important}
-#homeScreen .hero h1 span{background:linear-gradient(90deg,#8f72ff,#47d8ff 38%,#f56ebc 70%,#f6d29a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
-#homeScreen .hero p{position:relative;z-index:3;color:#f4f6fa!important;text-shadow:0 2px 12px rgba(0,0,0,.88);max-width:680px;font-size:18px!important;line-height:1.9}
-#homeScreen .hero-stats{position:relative;z-index:3;margin-top:18px!important}
-#homeScreen .hero-stats>div{background:rgba(8,17,31,.68)!important;border:1px solid rgba(255,255,255,.14)!important;backdrop-filter:blur(10px)}
+@keyframes omanFloat{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-7px)}}
+#homeScreen .eyebrow{z-index:3!important;background:rgba(7,15,31,.74)!important;border:1px solid rgba(232,189,106,.52)!important;color:#f4dfb8!important;backdrop-filter:blur(12px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+#homeScreen .hero h1{z-index:3!important;margin:14px 0 9px!important;font-size:clamp(50px,9vw,84px)!important}
+#homeScreen .hero h1 span{background:linear-gradient(90deg,#9d77ff,#49dfff 39%,#f175bb 72%,#ffd59d);-webkit-background-clip:text;background-clip:text;color:transparent}
+#homeScreen .hero p{z-index:3!important;color:#f5f7fb!important;max-width:680px;font-size:18px!important;line-height:1.9;text-shadow:0 2px 12px rgba(0,0,0,.72)}
+#homeScreen .hero-stats{z-index:3!important;margin-top:18px!important}
+#homeScreen .hero-stats>div{background:rgba(6,15,29,.7)!important;border:1px solid rgba(255,255,255,.14)!important;backdrop-filter:blur(10px)}
 
-/* بطاقات المعالم المرجعية */
-.mode-grid{position:relative;z-index:4;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px!important;margin:46px auto 0!important;max-width:1180px;padding:0 24px 60px!important}
-.mode-card{position:relative!important;min-height:250px!important;padding:126px 28px 30px!important;border-radius:30px!important;overflow:visible!important;border:1px solid rgba(232,189,106,.32)!important;background:linear-gradient(145deg,rgba(8,20,36,.90),rgba(18,16,43,.83))!important;box-shadow:0 28px 64px rgba(0,0,0,.40),inset 0 1px 0 rgba(255,255,255,.07)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);isolation:isolate}
-.mode-card::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(0,0,0,.20));pointer-events:none}
-.mode-card::before{content:""!important;position:absolute!important;z-index:2!important;top:-92px!important;right:8px!important;width:300px!important;height:200px!important;background-position:center bottom!important;background-size:contain!important;background-repeat:no-repeat!important;filter:drop-shadow(0 18px 22px rgba(0,0,0,.52)) drop-shadow(0 0 12px rgba(232,189,106,.20))!important;transition:transform .25s ease!important}
-.mode-card:active::before{transform:translateY(-4px) scale(1.01)}
+/* بطاقات الرئيسية — نفس المعالم المعتمدة */
+.mode-grid{position:relative;z-index:4;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:34px!important;margin:52px auto 0!important;max-width:1180px;padding:0 24px 58px!important}
+.mode-card{position:relative!important;min-height:250px!important;padding:126px 28px 30px!important;border-radius:30px!important;overflow:visible!important;border:1px solid rgba(232,189,106,.33)!important;background:linear-gradient(145deg,rgba(7,20,36,.93),rgba(23,17,48,.88))!important;box-shadow:0 28px 64px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.07)!important;backdrop-filter:blur(16px);isolation:isolate}
+.mode-card::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(0,0,0,.2));pointer-events:none}
+.mode-card::before{content:""!important;position:absolute!important;z-index:2!important;top:-92px!important;right:10px!important;width:300px!important;height:205px!important;background-position:center bottom!important;background-size:contain!important;background-repeat:no-repeat!important;filter:drop-shadow(0 20px 26px rgba(0,0,0,.55)) drop-shadow(0 0 12px rgba(232,189,106,.22))!important;transition:.25s ease!important}
+.mode-card:hover::before{transform:translateY(-5px) scale(1.015)}
 .mode-card.host-card::before{background-image:var(--oman-municipality-photo)!important}
 .mode-card.player-card::before{background-image:var(--oman-opera-photo)!important}
-.mode-card.display-card::before{background-image:var(--oman-riyam-photo)!important;width:220px!important;right:36px!important;top:-106px!important;height:225px!important}
+.mode-card.display-card::before{background-image:var(--oman-riyam-photo)!important;width:225px!important;height:225px!important;top:-110px!important;right:34px!important}
 .mode-card .mode-icon{display:none!important}
-.mode-card strong{font-size:28px!important;color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.55)}
-.mode-card small{font-size:15px!important;color:#d4deeb!important;line-height:1.85}
-.mode-card .arrow{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:none!important;color:#fff!important}
+.mode-card strong{font-size:28px!important;color:#fff!important}
+.mode-card small{font-size:15px!important;color:#d7e1ec!important;line-height:1.8}
+.mode-card .arrow{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.13)!important;color:#fff!important}
 
-/* بقية الصفحات تحمل نفس الهوية العُمانية بهدوء */
-.screen:not(#homeScreen){position:relative;background:linear-gradient(180deg,rgba(5,12,26,.83),rgba(6,16,29,.94))!important}
-.screen:not(#homeScreen)::before{content:"";position:absolute;inset:0;z-index:-2;background-image:linear-gradient(rgba(5,12,26,.72),rgba(5,12,26,.90)),var(--oman-home-bg);background-size:cover;background-position:center 26%;background-repeat:no-repeat;opacity:.52;pointer-events:none}
-.panel,.question-card,.game-head,.display-stage{border-color:rgba(232,189,106,.24)!important;background:linear-gradient(145deg,rgba(12,24,42,.91),rgba(15,18,39,.87))!important;box-shadow:0 18px 42px rgba(0,0,0,.28)}
-.primary-btn{box-shadow:0 16px 30px rgba(0,0,0,.22)!important}
+/* كل الشاشات: صور ومعالم فعلية بدل الفراغ */
+.screen:not(#homeScreen){position:relative;min-height:calc(100vh - 82px);background:linear-gradient(180deg,#071324 0%,#07111e 100%)!important;overflow:hidden}
+.screen:not(#homeScreen)::before{content:"";position:absolute;inset:0;z-index:-4;background-image:linear-gradient(180deg,rgba(3,10,22,.46),rgba(3,10,22,.78)),var(--oman-home-bg);background-size:cover;background-position:center 28%;opacity:.6}
+
+#hostCreateScreen::after,#hostLobbyScreen::after{background-image:linear-gradient(180deg,rgba(6,16,29,.2),rgba(6,16,29,.82)),var(--oman-municipality-photo);background-size:auto,58%;background-position:center,110% 96%;background-repeat:no-repeat;opacity:.9}
+#joinScreen::after,#playerLobbyScreen::after{background-image:linear-gradient(180deg,rgba(6,16,29,.18),rgba(6,16,29,.82)),var(--oman-opera-photo);background-size:auto,62%;background-position:center,108% 96%;background-repeat:no-repeat;opacity:.9}
+#displayJoinScreen::after,#displayScreen::after{background-image:linear-gradient(180deg,rgba(6,16,29,.18),rgba(6,16,29,.86)),var(--oman-riyam-photo);background-size:auto,42%;background-position:center,100% 94%;background-repeat:no-repeat;opacity:.95}
+#questionScreen::after{background-image:linear-gradient(180deg,rgba(6,16,29,.36),rgba(6,16,29,.92)),var(--oman-sahwa-photo);background-size:auto,38%;background-position:center,105% 94%;background-repeat:no-repeat;opacity:.72}
+#resultScreen::after,#finalScreen::after{background-image:linear-gradient(180deg,rgba(6,16,29,.28),rgba(6,16,29,.9)),var(--oman-riyam-photo),var(--oman-opera-photo);background-size:auto,28%,42%;background-position:center,102% 95%,-8% 100%;background-repeat:no-repeat;opacity:.82}
+
+.panel,.question-card,.game-head,.display-stage,.result-hero,.final-wrap{border:1px solid rgba(232,189,106,.28)!important;background:linear-gradient(145deg,rgba(8,22,39,.9),rgba(21,17,43,.88))!important;box-shadow:0 22px 50px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.06)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.compact-screen .panel{max-width:620px!important;margin-top:34px!important;border-radius:30px!important}
+.panel-icon{font-size:42px!important;filter:drop-shadow(0 8px 16px rgba(0,0,0,.35))}
+.back{background:rgba(255,255,255,.05)!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:16px!important}
+.primary-btn{background:linear-gradient(135deg,#6c4ce6,#3e8ddf)!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:0 15px 34px rgba(0,0,0,.28)!important}
+.cyan-btn{background:linear-gradient(135deg,#0f8198,#27cfe5)!important}
+.pink-btn{background:linear-gradient(135deg,#8f376e,#ef70b6)!important}
+.secondary-btn,.mini-btn{background:rgba(255,255,255,.055)!important;border-color:rgba(232,189,106,.25)!important}
+
+.question-card{border-radius:30px!important}
+.answers button{border:1px solid rgba(255,255,255,.12)!important;background:linear-gradient(145deg,rgba(10,24,44,.92),rgba(24,19,48,.9))!important;box-shadow:0 14px 28px rgba(0,0,0,.22)!important}
+.answers button:active{transform:scale(.985)}
+.timer{filter:drop-shadow(0 8px 18px rgba(0,0,0,.28))}
+.leaderboard>*,.players-grid>*{background:rgba(7,17,31,.7)!important;border:1px solid rgba(255,255,255,.08)!important;backdrop-filter:blur(8px)}
+.final-title{background:linear-gradient(90deg,#f5d393,#fff1c8,#e8bd6a);-webkit-background-clip:text;background-clip:text;color:transparent}
 
 @media(max-width:760px){
- #homeScreen{padding-bottom:70px}
- #homeScreen::before{background-position:center top}
- #homeScreen .hero{min-height:625px;padding-top:8px!important}
- #homeScreen .floating-trophy{width:min(350px,88vw)!important;height:350px!important;top:8px!important}
- #homeScreen .hero h1{font-size:54px!important}
+ #homeScreen .hero{min-height:630px;padding-top:8px!important}
+ #homeScreen .floating-trophy{width:min(360px,90vw)!important;height:355px!important;top:6px!important}
+ #homeScreen .hero h1{font-size:55px!important}
  #homeScreen .hero p{font-size:16px!important;padding:0 10px}
- .mode-grid{grid-template-columns:1fr!important;gap:64px!important;margin-top:58px!important;padding:0 18px 46px!important}
+ .mode-grid{grid-template-columns:1fr!important;gap:66px!important;margin-top:60px!important;padding:0 18px 44px!important}
  .mode-card{min-height:210px!important;padding:110px 22px 24px!important;border-radius:28px!important}
- .mode-card::before{width:255px!important;height:176px!important;right:8px!important;top:-80px!important}
- .mode-card.display-card::before{width:178px!important;height:190px!important;right:30px!important;top:-96px!important}
+ .mode-card::before{width:255px!important;height:178px!important;top:-82px!important;right:8px!important}
+ .mode-card.display-card::before{width:182px!important;height:195px!important;top:-98px!important;right:28px!important}
  .mode-card strong{font-size:25px!important}
+ #hostCreateScreen::after,#hostLobbyScreen::after,#joinScreen::after,#playerLobbyScreen::after{background-size:auto,88%;background-position:center,50% 98%}
+ #displayJoinScreen::after,#displayScreen::after{background-size:auto,66%;background-position:center,50% 98%}
+ #questionScreen::after{background-size:auto,68%;background-position:center,50% 100%}
+ #resultScreen::after,#finalScreen::after{background-size:auto,48%,72%;background-position:center,100% 99%,-12% 100%}
+ .compact-screen .panel{margin:18px 14px 80px!important}
 }
 @media(max-width:390px){
  #homeScreen .hero{min-height:600px}
- #homeScreen .floating-trophy{height:315px!important;width:270px!important}
+ #homeScreen .floating-trophy{height:320px!important;width:280px!important}
  .mode-card{min-height:198px!important;padding-top:102px!important}
 }
