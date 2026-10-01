@@ -11,17 +11,17 @@
   if(!q('link[data-oman-home-final]')){
     const css=document.createElement('link');
     css.rel='stylesheet';
-    css.href='/oman-home-v2.css?v=16';
+    css.href='/oman-home-v2.css?v=17';
     css.dataset.omanHomeFinal='1';
     document.head.appendChild(css);
   }
 
+  document.documentElement.style.setProperty('--oman-sahwa-photo','url("/assets/sahwa-approved.png?v=17")');
   const assets={
-    '--oman-home-bg':'/oman-heritage-bg.b64?v=16',
-    '--oman-sahwa-photo':'/sahwa-photo.b64?v=16',
-    '--oman-municipality-photo':'/municipality-photo.b64?v=16',
-    '--oman-opera-photo':'/opera-photo.b64?v=16',
-    '--oman-riyam-photo':'/riyam-photo.b64?v=16'
+    '--oman-home-bg':'/oman-heritage-bg.b64?v=17',
+    '--oman-municipality-photo':'/municipality-photo.b64?v=17',
+    '--oman-opera-photo':'/opera-photo.b64?v=17',
+    '--oman-riyam-photo':'/riyam-photo.b64?v=17'
   };
   Object.entries(assets).forEach(([variable,url])=>{
     fetch(url,{cache:'no-store'})
