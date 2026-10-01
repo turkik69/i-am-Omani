@@ -1,518 +1,87 @@
-// ==================== إعدادات الاتصال ====================
 const socket = io();
-let currentPlayer = null;
-let deferredPrompt = null;
-let gameState = {
-    isQuizActive: false,
-    currentQuestion: null,
-    selectedAnswer: null,
-    timeRemaining: 0,
-    timerInterval: null
-};
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const state = { role:null, code:null, hostToken:null, room:null, player:null, avatar:'🦁', sound:true, timer:null, display:false };
+let deferredPrompt=null;
 
-// ==================== العناصر DOM ====================
-const screens = {
-    login: document.getElementById('loginScreen'),
-    lobby: document.getElementById('lobbyScreen'),
-    question: document.getElementById('questionScreen'),
-    results: document.getElementById('resultsScreen'),
-    final: document.getElementById('finalScreen')
-};
+const screens={home:'#homeScreen',hostCreate:'#hostCreateScreen',join:'#joinScreen',displayJoin:'#displayJoinScreen',hostLobby:'#hostLobbyScreen',playerLobby:'#playerLobbyScreen',question:'#questionScreen',result:'#resultScreen',final:'#finalScreen',display:'#displayScreen'};
+function show(name){ Object.values(screens).forEach(id=>$(id)?.classList.remove('active')); $(screens[name])?.classList.add('active'); window.scrollTo(0,0); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+function setRole(role){ state.role=role; $$('.host-only').forEach(x=>x.classList.toggle('hidden',role!=='host')); $$('.player-only').forEach(x=>x.classList.toggle('hidden',role!=='player')); }
+function esc(v=''){ return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
-const inputs = {
-    playerName: document.getElementById('playerName'),
-    joinBtn: document.getElementById('joinBtn'),
-    playAgainBtn: document.getElementById('playAgainBtn'),
-    installBtn: document.getElementById('installBtn')
-};
-
-// ==================== LocalStorage - حفظ البيانات ====================
-class PlayerStorage {
-    static savePlayer(playerData) {
-        const playerStats = {
-            name: playerData.name,
-            avatar: playerData.avatar,
-            joinDate: new Date().toISOString(),
-            totalGames: 0,
-            totalScore: 0,
-            bestScore: 0,
-            correctAnswers: 0,
-            averageScore: 0,
-            gamesHistory: []
-        };
-        localStorage.setItem(`player_${playerData.name}`, JSON.stringify(playerStats));
-    }
-
-    static getPlayer(playerName) {
-        const data = localStorage.getItem(`player_${playerName}`);
-        return data ? JSON.parse(data) : null;
-    }
-
-    static updatePlayerStats(playerName, gameResult) {
-        const player = this.getPlayer(playerName);
-        if (player) {
-            player.totalGames++;
-            player.totalScore += gameResult.score;
-            player.correctAnswers += gameResult.correctAnswers;
-            player.averageScore = Math.round(player.totalScore / player.totalGames);
-            
-            if (gameResult.score > player.bestScore) {
-                player.bestScore = gameResult.score;
-            }
-            
-            player.gamesHistory.push({
-                date: new Date().toISOString(),
-                score: gameResult.score,
-                correctAnswers: gameResult.correctAnswers,
-                rank: gameResult.rank
-            });
-            
-            // حفظ آخر 50 لعبة فقط
-            if (player.gamesHistory.length > 50) {
-                player.gamesHistory = player.gamesHistory.slice(-50);
-            }
-            
-            localStorage.setItem(`player_${playerName}`, JSON.stringify(player));
-            return player;
-        }
-        return null;
-    }
-
-    static getAllPlayers() {
-        const players = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.startsWith('player_')) {
-                const playerName = key.replace('player_', '');
-                players.push(this.getPlayer(playerName));
-            }
-        }
-        return players.sort((a, b) => b.bestScore - a.bestScore);
-    }
-
-    static getLastPlayedPlayer() {
-        const lastPlayer = localStorage.getItem('lastPlayedPlayer');
-        return lastPlayer ? JSON.parse(lastPlayer) : null;
-    }
-
-    static saveLastPlayedPlayer(playerName, avatar) {
-        localStorage.setItem('lastPlayedPlayer', JSON.stringify({ name: playerName, avatar }));
-    }
+class SFX{
+  static ctx(){ if(!state.sound)return null; return this._ctx||(this._ctx=new (window.AudioContext||window.webkitAudioContext)()); }
+  static tone(freq=440,dur=.12,type='sine',vol=.08,delay=0){ try{const c=this.ctx();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,c.currentTime+delay);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+delay+dur);o.connect(g);g.connect(c.destination);o.start(c.currentTime+delay);o.stop(c.currentTime+delay+dur);}catch{} }
+  static click(){this.tone(520,.07,'triangle',.05)}
+  static join(){this.tone(440,.12);this.tone(660,.14,'sine',.06,.08)}
+  static correct(){this.tone(523,.12);this.tone(659,.12,'sine',.09,.1);this.tone(784,.18,'sine',.1,.2)}
+  static start(){this.tone(330,.1,'square',.04);this.tone(494,.12,'square',.05,.1);this.tone(659,.2,'square',.06,.2)}
+  static finish(){[523,659,784,1046].forEach((f,i)=>this.tone(f,.25,'triangle',.09,i*.12))}
 }
+document.addEventListener('click',e=>{ if(e.target.closest('button')) SFX.click(); });
+$('#soundBtn').onclick=()=>{state.sound=!state.sound;$('#soundBtn').textContent=state.sound?'🔊':'🔇';toast(state.sound?'تم تشغيل الصوت':'تم كتم الصوت')};
 
-// ==================== PWA Install ====================
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    inputs.installBtn.style.display = 'block';
-});
+$$('[data-go="home"]').forEach(b=>b.onclick=()=>{show('home')});
+$$('[data-open]').forEach(b=>b.onclick=()=>show(b.dataset.open));
 
-window.addEventListener('appinstalled', () => {
-    console.log('✅ تم تثبيت التطبيق بنجاح!');
-    inputs.installBtn.style.display = 'none';
-    deferredPrompt = null;
-});
+$$('#avatars .avatar').forEach(b=>b.onclick=()=>{$$('#avatars .avatar').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');state.avatar=b.textContent.trim();});
 
-if (inputs.installBtn) {
-    inputs.installBtn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`تم اختيار المستخدم: ${outcome}`);
-            deferredPrompt = null;
-        }
-    });
+$('#createRoomBtn').onclick=()=>{ const title=$('#quizTitle').value.trim(); socket.emit('host:create',{title},res=>{if(!res.ok)return toast(res.error||'تعذر إنشاء المسابقة');setRole('host');state.code=res.code;state.hostToken=res.hostToken;localStorage.setItem('quizHost',JSON.stringify({code:res.code,hostToken:res.hostToken}));renderRoom(res.room);show('hostLobby');SFX.start();});};
+$('#joinRoomBtn').onclick=()=>{const code=$('#joinCode').value.trim(),name=$('#playerName').value.trim();socket.emit('player:join',{code,name,avatar:state.avatar},res=>{if(!res.ok)return toast(res.error);setRole('player');state.code=code;state.player=res.player;renderRoom(res.room);$('#myAvatar').textContent=state.avatar;$('#myName').textContent=`${name} — جاهز للتحدي`;$('#playerCode').textContent=code;show('playerLobby');SFX.join();});};
+$('#displayJoinBtn').onclick=()=>{const code=$('#displayCode').value.trim();socket.emit('display:join',{code},res=>{if(!res.ok)return toast(res.error);setRole('display');state.display=true;state.code=code;renderRoom(res.room);$('#displayRoomCode').textContent=code;show('display');});};
+$('#copyCodeBtn').onclick=async()=>{try{await navigator.clipboard.writeText(state.code);toast('تم نسخ الرمز')}catch{toast(state.code)}};
+$('#openDisplayBtn').onclick=()=>window.open(`${location.origin}/?display=${state.code}`,'_blank');
+
+function renderRoom(room){ if(!room)return;state.room=room;
+  $('#hostRoomTitle').textContent=room.title;$('#hostCode').textContent=room.code;$('#hostPlayersCount').textContent=room.players.length;$('#playerCode').textContent=room.code;$('#displayRoomCode').textContent=room.code;$('#displayTitle').textContent=room.title;
+  const players=room.players.map(p=>`<div class="player-chip"><span>${esc(p.avatar)}</span><b>${esc(p.name)}</b><small>${p.score||0}</small></div>`).join('');
+  $('#hostPlayers').innerHTML=players||'بانتظار اللاعبين…';$('#hostPlayers').classList.toggle('empty-state',!room.players.length);$('#playerLobbyList').innerHTML=players;$('#displayPlayers').innerHTML=players;
+  $('#totalCount').textContent=room.players.length;
 }
+socket.on('room:update',renderRoom);
+socket.on('fx:join',d=>{toast(`${d.avatar} ${d.name} دخل الساحة`);SFX.join()});
 
-// ==================== الدوال المساعدة ====================
-function switchScreen(screenName) {
-    Object.values(screens).forEach(screen => screen.classList.remove('active'));
-    if (screens[screenName]) {
-        screens[screenName].classList.add('active');
-    }
-}
+$('#startQuizBtn').onclick=()=>socket.emit('host:start',{},res=>{if(!res.ok)return toast(res.error);SFX.start()});
+$('#hostRevealBtn').onclick=()=>socket.emit('host:reveal');
+$('#nextQuestionBtn').onclick=()=>socket.emit('host:next');
+$('#finishQuizBtn').onclick=()=>socket.emit('host:finish');
+$('#resetQuizBtn').onclick=()=>socket.emit('host:reset');
+socket.on('quiz:reset',()=>{show(state.role==='host'?'hostLobby':'playerLobby')});
 
-function playNotificationSound() {
-    try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.value = 800;
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.1);
-    } catch (e) {
-        console.log('الصوت غير متاح:', e);
-    }
-}
-
-function formatTime(seconds) {
-    return seconds.toFixed(2);
-}
-
-// ==================== شاشة الدخول ====================
-const avatarOptions = document.querySelectorAll('.avatar-option');
-let selectedAvatar = '🦸‍♂️';
-
-avatarOptions.forEach(option => {
-    option.addEventListener('click', () => {
-        avatarOptions.forEach(opt => opt.classList.remove('selected'));
-        option.classList.add('selected');
-        selectedAvatar = option.dataset.avatar;
-    });
+socket.on('quiz:question',q=>{
+  show(state.role==='display'?'display':'question');
+  $('#qNumber').textContent=q.number;$('#qTotal').textContent=q.total;$('#category').textContent=q.category;$('#difficulty').textContent=q.difficulty;$('#questionText').textContent=q.question;$('#answeredCount').textContent='0';$('#statusFill').style.width='0%';
+  if(state.role!=='display') renderAnswers(q.options); else renderDisplayQuestion(q);
+  startTimer(q.timeLimit,q.startedAt); SFX.start();
 });
+function renderAnswers(options){const colors=['a','b','c','d','e','f'];$('#answers').innerHTML=options.map((o,i)=>`<button class="answer-btn ${colors[i]}"><span>${String.fromCharCode(65+i)}</span><b>${esc(o)}</b></button>`).join(''); $$('#answers .answer-btn').forEach((b,i)=>b.onclick=()=>{if(state.role!=='player')return; $$('#answers .answer-btn').forEach(x=>x.disabled=true);b.classList.add('chosen');socket.emit('player:answer',{answer:i},r=>{if(r.ok)toast('تم تثبيت إجابتك ⚡')});});}
+function startTimer(limit,startedAt){clearInterval(state.timer);const end=Number(startedAt)+limit;const circle=$('#timerProgress'); const tick=()=>{const left=Math.max(0,end-Date.now());const pct=left/limit;$('#timerText').textContent=Math.ceil(left/1000);if(circle)circle.style.strokeDashoffset=113*(1-pct);if(left<=0)clearInterval(state.timer)};tick();state.timer=setInterval(tick,100);}
+socket.on('quiz:progress',d=>{$('#answeredCount').textContent=d.answered;$('#totalCount').textContent=d.total;$('#statusFill').style.width=`${d.total?d.answered/d.total*100:0}%`; if(state.role==='display'){const el=$('#displayStage .display-progress');if(el)el.textContent=`أجاب ${d.answered} من ${d.total}`;}});
 
-// تحميل بيانات آخر لاعب
-const lastPlayer = PlayerStorage.getLastPlayedPlayer();
-if (lastPlayer) {
-    inputs.playerName.value = lastPlayer.name;
-    selectedAvatar = lastPlayer.avatar;
-    avatarOptions.forEach(opt => {
-        if (opt.dataset.avatar === lastPlayer.avatar) {
-            opt.click();
-        }
-    });
-}
+socket.on('quiz:result',r=>{clearInterval(state.timer);SFX.correct();if(state.role==='display'){renderDisplayResult(r);return;}show('result');$('#correctAnswer').textContent=r.correctText;renderPodium(r.podium);renderLeaderboard(r.leaderboard);});
+function renderPodium(items){$('#podium').innerHTML=items.length?items.slice(0,3).map((x,i)=>`<div class="podium-row rank-${i+1}"><span class="medal">${['🥇','🥈','🥉'][i]||'⭐'}</span><span class="avatar-mini">${esc(x.avatar)}</span><div><b>${esc(x.name)}</b><small>${x.time} ثانية</small></div><strong>+${x.points}</strong></div>`).join(''):'<div class="empty-state">لا توجد إجابات صحيحة</div>'}
+function renderLeaderboard(board){$('#leaderboard').innerHTML=board.map((p,i)=>`<div class="board-row"><span class="rank">#${i+1}</span><span>${esc(p.avatar)}</span><b>${esc(p.name)}</b><strong>${p.score} XP</strong></div>`).join('')}
 
-// تفعيل زر الدخول عند إدخال الاسم
-inputs.playerName.addEventListener('input', () => {
-    inputs.joinBtn.disabled = inputs.playerName.value.trim() === '';
-});
+socket.on('quiz:finished',board=>{clearInterval(state.timer);SFX.finish();confetti();if(state.role==='display'){renderDisplayFinal(board);return;}show('final');const top=board.slice(0,3);$('#finalPodium').innerHTML=top.map((p,i)=>`<div class="winner w${i+1}"><div>${['🥇','🥈','🥉'][i]}</div><span>${esc(p.avatar)}</span><b>${esc(p.name)}</b><strong>${p.score} XP</strong></div>`).join('');$('#finalBoard').innerHTML=board.map((p,i)=>`<div class="board-row"><span class="rank">#${i+1}</span><span>${esc(p.avatar)}</span><b>${esc(p.name)}</b><strong>${p.score} XP</strong></div>`).join('');});
+function confetti(){const box=$('#confetti');box.innerHTML=Array.from({length:60},(_,i)=>`<i style="--x:${Math.random()*100}%;--d:${Math.random()*2}s;--r:${Math.random()*360}deg"></i>`).join('');box.classList.add('go');setTimeout(()=>box.classList.remove('go'),3500)}
 
-// تعيين الاختيار الأول افتراضياً
-if (!lastPlayer) {
-    avatarOptions[0].click();
-}
+function renderDisplayQuestion(q){$('#displayStage').innerHTML=`<div class="display-question"><div class="display-meta"><span>${q.number}/${q.total}</span><b>${esc(q.category)}</b></div><h1>${esc(q.question)}</h1><div class="display-options">${q.options.map((o,i)=>`<div><span>${String.fromCharCode(65+i)}</span>${esc(o)}</div>`).join('')}</div><div class="display-progress">أجاب 0 من ${state.room?.players.length||0}</div></div>`}
+function renderDisplayResult(r){$('#displayStage').innerHTML=`<div class="display-result"><small>الإجابة الصحيحة</small><h1>✅ ${esc(r.correctText)}</h1><div class="display-board">${r.leaderboard.slice(0,8).map((p,i)=>`<div><span>#${i+1}</span><b>${esc(p.avatar)} ${esc(p.name)}</b><strong>${p.score} XP</strong></div>`).join('')}</div></div>`}
+function renderDisplayFinal(board){confetti();$('#displayStage').innerHTML=`<div class="display-final"><div class="floating-trophy">🏆</div><h1>أبطال ساحة التحدي</h1><div class="display-board">${board.slice(0,10).map((p,i)=>`<div><span>${['🥇','🥈','🥉'][i]||'#'+(i+1)}</span><b>${esc(p.avatar)} ${esc(p.name)}</b><strong>${p.score} XP</strong></div>`).join('')}</div></div>`}
 
-// زر الدخول
-inputs.joinBtn.addEventListener('click', () => {
-    const playerName = inputs.playerName.value.trim();
-    if (playerName) {
-        currentPlayer = {
-            name: playerName,
-            avatar: selectedAvatar
-        };
-        
-        // حفظ بيانات المشارك
-        PlayerStorage.savePlayer(currentPlayer);
-        PlayerStorage.saveLastPlayedPlayer(playerName, selectedAvatar);
-        
-        socket.emit('join', currentPlayer);
-    }
-});
+$('#toggleEditorBtn').onclick=()=>$('#questionEditor').classList.toggle('hidden');
+const starter=[
+['كم عدد محافظات سلطنة عُمان؟',['9','10','11','12'],2,'عُمان',15],['ما أكبر دولة في العالم من حيث المساحة؟',['كندا','الصين','روسيا','الولايات المتحدة'],2,'جغرافيا',15],['ما الكوكب المعروف بالكوكب الأحمر؟',['الزهرة','المريخ','عطارد','المشتري'],1,'علوم',12],['من كتب رواية الحرب والسلام؟',['تولستوي','دوستويفسكي','تشيخوف','بوشكين'],0,'أدب',15],['في أي عام سقط جدار برلين؟',['1987','1988','1989','1990'],2,'تاريخ',15],['ما أكبر حيوان حي على الأرض؟',['الفيل','الحوت الأزرق','الزرافة','فرس النهر'],1,'طبيعة',12]
+].map((x,i)=>({id:i+1,question:x[0],options:x[1],correct:x[2],category:x[3],difficulty:'متوسط',time:x[4]}));
+let editorQuestions=structuredClone(starter);
+function drawEditor(){ $('#questionCount').textContent=editorQuestions.length;$('#questionCards').innerHTML=editorQuestions.map((q,i)=>`<div class="q-edit"><div class="q-edit-head"><b>سؤال ${i+1}</b><button data-del="${i}">✕</button></div><input data-q="${i}" value="${esc(q.question)}"><div class="option-edit">${q.options.map((o,j)=>`<label><input type="radio" name="correct${i}" ${q.correct===j?'checked':''} data-correct="${i}:${j}"><input data-opt="${i}:${j}" value="${esc(o)}"></label>`).join('')}</div><div class="q-meta"><input data-cat="${i}" value="${esc(q.category)}" placeholder="التصنيف"><input data-time="${i}" type="number" min="5" max="60" value="${q.time}"></div></div>`).join(''); $$('[data-del]').forEach(b=>b.onclick=()=>{editorQuestions.splice(+b.dataset.del,1);drawEditor()}); }
+drawEditor();
+$('#addQuestionBtn').onclick=()=>{editorQuestions.push({question:'سؤال جديد',options:['خيار 1','خيار 2','خيار 3','خيار 4'],correct:0,category:'عام',difficulty:'متوسط',time:15});drawEditor()};
+$('#saveQuestionsBtn').onclick=()=>{ $$('#questionCards [data-q]').forEach(i=>editorQuestions[+i.dataset.q].question=i.value);$$('[data-opt]').forEach(i=>{const[a,b]=i.dataset.opt.split(':').map(Number);editorQuestions[a].options[b]=i.value});$$('[data-correct]:checked').forEach(i=>{const[a,b]=i.dataset.correct.split(':').map(Number);editorQuestions[a].correct=b});$$('[data-cat]').forEach(i=>editorQuestions[+i.dataset.cat].category=i.value);$$('[data-time]').forEach(i=>editorQuestions[+i.dataset.time].time=+i.value);socket.emit('host:setQuestions',{questions:editorQuestions},r=>{if(!r.ok)return toast(r.error);toast(`تم حفظ ${r.count} أسئلة`);$('#questionEditor').classList.add('hidden')})};
 
-// ==================== اتصالات Socket.io ====================
-socket.on('connect', () => {
-    console.log('✅ تم الاتصال بالخادم');
-});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').classList.remove('hidden')});$('#installBtn').onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('#installBtn').classList.add('hidden')}};
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 
-socket.on('joinSuccess', (data) => {
-    console.log('✅ تم الدخول بنجاح:', data);
-    document.getElementById('playerNameDisplay').textContent = `مرحباً ${currentPlayer.name} ${currentPlayer.avatar}`;
-    
-    // عرض إحصائيات اللاعب السابقة
-    const playerStats = PlayerStorage.getPlayer(currentPlayer.name);
-    if (playerStats && playerStats.totalGames > 0) {
-        const statsText = document.createElement('p');
-        statsText.style.fontSize = '0.9em';
-        statsText.style.color = '#cbd5e1';
-        statsText.textContent = `📊 ألعاب سابقة: ${playerStats.totalGames} | أفضل درجة: ${playerStats.bestScore}`;
-        document.getElementById('playerNameDisplay').parentElement.appendChild(statsText);
-    }
-    
-    switchScreen('lobby');
-    updatePlayersList(data.players);
-});
-
-socket.on('playersUpdate', (players) => {
-    updatePlayersList(players);
-});
-
-socket.on('questionSent', (data) => {
-    gameState.isQuizActive = true;
-    gameState.currentQuestion = data;
-    gameState.selectedAnswer = null;
-    gameState.timeRemaining = data.timeLimit / 1000;
-    
-    displayQuestion(data);
-    startTimer();
-    switchScreen('question');
-});
-
-socket.on('answerSubmitted', (data) => {
-    updateLiveStats(data);
-});
-
-socket.on('results', (data) => {
-    clearInterval(gameState.timerInterval);
-    gameState.isQuizActive = false;
-    displayResults(data);
-    switchScreen('results');
-    
-    // عداد للسؤال التالي
-    let countdown = 4;
-    const countdownEl = document.getElementById('nextQuestionCountdown');
-    const countdownInterval = setInterval(() => {
-        countdown--;
-        countdownEl.textContent = countdown;
-        if (countdown === 0) clearInterval(countdownInterval);
-    }, 1000);
-});
-
-socket.on('leaderboardUpdate', (leaderboard) => {
-    updateCurrentLeaderboard(leaderboard);
-});
-
-socket.on('quizEnded', (finalResults) => {
-    clearInterval(gameState.timerInterval);
-    gameState.isQuizActive = false;
-    
-    // تحديث إحصائيات المشارك
-    const currentPlayerResult = finalResults.find(p => p.name === currentPlayer.name);
-    if (currentPlayerResult) {
-        PlayerStorage.updatePlayerStats(currentPlayer.name, {
-            score: currentPlayerResult.totalScore,
-            correctAnswers: currentPlayerResult.correctAnswers,
-            rank: currentPlayerResult.rank
-        });
-    }
-    
-    displayFinalResults(finalResults);
-    switchScreen('final');
-});
-
-socket.on('connect_error', (error) => {
-    console.error('❌ خطأ في الاتصال:', error);
-    alert('خطأ في الاتصال بالخادم. يرجى إعادة المحاولة.');
-});
-
-socket.on('disconnect', () => {
-    console.log('❌ تم قطع الاتصال');
-});
-
-// ==================== تحديث قائمة اللاعبين ====================
-function updatePlayersList(players) {
-    const playersList = document.getElementById('playersList');
-    const playersCount = document.getElementById('playersCount');
-    const connectedPlayers = document.getElementById('connectedPlayers');
-    
-    playersList.innerHTML = '';
-    players.forEach(player => {
-        const playerItem = document.createElement('div');
-        playerItem.className = 'player-item';
-        playerItem.innerHTML = `
-            <div class="avatar">${player.avatar}</div>
-            <div class="name">${player.name}</div>
-            <div class="online-badge"></div>
-        `;
-        playersList.appendChild(playerItem);
-    });
-    
-    playersCount.textContent = `${players.length} لاعب متصل`;
-    connectedPlayers.textContent = players.length;
-    
-    // بدء المسابقة تلقائياً عند وجود 2 لاعب على الأقل
-    if (players.length >= 2) {
-        setTimeout(() => {
-            socket.emit('startQuiz');
-        }, 3000);
-    }
-}
-
-// ==================== عرض السؤال ====================
-function displayQuestion(data) {
-    document.getElementById('questionNumber').textContent = data.questionNumber;
-    document.getElementById('totalQuestions').textContent = data.totalQuestions;
-    document.getElementById('categoryBadge').textContent = `📚 ${data.category}`;
-    document.getElementById('questionText').textContent = data.question;
-    document.getElementById('totalPlayersCount').textContent = document.getElementById('connectedPlayers').textContent;
-    document.getElementById('answeredCount').textContent = '0';
-    
-    const optionsContainer = document.getElementById('optionsContainer');
-    optionsContainer.innerHTML = '';
-    
-    data.options.forEach((option, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'option-btn';
-        btn.textContent = option;
-        btn.dataset.index = index;
-        
-        btn.addEventListener('click', () => {
-            if (!gameState.isQuizActive || gameState.selectedAnswer !== null) return;
-            
-            gameState.selectedAnswer = index;
-            socket.emit('answer', { answer: index });
-            
-            // تحديث الواجهة
-            document.querySelectorAll('.option-btn').forEach(b => {
-                b.disabled = true;
-                if (parseInt(b.dataset.index) === index) {
-                    b.classList.add('selected');
-                }
-            });
-            
-            playNotificationSound();
-        });
-        
-        optionsContainer.appendChild(btn);
-    });
-}
-
-// ==================== المؤقت ====================
-function startTimer() {
-    const timerText = document.getElementById('timerText');
-    const timerCircle = document.getElementById('timerCircle');
-    gameState.timeRemaining = gameState.currentQuestion.timeLimit / 1000;
-    const totalTime = gameState.timeRemaining;
-    
-    clearInterval(gameState.timerInterval);
-    
-    gameState.timerInterval = setInterval(() => {
-        gameState.timeRemaining -= 0.1;
-        
-        if (gameState.timeRemaining <= 0) {
-            gameState.timeRemaining = 0;
-            clearInterval(gameState.timerInterval);
-        }
-        
-        timerText.textContent = Math.ceil(gameState.timeRemaining);
-        
-        // تغيير اللون حسب الوقت المتبقي
-        if (gameState.timeRemaining <= 3) {
-            timerText.classList.add('critical');
-            timerText.classList.remove('warning');
-        } else if (gameState.timeRemaining <= 7) {
-            timerText.classList.add('warning');
-            timerText.classList.remove('critical');
-        } else {
-            timerText.classList.remove('warning', 'critical');
-        }
-        
-        // تحديث دائرة المؤقت
-        const progress = (gameState.timeRemaining / totalTime) * 282.7;
-        timerCircle.style.strokeDashoffset = 282.7 - progress;
-    }, 100);
-}
-
-// ==================== تحديث إحصائيات مباشرة ====================
-function updateLiveStats(data) {
-    document.getElementById('answeredCount').textContent = data.answeredCount;
-}
-
-// ==================== عرض النتائج ====================
-function displayResults(data) {
-    document.getElementById('correctAnswerDisplay').textContent = data.correctAnswerText;
-    
-    const roundResults = document.getElementById('roundResults');
-    roundResults.innerHTML = '';
-    
-    if (data.rankings.length === 0) {
-        roundResults.innerHTML = '<p style="text-align: center; color: #cbd5e1;">لا توجد إجابات صحيحة في هذا السؤال</p>';
-    } else {
-        data.rankings.forEach((rank, index) => {
-            const rankingItem = document.createElement('div');
-            rankingItem.className = `ranking-item ${['gold', 'silver', 'bronze'][index] || ''}`;
-            rankingItem.innerHTML = `
-                <div class="ranking-medal">${['🥇', '🥈', '🥉'][index]}</div>
-                <div class="ranking-info">
-                    <div class="ranking-name">
-                        <span class="ranking-avatar">${rank.avatar}</span>
-                        ${rank.name}
-                    </div>
-                    <div class="ranking-time">⏱️ ${rank.responseTime}s</div>
-                </div>
-                <div class="ranking-points">+${rank.points}</div>
-            `;
-            roundResults.appendChild(rankingItem);
-        });
-    }
-}
-
-// ==================== تحديث الترتيب الحالي ====================
-function updateCurrentLeaderboard(leaderboard) {
-    const leaderboardEl = document.getElementById('currentLeaderboard');
-    leaderboardEl.innerHTML = '';
-    
-    leaderboard.slice(0, 5).forEach((player, index) => {
-        const leaderboardItem = document.createElement('div');
-        leaderboardItem.className = 'leaderboard-item';
-        leaderboardItem.innerHTML = `
-            <div class="leaderboard-rank">#${index + 1}</div>
-            <div class="leaderboard-player">
-                <span class="leaderboard-player-avatar">${player.avatar}</span>
-                <span class="leaderboard-player-name">${player.name}</span>
-            </div>
-            <div class="leaderboard-score">${player.totalScore}</div>
-        `;
-        leaderboardEl.appendChild(leaderboardItem);
-    });
-}
-
-// ==================== عرض النتائج النهائية ====================
-function displayFinalResults(finalResults) {
-    const finalLeaderboard = document.getElementById('finalLeaderboard');
-    finalLeaderboard.innerHTML = '';
-    
-    finalResults.forEach((player) => {
-        const rankItem = document.createElement('div');
-        rankItem.className = 'final-rank-item';
-        rankItem.innerHTML = `
-            <div class="final-medal">${player.medal}</div>
-            <div class="final-player-info">
-                <div class="final-player-name">
-                    <span class="final-player-avatar">${player.avatar}</span>
-                    ${player.name}
-                </div>
-                <div class="final-correct-count">✓ ${player.correctAnswers} إجابات صحيحة</div>
-            </div>
-            <div class="final-player-score">
-                <div class="final-score-value">${player.totalScore}</div>
-                <div class="final-score-label">نقطة</div>
-            </div>
-        `;
-        finalLeaderboard.appendChild(rankItem);
-    });
-    
-    // عرض إحصائيات اللاعب الحالي
-    const currentPlayerStats = finalResults.find(p => p.name === currentPlayer.name);
-    if (currentPlayerStats) {
-        const statsHTML = `
-            <div class="stat-card">
-                <div class="stat-card-value">${currentPlayerStats.rank}</div>
-                <div class="stat-card-label">المركز النهائي</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-value">${currentPlayerStats.totalScore}</div>
-                <div class="stat-card-label">إجمالي النقاط</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-value">${currentPlayerStats.correctAnswers}</div>
-                <div class="stat-card-label">إجابات صحيحة</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-value">${((currentPlayerStats.correctAnswers / document.getElementById('totalQuestions').textContent) * 100).toFixed(0)}%</div>
-                <div class="stat-card-label">نسبة النجاح</div>
-            </div>
-        `;
-        document.getElementById('playerFinalStats').innerHTML = statsHTML;
-    }
-}
-
-// ==================== زر العب مرة أخرى ====================
-inputs.playAgainBtn.addEventListener('click', () => {
-    location.reload();
-});
-
-// ==================== التهيئة ====================
-console.log('🎮 تطبيق المسابقات جاهز!');
-console.log('✅ الميزات المفعلة:');
-console.log('  ✓ حفظ بيانات المشارك تلقائياً');
-console.log('  ✓ PWA - تثبيت على الهاتف');
-console.log('  ✓ Service Worker - العمل بدون إنترنت');
-console.log('  ✓ مسابقات حية في الوقت الفعلي');
+const params=new URLSearchParams(location.search); if(params.get('display')){$('#displayCode').value=params.get('display');setTimeout(()=>$('#displayJoinBtn').click(),250)}
+const oldHost=JSON.parse(localStorage.getItem('quizHost')||'null');socket.on('connect',()=>{if(oldHost&&!state.role){socket.emit('host:reconnect',oldHost,r=>{if(r.ok){state.code=oldHost.code;state.hostToken=oldHost.hostToken;setRole('host');renderRoom(r.room);show('hostLobby');}})}});
