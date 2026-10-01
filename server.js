@@ -35,8 +35,6 @@ const DEFAULT_QUESTIONS = [
   { id: 6, question: 'ما أكبر حيوان حي على الأرض؟', options: ['الفيل','الحوت الأزرق','الزرافة','فرس النهر'], correct: 1, category: 'طبيعة', difficulty: 'سهل', time: 12 }
 ];
 
-// Omani location identity for competition rooms.
-// We only attach village names that are known/verified; other wilayats gracefully fall back to wilayat-level naming.
 const OMAN_LOCATIONS = [
   {
     wilayat: 'بركاء',
@@ -77,29 +75,20 @@ const roomCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const clean = (v='', max=180) => String(v).trim().replace(/[<>]/g,'').slice(0, max);
 const sanitizeName = v => clean(v, 28);
 
-function locationKey(location) {
-  return `${location.wilayat}:${location.village || ''}`;
+function findLocation(wilayat, village) {
+  const w = clean(wilayat, 40);
+  const v = clean(village, 50);
+  const entry = OMAN_LOCATIONS.find(x => x.wilayat === w);
+  if (!entry || !v) return null;
+  return { wilayat: entry.wilayat, village: v };
 }
 
-function pickOmaniLocation() {
-  const used = new Set([...rooms.values()].map(r => locationKey(r.location || {})));
-  const detailed = OMAN_LOCATIONS.flatMap(entry =>
-    entry.villages.map(village => ({ wilayat: entry.wilayat, village }))
-  );
-  const availableDetailed = detailed.filter(location => !used.has(locationKey(location)));
-  if (availableDetailed.length) {
-    return availableDetailed[Math.floor(Math.random() * availableDetailed.length)];
-  }
-
-  const wilayatOnly = OMAN_LOCATIONS.map(entry => ({ wilayat: entry.wilayat, village: null }));
-  const availableWilayat = wilayatOnly.filter(location => !used.has(locationKey(location)));
-  const pool = availableWilayat.length ? availableWilayat : (detailed.length ? detailed : wilayatOnly);
-  return pool[Math.floor(Math.random() * pool.length)];
+function locationKey(location) {
+  return `${location?.wilayat || ''}:${location?.village || ''}`;
 }
 
 function formatRoomIdentity(location) {
-  if (location?.village) return `مجلس ${location.village} – ساحة ${location.wilayat}`;
-  return `ساحة ${location?.wilayat || 'عُمان'}`;
+  return `مجلس ${location.village} – ساحة ${location.wilayat}`;
 }
 
 function publicRoom(room) {
@@ -112,11 +101,39 @@ function publicRoom(room) {
     status: room.status,
     currentQuestionIndex: room.currentQuestionIndex,
     totalQuestions: room.questions.length,
-    players: [...room.players.values()].map(({token, ...p}) => p),
-    leaderboard: [...room.players.values()].sort((a,b)=>b.score-a.score).map(({token, ...p},i)=>({...p,rank:i+1}))
+    players: [...room.players.values()].map(p => ({ ...p })),
+    pendingCount: room.pending.size,
+    leaderboard: [...room.players.values()].sort((a,b)=>b.score-a.score).map((p,i)=>({...p,rank:i+1}))
   };
 }
-function emitRoom(room) { io.to(room.code).emit('room:update', publicRoom(room)); }
+
+function pendingList(room) {
+  return [...room.pending.values()].map(r => ({
+    id:r.id, name:r.name, avatar:r.avatar, requestedAt:r.requestedAt
+  }));
+}
+
+function activeCouncils() {
+  return [...rooms.values()]
+    .filter(r => r.status === 'lobby')
+    .map(r => ({
+      code:r.code,
+      title:r.title,
+      roomIdentity:r.roomIdentity,
+      wilayat:r.location.wilayat,
+      village:r.location.village,
+      players:r.players.size,
+      pending:r.pending.size
+    }))
+    .sort((a,b) => b.players - a.players || b.pending - a.pending || a.roomIdentity.localeCompare(b.roomIdentity,'ar'));
+}
+
+function broadcastCouncils() { io.emit('councils:update', activeCouncils()); }
+function emitRoom(room) {
+  io.to(room.code).emit('room:update', publicRoom(room));
+  if (room.hostSocketId) io.to(room.hostSocketId).emit('host:pending', pendingList(room));
+  broadcastCouncils();
+}
 function getRoom(code) { return rooms.get(String(code || '').trim()); }
 function isHost(socket, room) { return room && room.hostSocketId === socket.id; }
 
@@ -208,18 +225,54 @@ function finishQuiz(room) {
   emitRoom(room);
 }
 
+function rejectAllPending(room, message='بدأت المسابقة قبل قبول الطلب') {
+  for (const req of room.pending.values()) io.to(req.socketId).emit('join:rejected', { message });
+  room.pending.clear();
+}
+
+function requestJoin(socket, payload={}, ack=()=>{}) {
+  const room=getRoom(payload.code);
+  if(!room) return ack({ok:false,error:'المجلس غير موجود أو لم يعد متاحًا'});
+  if(room.status!=='lobby') return ack({ok:false,error:'بدأت المسابقة بالفعل، اختر مجلسًا آخر'});
+  const name=sanitizeName(payload.name);
+  if(!name) return ack({ok:false,error:'اكتب اسم اللاعب'});
+  const duplicatePlayer=[...room.players.values()].some(p=>p.name.toLowerCase()===name.toLowerCase());
+  const duplicatePending=[...room.pending.values()].some(p=>p.name.toLowerCase()===name.toLowerCase());
+  if(duplicatePlayer||duplicatePending) return ack({ok:false,error:'هذا الاسم مستخدم في المجلس'});
+  if(socket.data.pendingRoomCode) return ack({ok:false,error:'لديك طلب انضمام قيد الانتظار بالفعل'});
+
+  const req={
+    id:randomUUID(), socketId:socket.id, name,
+    avatar:clean(payload.avatar||'🇴🇲',8), requestedAt:Date.now()
+  };
+  room.pending.set(req.id,req);
+  socket.data.pendingRoomCode=room.code;
+  socket.data.pendingRequestId=req.id;
+  ack({ok:true,pending:true,requestId:req.id,room:{code:room.code,roomIdentity:room.roomIdentity,title:room.title}});
+  if(room.hostSocketId) io.to(room.hostSocketId).emit('host:pending',pendingList(room));
+  broadcastCouncils();
+}
+
 io.on('connection', socket => {
+  socket.emit('councils:update', activeCouncils());
+
+  socket.on('councils:list', (ack=()=>{}) => ack({ok:true,councils:activeCouncils()}));
+
   socket.on('host:create', (payload={}, ack=()=>{}) => {
     let code; do { code = roomCode(); } while (rooms.has(code));
     const customTitle = sanitizeName(payload.title);
-    const location = pickOmaniLocation();
+    const location = findLocation(payload.wilayat, payload.village);
+    if(!location) return ack({ok:false,error:'اختر الولاية واكتب اسم المجلس أو القرية'});
+    const busy=[...rooms.values()].some(r=>r.status!=='finished'&&locationKey(r.location)===locationKey(location));
+    if(busy) return ack({ok:false,error:'هذا المجلس لديه مسابقة نشطة الآن، اختر مجلسًا آخر'});
+
     const roomIdentity = formatRoomIdentity(location);
     const title = customTitle ? `${roomIdentity} | ${customTitle}` : roomIdentity;
     const hostToken = randomUUID();
     const room = {
       code, title, roomIdentity, location, hostToken, hostSocketId:socket.id,
       status:'lobby', questions:DEFAULT_QUESTIONS.map(q=>({...q, options:[...q.options]})),
-      currentQuestionIndex:0, players:new Map(), answers:new Map(), timer:null,
+      currentQuestionIndex:0, players:new Map(), pending:new Map(), answers:new Map(), timer:null,
       startedAt:null, persisted:false
     };
     rooms.set(code, room); socket.join(code); socket.data.roomCode=code; socket.data.role='host';
@@ -230,20 +283,49 @@ io.on('connection', socket => {
     const room=getRoom(code);
     if(!room || room.hostToken!==hostToken) return ack({ok:false,error:'تعذر استعادة جلسة المضيف'});
     room.hostSocketId=socket.id; socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='host';
-    ack({ok:true,room:publicRoom(room)}); emitRoom(room);
+    ack({ok:true,room:publicRoom(room),pending:pendingList(room)}); emitRoom(room);
   });
 
-  socket.on('player:join', (payload={}, ack=()=>{}) => {
-    const room=getRoom(payload.code);
-    if(!room) return ack({ok:false,error:'رمز المسابقة غير صحيح'});
-    if(room.status!=='lobby') return ack({ok:false,error:'المسابقة بدأت بالفعل'});
-    const name=sanitizeName(payload.name);
-    if(!name) return ack({ok:false,error:'اكتب اسم اللاعب'});
-    if([...room.players.values()].some(p=>p.name.toLowerCase()===name.toLowerCase())) return ack({ok:false,error:'هذا الاسم مستخدم في الغرفة'});
-    const id=socket.id;
-    const player={id,name,avatar:clean(payload.avatar||'🎮',8),score:0,correct:0,answered:false,lastPoints:0};
-    room.players.set(id,player); socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='player';
-    ack({ok:true,player,room:publicRoom(room)}); emitRoom(room); io.to(room.code).emit('fx:join',{name:player.name,avatar:player.avatar});
+  socket.on('player:requestJoin', (payload={},ack=()=>{}) => requestJoin(socket,payload,ack));
+  socket.on('player:join', (payload={},ack=()=>{}) => requestJoin(socket,payload,ack));
+
+  socket.on('player:cancelJoin', (_,ack=()=>{}) => {
+    const room=getRoom(socket.data.pendingRoomCode);
+    const requestId=socket.data.pendingRequestId;
+    if(room&&requestId) room.pending.delete(requestId);
+    socket.data.pendingRoomCode=null; socket.data.pendingRequestId=null;
+    if(room) emitRoom(room);
+    ack({ok:true});
+  });
+
+  socket.on('host:approveJoin', ({requestId}={},ack=()=>{}) => {
+    const room=getRoom(socket.data.roomCode);
+    if(!isHost(socket,room)) return ack({ok:false,error:'غير مصرح'});
+    if(room.status!=='lobby') return ack({ok:false,error:'لا يمكن قبول لاعبين بعد بدء المسابقة'});
+    const req=room.pending.get(requestId);
+    if(!req) return ack({ok:false,error:'الطلب لم يعد متاحًا'});
+    const playerSocket=io.sockets.sockets.get(req.socketId);
+    if(!playerSocket){ room.pending.delete(requestId); emitRoom(room); return ack({ok:false,error:'اللاعب غير متصل الآن'}); }
+
+    const player={id:req.socketId,name:req.name,avatar:req.avatar,score:0,correct:0,answered:false,lastPoints:0};
+    room.players.set(req.socketId,player); room.pending.delete(requestId);
+    playerSocket.join(room.code); playerSocket.data.roomCode=room.code; playerSocket.data.role='player';
+    playerSocket.data.pendingRoomCode=null; playerSocket.data.pendingRequestId=null;
+    io.to(req.socketId).emit('join:approved',{player,room:publicRoom(room)});
+    io.to(room.code).emit('fx:join',{name:player.name,avatar:player.avatar});
+    ack({ok:true}); emitRoom(room);
+  });
+
+  socket.on('host:rejectJoin', ({requestId}={},ack=()=>{}) => {
+    const room=getRoom(socket.data.roomCode);
+    if(!isHost(socket,room)) return ack({ok:false,error:'غير مصرح'});
+    const req=room.pending.get(requestId);
+    if(!req) return ack({ok:false,error:'الطلب لم يعد متاحًا'});
+    room.pending.delete(requestId);
+    const playerSocket=io.sockets.sockets.get(req.socketId);
+    if(playerSocket){ playerSocket.data.pendingRoomCode=null; playerSocket.data.pendingRequestId=null; }
+    io.to(req.socketId).emit('join:rejected',{message:'لم يوافق مشرف المجلس على طلب الانضمام'});
+    ack({ok:true}); emitRoom(room);
   });
 
   socket.on('display:join', ({code}={},ack=()=>{}) => {
@@ -277,6 +359,7 @@ io.on('connection', socket => {
     if(!isHost(socket,room)) return ack({ok:false,error:'غير مصرح'});
     if(room.status!=='lobby') return ack({ok:false,error:'المسابقة قيد التشغيل'});
     if(room.players.size<1) return ack({ok:false,error:'يلزم لاعب واحد على الأقل'});
+    rejectAllPending(room);
     room.currentQuestionIndex=0; room.persisted=false;
     for(const p of room.players.values()){p.score=0;p.correct=0;}
     ack({ok:true}); sendQuestion(room);
@@ -312,6 +395,10 @@ io.on('connection', socket => {
   });
 
   socket.on('disconnect', () => {
+    const pendingRoom=getRoom(socket.data.pendingRoomCode);
+    if(pendingRoom&&socket.data.pendingRequestId){
+      pendingRoom.pending.delete(socket.data.pendingRequestId); emitRoom(pendingRoom);
+    }
     const room=getRoom(socket.data.roomCode); if(!room)return;
     if(socket.data.role==='player'){ room.players.delete(socket.id); room.answers.delete(socket.id); emitRoom(room); }
     if(room.players.size===0 && room.status==='finished') setTimeout(()=>{
@@ -323,7 +410,8 @@ io.on('connection', socket => {
 app.get('/api/health', (req,res)=>res.json({ok:true,rooms:rooms.size,time:new Date().toISOString()}));
 app.get('/api/leaderboard', (req,res)=>res.json(Object.values(persistent.players).sort((a,b)=>b.totalScore-a.totalScore).slice(0,50)));
 app.get('/api/oman-locations', (req,res)=>res.json(OMAN_LOCATIONS));
+app.get('/api/active-councils', (req,res)=>res.json(activeCouncils()));
 app.get('*', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 
 const PORT=process.env.PORT||3000;
-server.listen(PORT,'0.0.0.0',()=>console.log(`🎮 Quiz Arena running on ${PORT}`));
+server.listen(PORT,'0.0.0.0',()=>console.log(`🇴🇲 I Am Omani running on ${PORT}`));
