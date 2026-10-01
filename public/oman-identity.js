@@ -6,7 +6,7 @@
   document.title = 'أنا عُماني';
 
   const desc = q('meta[name="description"]');
-  if (desc) desc.content = 'أنا عُماني | I Am Omani — مسابقات حية بهوية عُمانية، ساحات الولايات ومجالس القرى';
+  if (desc) desc.content = 'أنا عُماني | I Am Omani — منصة ألعاب ومسابقات عُمانية حية، من تحديات المعرفة إلى البلوت وبطولات المجالس';
 
   let apple = q('meta[name="apple-mobile-web-app-title"]');
   if (!apple) {
@@ -43,16 +43,16 @@
   if (heroTitle) heroTitle.innerHTML = '<span>أنا عُماني</span>';
 
   const eyebrow = q('#homeScreen .eyebrow');
-  if (eyebrow) eyebrow.textContent = 'I AM OMANI • LIVE QUIZ';
+  if (eyebrow) eyebrow.textContent = 'I AM OMANI • LIVE GAMES';
 
   const heroP = q('#homeScreen .hero p');
-  if (heroP) heroP.textContent = 'اعرف عُمان... وتحدَّ غيرك في ساحات الولايات ومجالس القرى.';
+  if (heroP) heroP.textContent = 'العب، نافس، واكتشف عُمان… في ساحات الولايات ومجالس القرى.';
 
   const finalTitle = q('#finalScreen .final-title h1');
   if (finalTitle) finalTitle.textContent = 'أبطال أنا عُماني';
 
   const displayBrand = q('#displayScreen .display-head b');
-  if (displayBrand) displayBrand.textContent = 'أنا عُماني — تحدّي المعرفة';
+  if (displayBrand) displayBrand.textContent = 'أنا عُماني — تحديات وألعاب مباشرة';
 
   qa('.floating-trophy').forEach(el => {
     el.innerHTML = '';
@@ -72,4 +72,25 @@
     btn.textContent = '🎵';
     topActions.prepend(btn);
   }
+
+  // Load the game catalog and Wilayat identity layer.
+  if (!q('link[data-game-catalog]')) {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = '/game-catalog.css?v=1';
+    css.dataset.gameCatalog = '1';
+    document.head.appendChild(css);
+  }
+  const loadScript = src => new Promise(resolve => {
+    if ([...document.scripts].some(s => s.src.includes(src.split('?')[0]))) return resolve();
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = resolve;
+    document.body.appendChild(s);
+  });
+  (async () => {
+    await loadScript('/oman-wilayat-themes.js?v=1');
+    await loadScript('/game-catalog.js?v=1');
+  })();
 })();
