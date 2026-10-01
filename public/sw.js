@@ -1,4 +1,4 @@
-const CACHE='iam-omani-v9';
+const CACHE='iam-omani-v10';
 const CORE=['/','/index.html','/styles.css','/app.js','/manifest.json?v=7','/icon.svg?v=7','/oman-identity.js?v=6','/oman-premium.css?v=6','/oman-audio-v2.js?v=1','/omani-bg10.b64?v=1','/oman-villages.js?v=1','/approval-flow.js','/village-directory-ui.js?v=1','/progression-ui.js','/progression-ui.css','/firebase-auth-ui.css?v=2','/firebase-auth-ui.js?v=2'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)));self.skipWaiting()});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
