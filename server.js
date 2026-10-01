@@ -35,16 +35,41 @@ const DEFAULT_QUESTIONS = [
   { id: 6, question: 'ما أكبر حيوان حي على الأرض؟', options: ['الفيل','الحوت الأزرق','الزرافة','فرس النهر'], correct: 1, category: 'طبيعة', difficulty: 'سهل', time: 12 }
 ];
 
-const OMAN_WILAYAT = [
-  'مسقط','مطرح','بوشر','السيب','العامرات','قريات',
-  'بركاء','الرستاق','نخل','وادي المعاول','العوابي','المصنعة',
-  'صحار','شناص','لوى','صحم','الخابورة','السويق',
-  'نزوى','بهلاء','منح','آدم','الحمراء','إزكي','بدبد','سمائل',
-  'صور','مصيرة','جعلان بني بو علي','جعلان بني بو حسن','الكامل والوافي',
-  'عبري','ينقل','ضنك','البريمي','محضة','السنينة',
-  'خصب','بخاء','دبا','مدحاء',
-  'صلالة','طاقة','مرباط','ثمريت','مقشن','شليم وجزر الحلانيات','رخيوت','ضلكوت','مزيونة','سدح',
-  'هيما','محوت','الدقم','الجازر'
+// Omani location identity for competition rooms.
+// We only attach village names that are known/verified; other wilayats gracefully fall back to wilayat-level naming.
+const OMAN_LOCATIONS = [
+  {
+    wilayat: 'بركاء',
+    villages: [
+      'الحرادي','مزرع الحرادي','المراغ','الباسط','الصومحان','الجحيلة','حلة الفوارس','حلة العجم',
+      'قرحة البلوش','الجنينة','الثرامد','حفري الجنوبية','الخويرات','مزرع الحرث','المذرية','حرادي الساحل',
+      'الهرم','السلاحة','وادي آمون','حي عاصم','مزغيو','الرميس','أبو النخيل','الشخاخيط'
+    ]
+  },
+  {
+    wilayat: 'صحار',
+    villages: [
+      'الهمبار','الحجرة','صلان','الطريف','الوقيبة','عوتب','الصويحرة','مجز الكبرى','غيل الشبول','العوينات',
+      'العوهي','فلج القبائل','العفيفة','مجيس','الجفرة','الملعب','الخويرية','حلة الشيزاو','حلة الصبارة',
+      'حلة الشيخ حسان','حيبي','الحجال','شام','السهيلة','الخان','الجاهلي'
+    ]
+  },
+  { wilayat: 'السيب', villages: [] },
+  { wilayat: 'المصنعة', villages: [] },
+  { wilayat: 'السويق', villages: [] },
+  { wilayat: 'نزوى', villages: [] },
+  { wilayat: 'بهلاء', villages: [] },
+  { wilayat: 'مطرح', villages: [] },
+  { wilayat: 'بوشر', villages: [] },
+  { wilayat: 'قريات', villages: [] },
+  { wilayat: 'صور', villages: [] },
+  { wilayat: 'إبراء', villages: [] },
+  { wilayat: 'الرستاق', villages: [] },
+  { wilayat: 'نخل', villages: [] },
+  { wilayat: 'العوابي', villages: [] },
+  { wilayat: 'صلالة', villages: [] },
+  { wilayat: 'خصب', villages: [] },
+  { wilayat: 'البريمي', villages: [] }
 ];
 
 const rooms = new Map();
@@ -52,19 +77,38 @@ const roomCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const clean = (v='', max=180) => String(v).trim().replace(/[<>]/g,'').slice(0, max);
 const sanitizeName = v => clean(v, 28);
 
-function pickWilaya() {
-  const active = new Set([...rooms.values()].filter(r => r.status !== 'finished').map(r => r.wilaya));
-  const available = OMAN_WILAYAT.filter(name => !active.has(name));
-  const pool = available.length ? available : OMAN_WILAYAT;
+function locationKey(location) {
+  return `${location.wilayat}:${location.village || ''}`;
+}
+
+function pickOmaniLocation() {
+  const used = new Set([...rooms.values()].map(r => locationKey(r.location || {})));
+  const detailed = OMAN_LOCATIONS.flatMap(entry =>
+    entry.villages.map(village => ({ wilayat: entry.wilayat, village }))
+  );
+  const availableDetailed = detailed.filter(location => !used.has(locationKey(location)));
+  if (availableDetailed.length) {
+    return availableDetailed[Math.floor(Math.random() * availableDetailed.length)];
+  }
+
+  const wilayatOnly = OMAN_LOCATIONS.map(entry => ({ wilayat: entry.wilayat, village: null }));
+  const availableWilayat = wilayatOnly.filter(location => !used.has(locationKey(location)));
+  const pool = availableWilayat.length ? availableWilayat : (detailed.length ? detailed : wilayatOnly);
   return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function formatRoomIdentity(location) {
+  if (location?.village) return `مجلس ${location.village} – ساحة ${location.wilayat}`;
+  return `ساحة ${location?.wilayat || 'عُمان'}`;
 }
 
 function publicRoom(room) {
   return {
     code: room.code,
     title: room.title,
-    wilaya: room.wilaya,
-    roomName: room.roomName,
+    roomIdentity: room.roomIdentity,
+    wilayat: room.location?.wilayat || null,
+    village: room.location?.village || null,
     status: room.status,
     currentQuestionIndex: room.currentQuestionIndex,
     totalQuestions: room.questions.length,
@@ -150,7 +194,11 @@ function finishQuiz(room) {
       s.name=p.name; s.avatar=p.avatar; s.games++; s.totalScore+=p.score; s.bestScore=Math.max(s.bestScore,p.score); s.correct+=p.correct; if(p.rank===1)s.wins++;
       persistent.players[key]=s;
     });
-    persistent.games.unshift({ id:randomUUID(), room:room.code, roomName:room.roomName, wilaya:room.wilaya, title:room.title, date:now, players:board.length, winner:board[0]?.name || null });
+    persistent.games.unshift({
+      id:randomUUID(), room:room.code, title:room.title, roomIdentity:room.roomIdentity,
+      wilayat:room.location?.wilayat || null, village:room.location?.village || null,
+      date:now, players:board.length, winner:board[0]?.name || null
+    });
     persistent.games = persistent.games.slice(0,100);
     room.persisted = true;
     saveStats();
@@ -164,12 +212,12 @@ io.on('connection', socket => {
   socket.on('host:create', (payload={}, ack=()=>{}) => {
     let code; do { code = roomCode(); } while (rooms.has(code));
     const customTitle = sanitizeName(payload.title);
-    const wilaya = pickWilaya();
-    const roomName = `غرفة ${wilaya}`;
-    const title = customTitle ? `${roomName} — ${customTitle}` : roomName;
+    const location = pickOmaniLocation();
+    const roomIdentity = formatRoomIdentity(location);
+    const title = customTitle ? `${roomIdentity} | ${customTitle}` : roomIdentity;
     const hostToken = randomUUID();
     const room = {
-      code, title, wilaya, roomName, hostToken, hostSocketId:socket.id,
+      code, title, roomIdentity, location, hostToken, hostSocketId:socket.id,
       status:'lobby', questions:DEFAULT_QUESTIONS.map(q=>({...q, options:[...q.options]})),
       currentQuestionIndex:0, players:new Map(), answers:new Map(), timer:null,
       startedAt:null, persisted:false
@@ -274,6 +322,7 @@ io.on('connection', socket => {
 
 app.get('/api/health', (req,res)=>res.json({ok:true,rooms:rooms.size,time:new Date().toISOString()}));
 app.get('/api/leaderboard', (req,res)=>res.json(Object.values(persistent.players).sort((a,b)=>b.totalScore-a.totalScore).slice(0,50)));
+app.get('/api/oman-locations', (req,res)=>res.json(OMAN_LOCATIONS));
 app.get('*', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 
 const PORT=process.env.PORT||3000;
