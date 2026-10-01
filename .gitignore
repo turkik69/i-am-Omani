@@ -11,3 +11,4 @@ yarn-error.log*
 *.swo
 dist/
 build/
+data/*.json
