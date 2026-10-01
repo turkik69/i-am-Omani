@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" role="img" aria-label="مشهد تراث عُماني">
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#100d35"/><stop offset=".48" stop-color="#17164a"/><stop offset="1" stop-color="#061d29"/></linearGradient>
+ <radialGradient id="glow"><stop stop-color="#ffca74" stop-opacity=".55"/><stop offset="1" stop-color="#ffca74" stop-opacity="0"/></radialGradient>
+ <linearGradient id="sand" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d99b54"/><stop offset="1" stop-color="#8b4b32"/></linearGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+ <filter id="gold"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#ffbf58" flood-opacity=".28"/></filter>
+</defs>
+<rect width="1080" height="1920" fill="url(#sky)"/>
+<circle cx="760" cy="250" r="300" fill="url(#glow)" filter="url(#soft)"/>
+<!-- mountains -->
+<path d="M0 710L145 535l95 80 120-190 112 142 105-120 115 150 115-82 173 195v320H0Z" fill="#0b1730" opacity=".95"/>
+<path d="M0 770L170 645l92 65 145-135 96 92 135-105 145 130 112-80 185 155v225H0Z" fill="#162441" opacity=".78"/>
+<!-- fort silhouette -->
+<g transform="translate(55 505)" filter="url(#gold)">
+ <rect x="0" y="92" width="310" height="172" rx="8" fill="#b87545"/>
+ <rect x="18" y="40" width="70" height="224" rx="8" fill="#c88a53"/><rect x="220" y="20" width="72" height="244" rx="8" fill="#c88a53"/>
+ <path d="M18 40h14V22h14v18h14V22h14v18h14v22H18Zm202-20h14V2h14v18h14V2h14v18h16v24h-72Z" fill="#c88a53"/>
+ <path d="M118 264v-70q37-52 74 0v70Z" fill="#2a1830"/>
+ <g fill="#f5c578" opacity=".65"><rect x="40" y="112" width="18" height="32" rx="9"/><rect x="250" y="103" width="18" height="32" rx="9"/><rect x="95" y="120" width="22" height="28" rx="11"/></g>
+</g>
+<!-- tower -->
+<g transform="translate(748 390)" filter="url(#gold)">
+ <rect x="65" y="0" width="118" height="330" rx="10" fill="#b87646"/>
+ <rect x="38" y="45" width="172" height="46" fill="#c98b53"/>
+ <path d="M38 45h18V22h20v23h22V22h20v23h22V22h20v23h22V22h20v23h8v46H38Z" fill="#c98b53"/>
+ <rect x="82" y="94" width="84" height="96" rx="6" fill="#1b4d7b" stroke="#e5b25e" stroke-width="8"/>
+ <circle cx="124" cy="142" r="30" fill="#f6e6c2" stroke="#d5a14c" stroke-width="5"/><path d="M124 142l0-19m0 19 15 8" stroke="#30251f" stroke-width="4" stroke-linecap="round"/>
+ <path d="M105 330v-76q19-31 38 0v76Z" fill="#24162b"/>
+</g>
+<!-- dhow -->
+<g transform="translate(470 830)" opacity=".8">
+ <path d="M0 90q145 78 325 0-72 112-264 68Z" fill="#5f321f"/>
+ <path d="M135 0v105" stroke="#e8cfaa" stroke-width="5"/><path d="M140 6 255 85H140Z" fill="#f1dcc0" opacity=".82"/>
+</g>
+<!-- decorative arch -->
+<path d="M65 1760V1210q0-145 125-260 125-112 350-112t350 112q125 115 125 260v550" fill="none" stroke="#d79f59" stroke-opacity=".17" stroke-width="18"/>
+<!-- Omani man stylised -->
+<g transform="translate(85 1120)" filter="url(#gold)">
+ <circle cx="185" cy="105" r="66" fill="#8d5b3c"/>
+ <path d="M115 90q70-90 142 0l-18 40H133Z" fill="#efe4d2"/><path d="M118 78q74-65 136 2" fill="none" stroke="#a96848" stroke-width="18"/>
+ <path d="M104 196q82-55 164 0l70 440H26Z" fill="#f7f4ec"/>
+ <path d="M102 206q82 34 166 0l42 360H54Z" fill="#faf8f3"/>
+ <path d="M168 344h58l34 88-60 50-64-50Z" fill="#8b5639" stroke="#e8d0a2" stroke-width="10"/>
+ <rect x="223" y="438" width="15" height="285" rx="8" fill="#75472e"/>
+ <path d="M53 505q145 45 258 0" stroke="#bb915e" stroke-width="12"/>
+</g>
+<!-- child -->
+<g transform="translate(330 1385)" opacity=".95">
+ <circle cx="88" cy="62" r="42" fill="#9a6848"/><path d="M42 55q44-60 92 0l-6 24H49Z" fill="#e7c67e"/>
+ <path d="M30 120q60-35 118 0l42 285H-8Z" fill="#f6f3eb"/>
+ <path d="M72 248h38l28 64-47 37-45-37Z" fill="#9b603d" stroke="#dec28e" stroke-width="7"/>
+ <rect x="113" y="314" width="10" height="175" rx="5" fill="#8b5b34"/>
+</g>
+<!-- Omani woman stylised -->
+<g transform="translate(700 1200)" filter="url(#gold)">
+ <ellipse cx="150" cy="100" rx="58" ry="70" fill="#8b5a40"/>
+ <path d="M82 72q69-95 141 0v124H82Z" fill="#b13b37"/>
+ <path d="M74 165q76 22 152 0l78 470H0Z" fill="#16101c"/>
+ <path d="M42 207q111 43 221 0" stroke="#c86d48" stroke-width="30" opacity=".85"/>
+ <path d="M91 72q60-42 117 3l-22 70H112Z" fill="#aa3a37"/>
+ <path d="M102 109h92" stroke="#d4a36a" stroke-width="10"/><path d="M114 132h65" stroke="#d4a36a" stroke-width="8"/>
+</g>
+<!-- foreground fort wall -->
+<path d="M0 1775h1080v145H0Z" fill="#553024"/><path d="M0 1775h70v-44h64v44h64v-44h64v44h64v-44h64v44h64v-44h64v44h64v-44h64v44h64v-44h64v44h64v-44h64v44h70" fill="#8d5738"/>
+<rect x="0" y="0" width="1080" height="1920" fill="url(#glow)" opacity=".06"/>
+</svg>
