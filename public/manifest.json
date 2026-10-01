@@ -1,23 +1,23 @@
 {
   "name": "أنا عُماني",
   "short_name": "أنا عُماني",
-  "description": "أنا عُماني | I Am Omani — منصة ألعاب ومسابقات حية بهوية عُمانية",
-  "id": "/?app=iam-omani-v20",
-  "start_url": "/?app=iam-omani-v20",
+  "description": "أنا عُماني | I Am Omani — مسابقات حية بهوية عُمانية",
+  "id": "/?app=iam-omani-v27",
+  "start_url": "/?app=iam-omani-v27",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#06101d",
-  "theme_color": "#0b3554",
+  "background_color": "#050b2b",
+  "theme_color": "#08103d",
   "lang": "ar",
   "dir": "rtl",
   "categories": ["games", "education", "entertainment"],
   "icons": [
-    {"src":"/assets/sahwa-hero.webp?v=20","sizes":"512x512","type":"image/webp","purpose":"any"},
-    {"src":"/assets/sahwa-hero.webp?v=20","sizes":"512x512","type":"image/webp","purpose":"maskable"}
+    {"src":"/icon.svg?v=27","sizes":"any","type":"image/svg+xml","purpose":"any"},
+    {"src":"/icon.svg?v=27","sizes":"any","type":"image/svg+xml","purpose":"maskable"}
   ],
   "shortcuts": [
-    {"name":"انضم للمسابقة","short_name":"انضم","url":"/?join=1","icons":[{"src":"/assets/sahwa-hero.webp?v=20","sizes":"512x512","type":"image/webp"}]},
-    {"name":"شاشة العرض","short_name":"عرض","url":"/?displayMode=1","icons":[{"src":"/assets/sahwa-hero.webp?v=20","sizes":"512x512","type":"image/webp"}]}
+    {"name":"انضم للمسابقة","short_name":"انضم","url":"/?join=1","icons":[{"src":"/icon.svg?v=27","sizes":"any","type":"image/svg+xml"}]},
+    {"name":"شاشة العرض","short_name":"عرض","url":"/?displayMode=1","icons":[{"src":"/icon.svg?v=27","sizes":"any","type":"image/svg+xml"}]}
   ]
 }
