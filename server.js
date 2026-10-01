@@ -35,15 +35,36 @@ const DEFAULT_QUESTIONS = [
   { id: 6, question: 'ما أكبر حيوان حي على الأرض؟', options: ['الفيل','الحوت الأزرق','الزرافة','فرس النهر'], correct: 1, category: 'طبيعة', difficulty: 'سهل', time: 12 }
 ];
 
+const OMAN_WILAYAT = [
+  'مسقط','مطرح','بوشر','السيب','العامرات','قريات',
+  'بركاء','الرستاق','نخل','وادي المعاول','العوابي','المصنعة',
+  'صحار','شناص','لوى','صحم','الخابورة','السويق',
+  'نزوى','بهلاء','منح','آدم','الحمراء','إزكي','بدبد','سمائل',
+  'صور','مصيرة','جعلان بني بو علي','جعلان بني بو حسن','الكامل والوافي',
+  'عبري','ينقل','ضنك','البريمي','محضة','السنينة',
+  'خصب','بخاء','دبا','مدحاء',
+  'صلالة','طاقة','مرباط','ثمريت','مقشن','شليم وجزر الحلانيات','رخيوت','ضلكوت','مزيونة','سدح',
+  'هيما','محوت','الدقم','الجازر'
+];
+
 const rooms = new Map();
 const roomCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const clean = (v='', max=180) => String(v).trim().replace(/[<>]/g,'').slice(0, max);
 const sanitizeName = v => clean(v, 28);
 
+function pickWilaya() {
+  const active = new Set([...rooms.values()].filter(r => r.status !== 'finished').map(r => r.wilaya));
+  const available = OMAN_WILAYAT.filter(name => !active.has(name));
+  const pool = available.length ? available : OMAN_WILAYAT;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 function publicRoom(room) {
   return {
     code: room.code,
     title: room.title,
+    wilaya: room.wilaya,
+    roomName: room.roomName,
     status: room.status,
     currentQuestionIndex: room.currentQuestionIndex,
     totalQuestions: room.questions.length,
@@ -129,7 +150,7 @@ function finishQuiz(room) {
       s.name=p.name; s.avatar=p.avatar; s.games++; s.totalScore+=p.score; s.bestScore=Math.max(s.bestScore,p.score); s.correct+=p.correct; if(p.rank===1)s.wins++;
       persistent.players[key]=s;
     });
-    persistent.games.unshift({ id:randomUUID(), room:room.code, title:room.title, date:now, players:board.length, winner:board[0]?.name || null });
+    persistent.games.unshift({ id:randomUUID(), room:room.code, roomName:room.roomName, wilaya:room.wilaya, title:room.title, date:now, players:board.length, winner:board[0]?.name || null });
     persistent.games = persistent.games.slice(0,100);
     room.persisted = true;
     saveStats();
@@ -142,10 +163,13 @@ function finishQuiz(room) {
 io.on('connection', socket => {
   socket.on('host:create', (payload={}, ack=()=>{}) => {
     let code; do { code = roomCode(); } while (rooms.has(code));
-    const title = sanitizeName(payload.title) || 'مسابقة حية';
+    const customTitle = sanitizeName(payload.title);
+    const wilaya = pickWilaya();
+    const roomName = `غرفة ${wilaya}`;
+    const title = customTitle ? `${roomName} — ${customTitle}` : roomName;
     const hostToken = randomUUID();
     const room = {
-      code, title, hostToken, hostSocketId:socket.id,
+      code, title, wilaya, roomName, hostToken, hostSocketId:socket.id,
       status:'lobby', questions:DEFAULT_QUESTIONS.map(q=>({...q, options:[...q.options]})),
       currentQuestionIndex:0, players:new Map(), answers:new Map(), timer:null,
       startedAt:null, persisted:false
