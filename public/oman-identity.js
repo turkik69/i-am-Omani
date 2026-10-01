@@ -8,16 +8,27 @@
   if(!apple){apple=document.createElement('meta');apple.name='apple-mobile-web-app-title';document.head.appendChild(apple)}
   apple.content='أنا عُماني';
 
-  // Ensure the final visual layer is always last.
-  if(!q('link[data-oman-home-v14]')){
-    const css=document.createElement('link');css.rel='stylesheet';css.href='/oman-home-v2.css?v=14';css.dataset.omanHomeV14='1';document.head.appendChild(css);
+  if(!q('link[data-oman-home-final]')){
+    const css=document.createElement('link');
+    css.rel='stylesheet';
+    css.href='/oman-home-v2.css?v=15';
+    css.dataset.omanHomeFinal='1';
+    document.head.appendChild(css);
   }
 
-  // The background is stored as text-safe base64 in Git and converted locally in the browser.
-  fetch('/oman-heritage-bg.b64?v=14',{cache:'no-store'})
-    .then(r=>r.ok?r.text():Promise.reject())
-    .then(b64=>document.documentElement.style.setProperty('--oman-home-bg',`url("data:image/webp;base64,${b64.trim()}")`))
-    .catch(()=>{});
+  const assets={
+    '--oman-home-bg':'/oman-heritage-bg.b64?v=15',
+    '--oman-sahwa-photo':'/sahwa-photo.b64?v=15',
+    '--oman-municipality-photo':'/municipality-photo.b64?v=15',
+    '--oman-opera-photo':'/opera-photo.b64?v=15',
+    '--oman-riyam-photo':'/riyam-photo.b64?v=15'
+  };
+  Object.entries(assets).forEach(([variable,url])=>{
+    fetch(url,{cache:'no-store'})
+      .then(r=>r.ok?r.text():Promise.reject())
+      .then(b64=>document.documentElement.style.setProperty(variable,`url("data:image/webp;base64,${b64.trim()}")`))
+      .catch(()=>{});
+  });
 
   const brand=q('.brand span:last-child'); if(brand) brand.innerHTML='<b>I AM OMANI</b><small>أنا عُماني</small>';
   const hero=q('#homeScreen .hero h1'); if(hero) hero.innerHTML='<span>أنا عُماني</span>';
