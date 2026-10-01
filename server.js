@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { randomUUID } = require('crypto');
 const { Server } = require('socket.io');
+const admin = require('firebase-admin');
 
 const app = express();
 const server = http.createServer(app);
@@ -11,6 +12,68 @@ const io = new Server(server, { transports: ['websocket', 'polling'] });
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Public web configuration is served to the browser. Admin credentials stay on Render.
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  appId: process.env.FIREBASE_APP_ID
+};
+let firebaseAdmin = null;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    firebaseAdmin = admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON))
+    });
+  }
+} catch (error) { console.error('Firebase Admin initialization failed:', error.message); }
+
+app.get('/api/firebase-config', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  if (Object.values(firebaseConfig).some(v => !v) || !firebaseAdmin) return res.status(503).json({ configured: false });
+  res.json(firebaseConfig);
+});
+
+const loginAttempts = new Map();
+app.post('/api/auth/username-login', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  if (!firebaseAdmin || !firebaseConfig.apiKey) return res.status(503).json({ error: 'خدمة الحسابات غير متاحة حاليًا' });
+  const ip = req.ip || req.socket.remoteAddress;
+  const now = Date.now();
+  const attempts = (loginAttempts.get(ip) || []).filter(t => now - t < 15 * 60 * 1000);
+  attempts.push(now);
+  loginAttempts.set(ip, attempts);
+  if (attempts.length > 15) return res.status(429).json({ error: 'محاولات كثيرة. حاول بعد قليل.' });
+  const username = String(req.body?.username || '').trim().toLowerCase();
+  const password = req.body?.password;
+  if (!/^[a-z0-9_]{3,24}$/.test(username) || typeof password !== 'string' || !password || password.length > 1024)
+    return res.status(400).json({ error: 'بيانات الدخول غير صحيحة' });
+  try {
+    const nameDoc = await admin.firestore().collection('usernames').doc(username).get();
+    if (!nameDoc.exists) throw new Error('Unknown username');
+    const account = await admin.auth().getUser(nameDoc.data().uid);
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(firebaseConfig.apiKey)}`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: account.email, password, returnSecureToken: true })
+    });
+    if (!response.ok) throw new Error('Invalid password');
+    const tokens = await response.json();
+    if (tokens.localId !== account.uid) throw new Error('UID mismatch');
+    res.json({ token: await admin.auth().createCustomToken(account.uid) });
+  } catch (error) {
+    console.warn('Username login failed:', error.message);
+    res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
+  }
+});
+setInterval(() => {
+  const cutoff = Date.now() - 15 * 60 * 1000;
+  for (const [ip, times] of loginAttempts) {
+    const recent = times.filter(time => time > cutoff);
+    if (recent.length) loginAttempts.set(ip, recent);
+    else loginAttempts.delete(ip);
+  }
+}, 15 * 60 * 1000).unref();
 
 const DATA_DIR = path.join(__dirname, 'data');
 const STATS_FILE = path.join(DATA_DIR, 'stats.json');

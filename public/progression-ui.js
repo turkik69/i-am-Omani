@@ -87,7 +87,25 @@
   let pendingSeed = false;
   let game = {correct:0,fastest:0,questions:0,categoryHits:{}};
 
-  const save = () => localStorage.setItem('iamOmaniProgress',JSON.stringify(profile));
+  let cloudUser=null,cloudFirebase=null,cloudSave=Promise.resolve();
+  const save = () => {
+    localStorage.setItem('iamOmaniProgress',JSON.stringify(profile));
+    if(!cloudUser||!cloudFirebase)return;
+    const uid=cloudUser.uid,f=cloudFirebase,snapshot=JSON.parse(JSON.stringify(profile));
+    const level=levelInfo(snapshot.xp).cur.level;
+    cloudSave=cloudSave.catch(()=>{}).then(()=>f.dbMod.updateDoc(f.dbMod.doc(f.db,'users',uid),{
+      progress:snapshot,xp:snapshot.xp,level,badges:snapshot.badges
+    })).catch(error=>console.error('Cloud progress save failed',error));
+  };
+  window.addEventListener('iam-omani-auth',event=>{
+    const {user,firebase,profile:account}=event.detail;
+    cloudUser=user;cloudFirebase=user?firebase:null;
+    if(user){
+      profile={...profileDefault(),...(account?.progress||{}),lastName:account?.username||profile.lastName};
+      localStorage.setItem('iamOmaniProgress',JSON.stringify(profile));
+      renderProfile();decorateSelf();
+    }
+  });
   const levelInfo = xp => {
     let cur=LEVELS[0]; for(const l of LEVELS) if(xp>=l.xp) cur=l;
     const idx=LEVELS.findIndex(x=>x.level===cur.level), next=LEVELS[idx+1]||null;
@@ -172,7 +190,8 @@
       <div class="profile-stat-grid"><div><b>${profile.games}</b><span>مسابقة</span></div><div><b>${profile.wins}</b><span>فوز</span></div><div><b>${profile.correct}</b><span>إجابة صحيحة</span></div><div><b>${profile.fastest}</b><span>أسرع إجابة</span></div><div><b>${profile.maxStreak}</b><span>أفضل سلسلة</span></div><div><b>${profile.perfect}</b><span>مسابقة كاملة</span></div></div>
       <div class="profile-section"><h3>🏅 الشارات</h3><div class="badge-grid">${profile.badges.length?profile.badges.map(b=>`<div class="achievement-badge"><span>${b.icon}</span><b>${b.name}</b></div>`).join(''):'<div class="empty-state">ابدأ اللعب لفتح أول شارة.</div>'}</div></div>
       <div class="profile-section"><h3>📊 تخصصاتك</h3><div class="specialty-list">${cats.length?cats.map(([id,v])=>`<div><span>${CATEGORIES.find(c=>c.id===id)?.icon||'🎯'}</span><b>${categoryName(id)}</b><i><em style="width:${Math.min(100,(v.correct||0)*3)}%"></em></i><strong>${v.correct||0}</strong></div>`).join(''):'<div class="empty-state">ستظهر هنا المجالات الأقوى لديك.</div>'}</div></div>
-      <div class="profile-section daily-card"><h3>🌅 تحديات اليوم</h3>${dailyRows()}</div>`;
+      <div class="profile-section daily-card"><h3>🌅 تحديات اليوم</h3>${dailyRows()}</div>${cloudUser?'<button id="profileSignOut" class="secondary-btn">تسجيل الخروج</button>':''}`;
+    if(cloudUser)$('#profileSignOut').onclick=()=>cloudFirebase.authMod.signOut(cloudFirebase.auth);
   }
   function dailyRows(){ensureDaily();const d=profile.daily;return [
     ['شارك في مسابقة',d.games,1,100,d.claimed.game],['أجب 5 إجابات صحيحة',d.correct,5,200,d.claimed.correct],['حقق أسرع إجابة',d.fastest,1,150,d.claimed.fastest]

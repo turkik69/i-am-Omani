@@ -98,3 +98,11 @@ render.yaml              Blueprint جاهز للنشر على Render
 ## 👨‍💻 المطور
 
 **turkik69**
+
+## Firebase accounts and progress
+
+The server serves only the public Web App config at `/api/firebase-config`. On Render set `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, and `FIREBASE_APP_ID` from the Firebase Web App. Set `FIREBASE_SERVICE_ACCOUNT_JSON` as a **server-only** secret containing the service-account JSON for that same project. Never put that JSON in `public/`, Git, or a browser variable. Render's existing service must have these variables configured in its environment; a Blueprint change alone does not populate them.
+
+Enable Email/Password in Firebase Authentication and authorize `sahat-oman.onrender.com`. Create Firestore (production mode) and deploy `firestore.rules` with the Firebase CLI (`firebase deploy --only firestore:rules --project PROJECT_ID`) or paste the file into Firestore > Rules and publish it. The rules keep email/phone/profile data private to the account owner, reserve usernames atomically, and allow each owner to save XP, levels, badges, and progress. An authenticated user can read a username reservation's UID; emails are never in that directory. Client-side XP remains self-reported and should not be used for prizes or trusted rankings until rewards are verified by the server.
+
+A user can recover a password through Firebase's reset email. The username recovery flow sends the same private reset link to the registered email, after which the user signs in with their email and sees their username in the profile. The account screen stays out of the way until Firebase is fully configured. Existing local progress is not silently attached to a new account, to avoid mixing profiles on a shared device.
