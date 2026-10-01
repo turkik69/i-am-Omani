@@ -1,15 +1,15 @@
 {
-  "name": "Quiz Arena - ساحة التحدي",
-  "short_name": "Quiz Arena",
-  "description": "منصة مسابقات حية متعددة اللاعبين مع غرف وتحديات مباشرة",
+  "name": "ساحة عُمان | تحدّي المعرفة",
+  "short_name": "ساحة عُمان",
+  "description": "منصة مسابقات عُمانية حية متعددة اللاعبين بهوية مستوحاة من ولايات وقرى ومعالم عُمان",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",
-  "background_color": "#070914",
-  "theme_color": "#6d4aff",
+  "background_color": "#071421",
+  "theme_color": "#0b3554",
   "lang": "ar",
   "dir": "rtl",
   "categories": ["games", "education", "entertainment"],
@@ -17,7 +17,7 @@
     {"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
   ],
   "shortcuts": [
-    {"name":"انضم للمسابقة","short_name":"انضم","url":"/?join=1","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml"}]},
+    {"name":"الانضمام إلى مسابقة","short_name":"انضم","url":"/?join=1","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml"}]},
     {"name":"شاشة العرض","short_name":"عرض","url":"/?displayMode=1","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml"}]}
   ]
 }
