@@ -8,6 +8,14 @@
   if(!apple){apple=document.createElement('meta');apple.name='apple-mobile-web-app-title';document.head.appendChild(apple)}
   apple.content='أنا عُماني';
 
+  const manifest=q('link[rel="manifest"]'); if(manifest) manifest.href='/manifest.json?v=17';
+  let favicon=q('link[rel="icon"]');
+  if(!favicon){favicon=document.createElement('link');favicon.rel='icon';document.head.appendChild(favicon)}
+  favicon.href='/assets/sahwa-approved.png?v=17'; favicon.type='image/png';
+  let touch=q('link[rel="apple-touch-icon"]');
+  if(!touch){touch=document.createElement('link');touch.rel='apple-touch-icon';document.head.appendChild(touch)}
+  touch.href='/assets/sahwa-approved.png?v=17'; touch.sizes='512x512';
+
   if(!q('link[data-oman-home-final]')){
     const css=document.createElement('link');
     css.rel='stylesheet';
