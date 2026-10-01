@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="أنا عُماني" />
   <title>أنا عُماني</title>
-  <link rel="manifest" href="/manifest.json?v=6" />
-  <link rel="icon" href="/icon.svg?v=6" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="/icon.svg?v=6" />
+  <link rel="manifest" href="/manifest.json?v=7" />
+  <link rel="icon" href="/icon.svg?v=7" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icon.svg?v=7" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="/approval-flow.css" />
   <link rel="stylesheet" href="/progression-ui.css" />
   <link rel="stylesheet" href="/oman-premium.css?v=6" />
+  <link rel="stylesheet" href="/firebase-auth-ui.css?v=1" />
 </head>
 <body>
   <div class="ambient"><i></i><i></i><i></i><i></i></div>
@@ -68,119 +69,23 @@
       </div>
     </section>
 
-    <section id="hostCreateScreen" class="screen compact-screen">
-      <div class="panel glow-panel">
-        <button class="back" data-go="home">→ رجوع</button>
-        <div class="panel-icon">🏰</div>
-        <h2>إنشاء مسابقة جديدة</h2>
-        <p>اختر نوع المسابقة ثم الولاية والمجلس الذي تريد إقامة التحدي باسمه.</p>
-        <label>اسم المسابقة</label>
-        <input id="quizTitle" maxlength="28" placeholder="مثال: تحدي القلاع" value="تحدي الأبطال" />
-        <button id="createRoomBtn" class="primary-btn"><span>🚀</span> إنشاء الساحة</button>
-      </div>
-    </section>
+    <section id="hostCreateScreen" class="screen compact-screen"><div class="panel glow-panel"><button class="back" data-go="home">→ رجوع</button><div class="panel-icon">🏰</div><h2>إنشاء مسابقة جديدة</h2><p>اختر نوع المسابقة ثم الولاية والمجلس الذي تريد إقامة التحدي باسمه.</p><label>اسم المسابقة</label><input id="quizTitle" maxlength="28" placeholder="مثال: تحدي القلاع" value="تحدي الأبطال" /><button id="createRoomBtn" class="primary-btn"><span>🚀</span> إنشاء الساحة</button></div></section>
 
-    <section id="joinScreen" class="screen compact-screen">
-      <div class="panel glow-panel">
-        <button class="back" data-go="home">→ رجوع</button>
-        <div class="panel-icon">🧭</div>
-        <h2>الانضمام إلى أنا عُماني</h2>
-        <p>اختر مجلسًا من المجالس النشطة أو استخدم رمز الدعوة، ثم انتظر موافقة المشرف.</p>
-        <label>رمز المسابقة</label>
-        <input id="joinCode" class="code-input" inputmode="numeric" maxlength="6" placeholder="000000" />
-        <label>اسمك</label>
-        <input id="playerName" maxlength="28" placeholder="اكتب اسمك" />
-        <label>اختر شخصيتك</label>
-        <div id="avatars" class="avatars">
-          <button class="avatar selected">🦁</button><button class="avatar">🦅</button><button class="avatar">🐪</button><button class="avatar">🐬</button><button class="avatar">⛰️</button><button class="avatar">🏰</button><button class="avatar">🗡️</button><button class="avatar">⛵</button>
-        </div>
-        <button id="joinRoomBtn" class="primary-btn cyan-btn"><span>🛡️</span> إرسال طلب الانضمام</button>
-      </div>
-    </section>
+    <section id="joinScreen" class="screen compact-screen"><div class="panel glow-panel"><button class="back" data-go="home">→ رجوع</button><div class="panel-icon">🧭</div><h2>الانضمام إلى أنا عُماني</h2><p>اختر مجلسًا من المجالس النشطة أو استخدم رمز الدعوة، ثم انتظر موافقة المشرف.</p><label>رمز المسابقة</label><input id="joinCode" class="code-input" inputmode="numeric" maxlength="6" placeholder="000000" /><label>اسمك</label><input id="playerName" maxlength="28" placeholder="اكتب اسمك" /><label>اختر شخصيتك</label><div id="avatars" class="avatars"><button class="avatar selected">🦁</button><button class="avatar">🦅</button><button class="avatar">🐪</button><button class="avatar">🐬</button><button class="avatar">⛰️</button><button class="avatar">🏰</button><button class="avatar">🗡️</button><button class="avatar">⛵</button></div><button id="joinRoomBtn" class="primary-btn cyan-btn"><span>🛡️</span> إرسال طلب الانضمام</button></div></section>
 
-    <section id="displayJoinScreen" class="screen compact-screen">
-      <div class="panel glow-panel">
-        <button class="back" data-go="home">→ رجوع</button>
-        <div class="panel-icon">📺</div>
-        <h2>شاشة العرض</h2>
-        <p>أدخل رمز الساحة وافتح الشاشة على التلفزيون أو البروجكتر.</p>
-        <input id="displayCode" class="code-input" inputmode="numeric" maxlength="6" placeholder="000000" />
-        <button id="displayJoinBtn" class="primary-btn pink-btn">فتح شاشة العرض</button>
-      </div>
-    </section>
+    <section id="displayJoinScreen" class="screen compact-screen"><div class="panel glow-panel"><button class="back" data-go="home">→ رجوع</button><div class="panel-icon">📺</div><h2>شاشة العرض</h2><p>أدخل رمز الساحة وافتح الشاشة على التلفزيون أو البروجكتر.</p><input id="displayCode" class="code-input" inputmode="numeric" maxlength="6" placeholder="000000" /><button id="displayJoinBtn" class="primary-btn pink-btn">فتح شاشة العرض</button></div></section>
 
-    <section id="hostLobbyScreen" class="screen">
-      <div class="game-head">
-        <div><small>أنت المضيف والمشرف</small><h2 id="hostRoomTitle">المسابقة</h2></div>
-        <div class="room-code"><small>رمز الدخول</small><b id="hostCode">------</b><button id="copyCodeBtn">نسخ</button></div>
-      </div>
-      <div class="dashboard-grid">
-        <div class="panel">
-          <div class="section-title"><h3>👥 اللاعبون المقبولون</h3><span id="hostPlayersCount" class="pill">0</span></div>
-          <div id="hostPlayers" class="players-grid empty-state">بانتظار قبول اللاعبين…</div>
-        </div>
-        <div class="panel">
-          <div class="section-title"><h3>📚 بنك الأسئلة</h3><button id="toggleEditorBtn" class="mini-btn">تعديل</button></div>
-          <p class="muted"><span id="questionCount">6</span> أسئلة جاهزة. يمكنك تعديلها قبل البداية.</p>
-          <div id="questionEditor" class="question-editor hidden">
-            <div id="questionCards"></div>
-            <button id="addQuestionBtn" class="secondary-btn">＋ إضافة سؤال</button>
-            <button id="saveQuestionsBtn" class="primary-btn small-btn">حفظ بنك الأسئلة</button>
-          </div>
-          <button id="startQuizBtn" class="primary-btn mega-btn">🎮 ابدأ المسابقة</button>
-          <button id="openDisplayBtn" class="secondary-btn">📺 فتح شاشة العرض</button>
-        </div>
-      </div>
-    </section>
+    <section id="hostLobbyScreen" class="screen"><div class="game-head"><div><small>أنت المضيف والمشرف</small><h2 id="hostRoomTitle">المسابقة</h2></div><div class="room-code"><small>رمز الدخول</small><b id="hostCode">------</b><button id="copyCodeBtn">نسخ</button></div></div><div class="dashboard-grid"><div class="panel"><div class="section-title"><h3>👥 اللاعبون المقبولون</h3><span id="hostPlayersCount" class="pill">0</span></div><div id="hostPlayers" class="players-grid empty-state">بانتظار قبول اللاعبين…</div></div><div class="panel"><div class="section-title"><h3>📚 بنك الأسئلة</h3><button id="toggleEditorBtn" class="mini-btn">تعديل</button></div><p class="muted"><span id="questionCount">6</span> أسئلة جاهزة. يمكنك تعديلها قبل البداية.</p><div id="questionEditor" class="question-editor hidden"><div id="questionCards"></div><button id="addQuestionBtn" class="secondary-btn">＋ إضافة سؤال</button><button id="saveQuestionsBtn" class="primary-btn small-btn">حفظ بنك الأسئلة</button></div><button id="startQuizBtn" class="primary-btn mega-btn">🎮 ابدأ المسابقة</button><button id="openDisplayBtn" class="secondary-btn">📺 فتح شاشة العرض</button></div></div></section>
 
-    <section id="playerLobbyScreen" class="screen compact-screen">
-      <div class="panel lobby-player">
-        <div id="myAvatar" class="big-avatar">🏰</div>
-        <div class="pulse-ring"></div>
-        <h2>تم قبولك في المجلس!</h2>
-        <p id="myName">جاهز للتحدي؟</p>
-        <div class="waiting"><span></span> بانتظار المضيف لبدء المسابقة</div>
-        <div class="room-code slim"><small>رمز الساحة</small><b id="playerCode">------</b></div>
-        <div id="playerLobbyList" class="mini-player-list"></div>
-      </div>
-    </section>
+    <section id="playerLobbyScreen" class="screen compact-screen"><div class="panel lobby-player"><div id="myAvatar" class="big-avatar">🏰</div><div class="pulse-ring"></div><h2>تم قبولك في المجلس!</h2><p id="myName">جاهز للتحدي؟</p><div class="waiting"><span></span> بانتظار المضيف لبدء المسابقة</div><div class="room-code slim"><small>رمز الساحة</small><b id="playerCode">------</b></div><div id="playerLobbyList" class="mini-player-list"></div></div></section>
 
-    <section id="questionScreen" class="screen game-screen">
-      <div class="question-top">
-        <div class="question-progress"><span id="qNumber">1</span>/<span id="qTotal">6</span></div>
-        <div id="category" class="category">عُمان</div>
-        <div id="timer" class="timer"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18"></circle><circle id="timerProgress" class="progress" cx="22" cy="22" r="18"></circle></svg><b id="timerText">15</b></div>
-      </div>
-      <div class="question-card"><small id="difficulty">متوسط</small><h2 id="questionText">السؤال هنا</h2></div>
-      <div id="answers" class="answers"></div>
-      <div class="answer-status"><span>أجاب <b id="answeredCount">0</b> من <b id="totalCount">0</b></span><div class="status-line"><i id="statusFill"></i></div></div>
-      <button id="hostRevealBtn" class="secondary-btn host-only hidden">إظهار الإجابة الآن</button>
-    </section>
+    <section id="questionScreen" class="screen game-screen"><div class="question-top"><div class="question-progress"><span id="qNumber">1</span>/<span id="qTotal">6</span></div><div id="category" class="category">عُمان</div><div id="timer" class="timer"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18"></circle><circle id="timerProgress" class="progress" cx="22" cy="22" r="18"></circle></svg><b id="timerText">15</b></div></div><div class="question-card"><small id="difficulty">متوسط</small><h2 id="questionText">السؤال هنا</h2></div><div id="answers" class="answers"></div><div class="answer-status"><span>أجاب <b id="answeredCount">0</b> من <b id="totalCount">0</b></span><div class="status-line"><i id="statusFill"></i></div></div><button id="hostRevealBtn" class="secondary-btn host-only hidden">إظهار الإجابة الآن</button></section>
 
-    <section id="resultScreen" class="screen">
-      <div class="result-hero"><span>✅ الإجابة الصحيحة</span><h2 id="correctAnswer">—</h2></div>
-      <div class="result-grid">
-        <div class="panel"><h3>⚡ الأسرع</h3><div id="podium" class="podium"></div></div>
-        <div class="panel"><h3>🏆 الترتيب الحالي</h3><div id="leaderboard" class="leaderboard"></div></div>
-      </div>
-      <div class="host-controls host-only hidden"><button id="nextQuestionBtn" class="primary-btn">السؤال التالي ←</button><button id="finishQuizBtn" class="secondary-btn">إنهاء المسابقة</button></div>
-      <div class="player-wait player-only hidden">استعد للسؤال التالي… ⚡</div>
-    </section>
+    <section id="resultScreen" class="screen"><div class="result-hero"><span>✅ الإجابة الصحيحة</span><h2 id="correctAnswer">—</h2></div><div class="result-grid"><div class="panel"><h3>⚡ الأسرع</h3><div id="podium" class="podium"></div></div><div class="panel"><h3>🏆 الترتيب الحالي</h3><div id="leaderboard" class="leaderboard"></div></div></div><div class="host-controls host-only hidden"><button id="nextQuestionBtn" class="primary-btn">السؤال التالي ←</button><button id="finishQuizBtn" class="secondary-btn">إنهاء المسابقة</button></div><div class="player-wait player-only hidden">استعد للسؤال التالي… ⚡</div></section>
 
-    <section id="finalScreen" class="screen">
-      <div class="final-wrap">
-        <div class="final-title">🏆<h1>أبطال أنا عُماني</h1><p>انتهت المسابقة… وهذه هي النتائج النهائية</p></div>
-        <div id="finalPodium" class="final-podium"></div>
-        <div id="finalBoard" class="leaderboard final-board"></div>
-        <div class="host-controls host-only hidden"><button id="resetQuizBtn" class="primary-btn">🔄 مسابقة جديدة</button></div>
-        <button class="secondary-btn" data-go="home">العودة للرئيسية</button>
-      </div>
-    </section>
+    <section id="finalScreen" class="screen"><div class="final-wrap"><div class="final-title">🏆<h1>أبطال أنا عُماني</h1><p>انتهت المسابقة… وهذه هي النتائج النهائية</p></div><div id="finalPodium" class="final-podium"></div><div id="finalBoard" class="leaderboard final-board"></div><div class="host-controls host-only hidden"><button id="resetQuizBtn" class="primary-btn">🔄 مسابقة جديدة</button></div><button class="secondary-btn" data-go="home">العودة للرئيسية</button></div></section>
 
-    <section id="displayScreen" class="screen display-screen">
-      <div class="display-head"><span class="logo3d small">ع</span><div><small id="displayTitle">أنا عُماني</small><b>I Am Omani — تحدّي المعرفة</b></div><div class="room-code slim"><small>CODE</small><b id="displayRoomCode">------</b></div></div>
-      <div id="displayStage" class="display-stage"><div class="display-wait"><div class="floating-trophy" aria-label="برج الصحوة"></div><h1>استعدوا للتحدي!</h1><p>بانتظار بدء المسابقة</p><div id="displayPlayers" class="display-players"></div></div></div>
-    </section>
+    <section id="displayScreen" class="screen display-screen"><div class="display-head"><span class="logo3d small">ع</span><div><small id="displayTitle">أنا عُماني</small><b>I Am Omani — تحدّي المعرفة</b></div><div class="room-code slim"><small>CODE</small><b id="displayRoomCode">------</b></div></div><div id="displayStage" class="display-stage"><div class="display-wait"><div class="floating-trophy" aria-label="برج الصحوة"></div><h1>استعدوا للتحدي!</h1><p>بانتظار بدء المسابقة</p><div id="displayPlayers" class="display-players"></div></div></div></section>
   </main>
 
   <div id="toast" class="toast"></div>
@@ -192,5 +97,6 @@
   <script src="/approval-flow.js"></script>
   <script src="/village-directory-ui.js?v=1"></script>
   <script src="/progression-ui.js"></script>
+  <script src="/firebase-auth-ui.js?v=1"></script>
 </body>
 </html>
