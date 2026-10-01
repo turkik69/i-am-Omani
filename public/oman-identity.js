@@ -1,96 +1,54 @@
 (() => {
   const q=s=>document.querySelector(s);
   const qa=s=>[...document.querySelectorAll(s)];
-  const V='23';
-  const root=document.documentElement.style;
-
-  async function visualAsset(path,mime='image/webp'){
-    const r=await fetch(`${path}?v=${V}`,{cache:'no-store'});
-    if(!r.ok) throw new Error(`asset ${path} ${r.status}`);
-    const buf=await r.arrayBuffer();
-    if(!buf.byteLength) throw new Error(`empty ${path}`);
-    const u8=new Uint8Array(buf);
-    const isWebP=u8.length>12 && u8[0]===0x52 && u8[1]===0x49 && u8[2]===0x46 && u8[3]===0x46 && u8[8]===0x57 && u8[9]===0x45 && u8[10]===0x42 && u8[11]===0x50;
-    const isPng=u8.length>8 && u8[0]===0x89 && u8[1]===0x50 && u8[2]===0x4e && u8[3]===0x47;
-    if(isWebP || isPng){
-      return URL.createObjectURL(new Blob([buf],{type:isPng?'image/png':mime}));
-    }
-    const raw=new TextDecoder().decode(buf).replace(/\s+/g,'');
-    if(!raw || !/^[A-Za-z0-9+/=]+$/.test(raw)) throw new Error(`invalid ${path}`);
-    return `data:${mime};base64,${raw}`;
-  }
+  const V='24';
+  const SHEET=`/assets/omani-landmarks-sheet.webp?v=${V}`;
 
   function injectStyles(){
-    if(q('#oman-v23-img-style')) return;
+    if(q('#oman-v24-sprite-style')) return;
     const s=document.createElement('style');
-    s.id='oman-v23-img-style';
+    s.id='oman-v24-sprite-style';
     s.textContent=`
       .floating-trophy{background:none!important;overflow:visible!important}
-      .floating-trophy .oman-landmark-img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center bottom!important;filter:drop-shadow(0 22px 38px rgba(0,0,0,.5)) drop-shadow(0 0 24px rgba(255,194,91,.22));pointer-events:none}
-      .mode-card::before{display:none!important}
-      .mode-card .oman-card-landmark{position:absolute!important;z-index:2!important;top:-92px!important;right:10px!important;width:300px!important;height:205px!important;object-fit:contain!important;object-position:center bottom!important;filter:drop-shadow(0 20px 26px rgba(0,0,0,.55)) drop-shadow(0 0 12px rgba(232,189,106,.22));pointer-events:none!important}
-      .mode-card.display-card .oman-card-landmark{width:225px!important;height:225px!important;top:-110px!important;right:34px!important}
-      @media(max-width:760px){
-        .mode-card .oman-card-landmark{width:255px!important;height:178px!important;top:-82px!important;right:8px!important}
-        .mode-card.display-card .oman-card-landmark{width:182px!important;height:195px!important;top:-98px!important;right:28px!important}
-      }
+      .oman-landmark-sprite{display:block!important;background-image:url('${SHEET}')!important;background-repeat:no-repeat!important;background-size:200% 200%!important;pointer-events:none!important;filter:drop-shadow(0 20px 30px rgba(0,0,0,.48)) drop-shadow(0 0 18px rgba(245,190,90,.20))}
+      .oman-landmark-sprite.sahwa{background-position:0% 0%!important}
+      .oman-landmark-sprite.municipality{background-position:100% 0%!important}
+      .oman-landmark-sprite.opera{background-position:0% 100%!important}
+      .oman-landmark-sprite.riyam{background-position:100% 100%!important}
+      .floating-trophy .oman-landmark-sprite{width:100%!important;height:100%!important}
       #homeScreen .floating-trophy{display:block!important;opacity:1!important;visibility:visible!important}
+      .mode-card{overflow:visible!important;position:relative!important}
+      .mode-card::before{display:none!important}
+      .mode-card .oman-card-landmark{position:absolute!important;z-index:2!important;top:-88px!important;right:10px!important;width:285px!important;height:190px!important}
+      .mode-card.display-card .oman-card-landmark{width:210px!important;height:205px!important;top:-100px!important;right:30px!important}
+      @media(max-width:760px){
+        .mode-card .oman-card-landmark{width:245px!important;height:165px!important;top:-76px!important;right:8px!important}
+        .mode-card.display-card .oman-card-landmark{width:178px!important;height:185px!important;top:-90px!important;right:26px!important}
+      }
     `;
     document.head.appendChild(s);
   }
 
-  function setPhotoVar(name,url){ root.setProperty(name,`url("${url}")`); }
-
-  function putImg(host,url,cls,alt){
+  function putSprite(host,type,cls,label){
     if(!host) return;
-    let img=host.querySelector(`img.${cls}`);
-    if(!img){
-      img=document.createElement('img');
-      img.className=cls;
-      host.prepend(img);
-    }
-    img.src=url;
-    img.alt=alt||'';
-    img.decoding='async';
-    img.loading='eager';
+    host.querySelectorAll('.oman-landmark-img,.oman-landmark-sprite,.oman-card-landmark').forEach(n=>n.remove());
+    const el=document.createElement('span');
+    el.className=`oman-landmark-sprite ${type} ${cls||''}`.trim();
+    el.setAttribute('role','img');
+    el.setAttribute('aria-label',label||'');
+    host.prepend(el);
   }
 
-  async function loadOne(path,varName,onReady){
-    try{
-      const url=await visualAsset(path);
-      if(varName) setPhotoVar(varName,url);
-      if(onReady) onReady(url);
-      return url;
-    }catch(err){
-      console.error('Omani asset failed',path,err);
-      return null;
-    }
-  }
-
-  async function applyVisualAssets(){
+  function applyVisualAssets(){
     injectStyles();
-    document.documentElement.dataset.omanAssets='loading';
-
-    const sahwa=await loadOne('/assets/sahwa-hero.webp','--oman-sahwa-photo',url=>{
-      qa('.floating-trophy').forEach(el=>{
-        el.innerHTML='';
-        putImg(el,url,'oman-landmark-img','برج الصحوة');
-        el.setAttribute('aria-label','برج الصحوة');
-      });
-      let favicon=q('link[rel="icon"]');
-      if(!favicon){favicon=document.createElement('link');favicon.rel='icon';document.head.appendChild(favicon)}
-      favicon.href=url; favicon.type='image/webp';
-      let touch=q('link[rel="apple-touch-icon"]');
-      if(!touch){touch=document.createElement('link');touch.rel='apple-touch-icon';document.head.appendChild(touch)}
-      touch.href=url; touch.sizes='512x512';
+    qa('.floating-trophy').forEach(el=>{
+      el.innerHTML='';
+      putSprite(el,'sahwa','','برج الصحوة');
     });
-
-    const municipality=await loadOne('/assets/municipality-card.webp','--oman-municipality-photo',url=>putImg(q('.mode-card.host-card'),url,'oman-card-landmark','مبنى بلدية مسقط'));
-    const opera=await loadOne('/assets/opera-card.webp','--oman-opera-photo',url=>putImg(q('.mode-card.player-card'),url,'oman-card-landmark','دار الأوبرا السلطانية'));
-    const riyam=await loadOne('/assets/riyam-card.webp','--oman-riyam-photo',url=>putImg(q('.mode-card.display-card'),url,'oman-card-landmark','مبخرة ريام'));
-    const heritage=await loadOne('/oman-heritage-bg.b64','--oman-home-bg');
-
-    document.documentElement.dataset.omanAssets=(sahwa && (municipality||opera||riyam||heritage))?'ready':'partial';
+    putSprite(q('.mode-card.host-card'),'municipality','oman-card-landmark','مبنى بلدية مسقط');
+    putSprite(q('.mode-card.player-card'),'opera','oman-card-landmark','دار الأوبرا السلطانية');
+    putSprite(q('.mode-card.display-card'),'riyam','oman-card-landmark','مبخرة ريام');
+    document.documentElement.dataset.omanAssets='ready';
   }
 
   document.title='أنا عُماني';
@@ -108,8 +66,9 @@
   const hero=q('#homeScreen .hero h1'); if(hero) hero.innerHTML='<span>أنا عُماني</span>';
   const eyebrow=q('#homeScreen .eyebrow'); if(eyebrow) eyebrow.textContent='I AM OMANI • LIVE GAMES';
   const heroP=q('#homeScreen .hero p'); if(heroP) heroP.textContent='العب، نافس، واكتشف عُمان… في ساحات الولايات ومجالس القرى.';
-  document.body.classList.remove('oman-v20','oman-v21','oman-v22');
-  document.body.classList.add('premium-oman-final','oman-v23');
+  document.body.classList.remove('oman-v20','oman-v21','oman-v22','oman-v23');
+  document.body.classList.add('premium-oman-final','oman-v24');
   const top=q('.top-actions'); if(top&&!q('#musicBtn')){const b=document.createElement('button');b.id='musicBtn';b.className='icon-btn';b.title='الموسيقى العُمانية';b.textContent='🎵';top.prepend(b)}
+
   applyVisualAssets();
 })();
