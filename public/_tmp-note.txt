@@ -1,0 +1,1 @@
+binary app icons will be committed via Git blobs
