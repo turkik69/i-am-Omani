@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 815" role="img" aria-label="الورقة - البلوت">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#070817"/><stop offset="1" stop-color="#151025"/></linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a70028"/><stop offset="1" stop-color="#f30620"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff09a"/><stop offset=".5" stop-color="#f1bf32"/><stop offset="1" stop-color="#c98700"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="14" stdDeviation="12" flood-opacity=".45"/></filter>
+  </defs>
+  <rect width="1000" height="815" fill="url(#bg)"/>
+  <g opacity=".16" fill="#2c3348" transform="translate(500 408)">
+    <path d="M0-345 38-90 120-325 78-78 228-264 115-55 315-165 139-28 350-20 142 10 330 130 126 46 245 247 94 71 94 344 47 86-58 344-13 87-243 248-87 68-330 135-119 45-350-18-137 9-315-165-126-28-229-266-100-54-120-325-57-79z"/>
+  </g>
+  <path d="M536 65 839 410 536 754 232 410z" fill="url(#red)" filter="url(#shadow)"/>
+  <path d="M536 126 773 410 536 695 297 410z" fill="#bf0029" opacity=".92"/>
+  <g filter="url(#shadow)" transform="translate(292 225)">
+    <g transform="rotate(-16 125 220)"><rect x="20" y="40" width="190" height="360" rx="20" fill="#fff"/><text x="50" y="96" font-size="44" font-family="Georgia" fill="#111">A</text><text x="52" y="145" font-size="43">♠</text></g>
+    <g transform="rotate(-8 200 210)"><rect x="95" y="25" width="190" height="370" rx="20" fill="#fff"/><text x="125" y="82" font-size="42" font-family="Georgia">10</text><text x="126" y="130" font-size="42">♠</text></g>
+    <g transform="rotate(-1 270 205)"><rect x="170" y="10" width="190" height="380" rx="20" fill="#fff"/><text x="202" y="70" font-size="45" font-family="Georgia">K</text><text x="205" y="120" font-size="44">♠</text></g>
+    <g transform="rotate(7 338 205)"><rect x="245" y="18" width="190" height="375" rx="20" fill="#fff"/><text x="278" y="75" font-size="45" font-family="Georgia">Q</text><text x="280" y="124" font-size="44">♠</text></g>
+    <g transform="rotate(14 405 210)"><rect x="320" y="38" width="190" height="360" rx="20" fill="#fff"/><text x="350" y="95" font-size="45" font-family="Georgia">J</text><text x="355" y="145" font-size="44">♠</text><circle cx="414" cy="230" r="55" fill="#f0b620"/><path d="M390 258q24-70 48 0" stroke="#9a1329" stroke-width="20" fill="none"/></g>
+  </g>
+  <g fill="url(#gold)" filter="url(#shadow)"><circle cx="249" cy="369" r="38"/><path d="M401 566c-65-15-72 75-20 92 45 15 79-18 82-52 4-37-31-28-62-40z"/><path d="M705 513c36-9 63 15 60 48-2 24-16 39-30 55-15-22-38-33-57-49-33-27-8-66 27-54z"/></g>
+  <g fill="#f1c232"><path d="M144 523 181 487 199 532 240 552 199 572 181 617 163 572 122 552z"/><path d="M819 189 840 163 854 192 881 207 852 221 837 249 823 222 795 207z"/></g>
+  <text x="500" y="775" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-weight="700" font-size="42">الورقة • البلوت</text>
+</svg>
