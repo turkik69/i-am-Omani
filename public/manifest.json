@@ -1,14 +1,14 @@
 {
-  "name": "ساحة عُمان | تحدّي المعرفة",
-  "short_name": "ساحة عُمان",
-  "description": "منصة مسابقات عُمانية حية متعددة اللاعبين بهوية مستوحاة من ولايات وقرى ومعالم عُمان",
+  "name": "أنا عُماني - I Am Omani",
+  "short_name": "أنا عُماني",
+  "description": "منصة مسابقات حية بهوية عُمانية، ساحات الولايات ومجالس القرى",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",
-  "background_color": "#071421",
+  "background_color": "#070914",
   "theme_color": "#0b3554",
   "lang": "ar",
   "dir": "rtl",
@@ -17,7 +17,7 @@
     {"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
   ],
   "shortcuts": [
-    {"name":"الانضمام إلى مسابقة","short_name":"انضم","url":"/?join=1","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml"}]},
+    {"name":"انضم للمسابقة","short_name":"انضم","url":"/?join=1","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml"}]},
     {"name":"شاشة العرض","short_name":"عرض","url":"/?displayMode=1","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml"}]}
   ]
 }
