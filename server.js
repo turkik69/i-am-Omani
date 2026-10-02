@@ -22,12 +22,23 @@ const firebaseConfig = {
 };
 let firebaseAdmin = null;
 try {
-  const serviceAccountFile = '/etc/secrets/firebase-service-account.json';
+  const secretsDir = '/etc/secrets';
+  const preferredFile = `${secretsDir}/firebase-service-account.json`;
+  const originalFirebaseFile = fs.existsSync(secretsDir)
+    ? fs.readdirSync(secretsDir).find(name => /^.+-firebase-adminsdk-.+\.json$/.test(name))
+    : null;
+  const serviceAccountFile = fs.existsSync(preferredFile)
+    ? preferredFile
+    : originalFirebaseFile && `${secretsDir}/${originalFirebaseFile}`;
   const serviceAccountJSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
-    (fs.existsSync(serviceAccountFile) ? fs.readFileSync(serviceAccountFile, 'utf8') : null);
+    (serviceAccountFile ? fs.readFileSync(serviceAccountFile, 'utf8') : null);
   if (serviceAccountJSON) {
+    const serviceAccount = JSON.parse(serviceAccountJSON);
+    if (serviceAccount.type !== 'service_account' || serviceAccount.project_id !== firebaseConfig.projectId) {
+      throw new Error('Firebase service account does not match the configured project');
+    }
     firebaseAdmin = admin.initializeApp({
-      credential: admin.credential.cert(JSON.parse(serviceAccountJSON))
+      credential: admin.credential.cert(serviceAccount)
     });
   }
 } catch (error) { console.error('Firebase Admin initialization failed:', error.message); }
