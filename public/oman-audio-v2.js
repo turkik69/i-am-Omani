@@ -10,7 +10,7 @@
   let playPending = false;
 
   function updateVolume() {
-    audio.volume = document.querySelector('.screen.active')?.id === 'questionScreen' ? .06 : .15;
+    audio.volume = document.querySelector('.screen.active')?.id === 'questionScreen' ? .02 : .05;
   }
   function updateButton() {
     if (!button) return;
