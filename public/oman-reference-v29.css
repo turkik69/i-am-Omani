@@ -1,0 +1,69 @@
+/* The live controls stay in HTML; the Oman skyline is decorative artwork. */
+:root{--oman-gold:#ffd480;--oman-cyan:#33e1ff;--oman-pink:#ff50d0}
+html,body{background:#060a2c!important}
+.topbar{background:#080d35!important;border-bottom:1px solid rgba(255,206,122,.42)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.screen{isolation:isolate;position:relative;background:linear-gradient(180deg,rgba(4,7,29,.14),rgba(4,7,29,.56) 58%,rgba(4,7,29,.95))!important}
+.screen::before{content:"";position:absolute;inset:0;z-index:-5;background-image:linear-gradient(180deg,rgba(4,7,26,.16) 0%,rgba(4,7,26,.5) 55%,rgba(4,7,26,.88) 100%),url("/oman-night-scene.webp?v=29");background-position:center,center 64%;background-size:cover,cover;background-repeat:no-repeat;pointer-events:none}
+#homeScreen::before{background-image:linear-gradient(180deg,rgba(4,7,26,.2),rgba(4,7,26,.15) 38%,rgba(4,7,26,.76) 74%,#05091e),url("/oman-night-scene.webp?v=29")}
+.screen:not(#homeScreen)::before{opacity:.9}
+.screen::after{content:"";position:absolute;inset:0;z-index:-4;background:radial-gradient(circle at 50% 5%,rgba(24,11,75,.3),transparent 38%);pointer-events:none}
+#homeScreen{padding-top:12px!important}
+#homeScreen .hero{min-height:500px!important;padding:260px 16px 18px!important;justify-content:flex-end}
+#homeScreen .floating-trophy{top:4px!important;height:268px!important;max-width:340px!important}
+#homeScreen .floating-trophy::before{display:none!important}
+#homeScreen .eyebrow{font-size:11px!important;letter-spacing:.15em!important}
+#homeScreen .hero h1{font-size:clamp(54px,8vw,96px)!important;line-height:1.13!important;margin:4px 0!important;filter:drop-shadow(0 0 24px rgba(138,91,255,.4))}
+#homeScreen .hero p{max-width:690px!important;margin:7px auto 12px!important;font-size:clamp(15px,1.7vw,21px)!important}
+.hero-stats>div{border-color:rgba(255,193,109,.28)!important;border-radius:13px!important}
+.mode-grid{margin:36px auto 0!important}
+.mode-card{border:1px solid rgba(161,94,255,.75)!important;background:linear-gradient(145deg,rgba(16,21,81,.94),rgba(29,13,74,.95))!important;box-shadow:0 22px 45px rgba(0,0,0,.42),0 0 20px rgba(130,64,255,.28),inset 0 1px rgba(255,255,255,.14)!important}
+.mode-card:focus-visible,.answer-btn:focus-visible,.primary-btn:focus-visible,.avatar:focus-visible{outline:3px solid var(--oman-cyan);outline-offset:3px}
+.mode-card:hover{border-color:var(--oman-cyan)!important;transform:translateY(-3px)}
+.mode-card strong{background:linear-gradient(90deg,#fff,#f9d8ff,#63dfff);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+.mode-card .arrow{color:#fff!important;background:linear-gradient(135deg,#11bff2,#6f3bff)!important}
+.mode-card.host-card{border-color:rgba(255,97,217,.7)!important}
+.mode-card.player-card{border-color:rgba(37,221,255,.7)!important}
+.mode-card.display-card{border-color:rgba(251,197,103,.65)!important}
+.compact-screen{min-height:calc(100svh - 70px)}
+.compact-screen .panel{background:linear-gradient(145deg,rgba(16,22,79,.94),rgba(24,14,72,.94))!important;border:1px solid rgba(162,91,255,.78)!important;box-shadow:0 24px 65px rgba(0,0,0,.5),0 0 26px rgba(124,63,255,.29)!important}
+.panel h2,.final-title h1{background:linear-gradient(90deg,#fff 20%,#42dfff 55%,#ff5bd1);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+.panel label{color:#fff}
+.primary-btn{font-weight:900!important;letter-spacing:.01em}
+.game-screen{max-width:1100px!important;min-height:calc(100svh - 70px);padding-top:28px!important}
+.question-top{position:relative;z-index:4;max-width:900px;margin:0 auto 18px!important}
+.question-progress,.category{background:rgba(16,19,74,.9)!important;border:1px solid rgba(255,206,122,.45)!important;color:#fff!important}
+.question-card{max-width:940px;margin:20px auto 25px!important;padding:25px!important;text-align:center;min-height:150px;background:linear-gradient(135deg,rgba(12,15,65,.94),rgba(39,11,89,.93))!important;border:1px solid rgba(173,79,255,.82)!important;box-shadow:0 0 28px rgba(148,53,255,.28),0 26px 55px rgba(0,0,0,.48)!important}
+.question-card h2{line-height:1.45!important;text-wrap:balance}
+.answers{max-width:940px;margin:auto}
+.answer-btn{min-height:90px;border-radius:18px!important;font-size:clamp(17px,2.1vw,28px)!important;font-weight:800;transition:transform .16s,border-color .16s,box-shadow .16s}
+.answer-btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--oman-cyan)!important;box-shadow:0 0 24px rgba(45,215,255,.3)!important}
+.answer-btn span{border-radius:50%!important;background:linear-gradient(135deg,#1268d8,#1acbff)!important;color:white}
+.answer-btn:nth-child(2) span{background:linear-gradient(135deg,#5e20b8,#a850ff)!important}
+.answer-btn:nth-child(3) span{background:linear-gradient(135deg,#ab1ba5,#ff4ac4)!important}
+.answer-btn:nth-child(4) span{background:linear-gradient(135deg,#a65c11,#ffca59)!important}
+.answer-status{max-width:940px;margin:22px auto}
+#resultScreen .result-hero,#finalScreen .final-wrap{background:linear-gradient(135deg,rgba(11,18,73,.9),rgba(33,14,77,.9))!important}
+.final-title{background:none!important;color:#fff!important}
+.final-title h1{font-size:clamp(36px,5vw,72px)!important}
+.final-podium{margin-top:45px!important;gap:12px!important}
+.winner{background:linear-gradient(145deg,rgba(23,23,81,.95),rgba(13,19,63,.96))!important;border:1px solid rgba(105,130,255,.65)!important;box-shadow:0 0 23px rgba(62,101,255,.28)!important}
+.winner.w1{border-color:var(--oman-gold)!important;box-shadow:0 0 32px rgba(255,193,76,.58)!important}
+.winner.w3{border-color:rgba(255,112,171,.65)!important}
+.display-stage{background:linear-gradient(135deg,rgba(9,17,63,.83),rgba(32,12,78,.84))!important}
+.display-question h1{background:linear-gradient(90deg,#fff,#52e0ff,#ff60d0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.auth-card{background:linear-gradient(145deg,rgba(17,21,80,.96),rgba(32,13,77,.96))!important;border:1px solid rgba(182,100,255,.72)!important;box-shadow:0 25px 60px rgba(0,0,0,.5),0 0 30px rgba(149,63,255,.25)!important}
+@media(max-width:760px){
+  .screen::before{background-position:center,center bottom;background-size:cover,auto 100%}
+  #homeScreen::before{background-position:center,center bottom;background-size:cover,auto 100%}
+  #homeScreen .hero{min-height:490px!important;padding:250px 14px 10px!important}
+  #homeScreen .floating-trophy{height:250px!important;top:0!important}
+  #homeScreen .hero h1{font-size:clamp(49px,14vw,72px)!important}
+  #homeScreen .hero p{font-size:15px!important}
+  .mode-grid{margin-top:28px!important;gap:42px!important}
+  .mode-card{min-height:170px!important;padding:70px 22px 18px!important}
+  .question-card{padding:16px!important;min-height:110px}
+  .question-card h2{font-size:clamp(25px,6vw,37px)!important}
+  .answer-btn{min-height:72px!important;font-size:18px!important}
+  .final-podium{gap:6px!important}.winner{padding:14px 4px!important}.winner b{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.oman-art,.floating-trophy .hero-sahwa{animation:none!important}.mode-card,.answer-btn{transition:none}}
