@@ -27,8 +27,7 @@
     uno.type='button';uno.id='unoEntry';uno.className='category-choice';
     uno.innerHTML='<span>🟥</span><b>أونو</b><small>لعبة واحدة • 2 إلى 10 لاعبين</small>';
     picker.appendChild(uno);
-    const hand=document.createElement('button');hand.type='button';hand.id='handEntry';hand.className='category-choice';hand.innerHTML='<span>🂡</span><b>هند</b><small>مجموعات وجوكر • 2 إلى 5 لاعبين</small>';picker.appendChild(hand);
-    const sixty=document.createElement('button');sixty.type='button';sixty.id='sixtyoneEntry';sixty.className='category-choice';sixty.innerHTML='<span>♠</span><b>61</b><small>ورقة عُمانية • 4 أو 6 لاعبين</small>';picker.appendChild(sixty);
+    const paper=$('#competitionBaloot');if(paper)paper.innerHTML='<span>🃏</span><b>الورقة • البلوت</b><small>البلوت، هند، 61</small>';
   }
   const uiObserver=new MutationObserver(addBalootEntry);uiObserver.observe(document.documentElement,{subtree:true,childList:true});addBalootEntry();
 })();
