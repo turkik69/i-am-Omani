@@ -1,4 +1,5 @@
 const socket = io();
+window.socket = socket;
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const state = { role:null, code:null, hostToken:null, room:null, player:null, avatar:'OM1', sound:true, timer:null, display:false };

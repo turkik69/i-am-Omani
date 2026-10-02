@@ -73,7 +73,27 @@
       ['ما الذي يميز المجلس في المجتمع العُماني تقليديًا؟',['مكان لاستقبال الضيوف والتجمع','مخزن للمؤن','ورشة صناعية','مرآب مركبات'],0,'مجتمع وتراث']
     ]
   };
-  BANKS.mixed = [BANKS.oman[0],BANKS.sports[0],BANKS.culture[0],BANKS.geography[0],BANKS.science[0],BANKS.social[0]];
+  BANKS.mixed = Object.values(BANKS).flat();
+
+  // Draw unseen questions first; only recycle a category after its available bank is exhausted.
+  function drawQuestions(category, count = 6) {
+    const bank = BANKS[category] || BANKS.mixed;
+    const key = `iamOmaniSeenQuestions:${category}`;
+    let seen;
+    try { seen = new Set(JSON.parse(localStorage.getItem(key) || '[]')); }
+    catch { seen = new Set(); }
+    const fingerprint = q => `${q[0]}|${q[1][q[2]]}`;
+    const shuffle = items => { const copy = [...items]; for (let i=copy.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [copy[i],copy[j]]=[copy[j],copy[i]]; } return copy; };
+    let fresh = shuffle(bank.filter(q => !seen.has(fingerprint(q))));
+    const selected = fresh.slice(0, count);
+    if (selected.length < count) {
+      seen.clear();
+      selected.push(...shuffle(bank.filter(q => !selected.includes(q))).slice(0, count - selected.length));
+    }
+    selected.forEach(q => seen.add(fingerprint(q)));
+    localStorage.setItem(key, JSON.stringify([...seen]));
+    return selected;
+  }
 
   const profileDefault = () => ({
     xp:0,games:0,wins:0,correct:0,fastest:0,maxStreak:0,currentStreak:0,perfect:0,
@@ -154,7 +174,7 @@
   }
 
   function questionsForSelection(wilayat){
-    const base=(BANKS[currentCategory]||BANKS.mixed).map((q,i)=>({id:i+1,question:q[0],options:q[1],correct:q[2],category:q[3],difficulty:currentDifficulty,time:currentMode==='سريعة'?10:currentDifficulty==='نخبة'?12:15}));
+    const base=drawQuestions(currentCategory).map((q,i)=>({id:i+1,question:q[0],options:q[1],correct:q[2],category:q[3],difficulty:currentDifficulty,time:currentMode==='سريعة'?10:currentDifficulty==='نخبة'?12:15}));
     const local=window.OMANI_LOCAL_QUESTIONS?.(wilayat)||[];
     return base.concat(local.map((q,i)=>({...q,id:base.length+i+1,difficulty:currentDifficulty,time:currentMode==='سريعة'?10:15})));
   }
@@ -168,7 +188,7 @@
       pendingSeed=false;
       const qs=questionsForSelection(room.wilayat);
       window.OMANI_SET_QUESTIONS?.(qs);
-      socket.emit('host:setQuestions',{questions:qs},r=>{if(r?.ok){$('#questionCount').textContent=r.count;toast(`${CATEGORIES.find(c=>c.id===currentCategory)?.icon||'🎯'} تم تجهيز ${r.count} أسئلة، منها ${qs.length-(BANKS[currentCategory]||BANKS.mixed).length} عن ولاية ${room.wilayat}`);}});
+      socket.emit('host:setQuestions',{questions:qs},r=>{if(r?.ok){$('#questionCount').textContent=r.count;toast(`${CATEGORIES.find(c=>c.id===currentCategory)?.icon||'🎯'} تم تجهيز ${r.count} أسئلة، منها ${qs.length-6} عن ولاية ${room.wilayat}`);}});
     }
     decorateSelf();
   });

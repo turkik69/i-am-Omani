@@ -1,15 +1,15 @@
-const CACHE = 'iam-omani-v43';
+const CACHE = 'iam-omani-v45';
 const CORE = [
-  '/', '/index.html', '/styles.css?v=28', '/app.js?v=43',
+  '/', '/index.html', '/styles.css?v=28', '/app.js?v=45',
   '/manifest.json?v=30', '/icon-180.png?v=30', '/icon-192.png?v=30',
   '/icon-512.png?v=30', '/oman-premium.css?v=6',
-  '/oman-home-v2.css?v=30', '/oman-reference-v29.css?v=31',
-  '/oman-night-scene.webp?v=29', '/oman-landmarks-v30.webp?v=30',
-  '/oman-identity.js?v=40', '/oman-music.js?v=33', '/oman-audio-v2.js?v=40',
+  '/oman-home-v2.css?v=30', '/oman-reference-v29.css?v=45',
+  '/oman-night-scene.webp?v=29', '/landmarks/sahwa.webp?v=45', '/landmarks/municipality.webp?v=45', '/landmarks/opera.webp?v=45', '/landmarks/riyam.webp?v=45',
+  '/oman-identity.js?v=45', '/oman-music.js?v=33', '/oman-audio-v2.js?v=45',
   '/omani-traditional-loop.mp3?v=35',
-  '/oman-villages.js?v=43', '/approval-flow.css', '/approval-flow.js?v=43', '/approval-sync.js?v=40',
-  '/village-directory-ui.js?v=1', '/progression-ui.js?v=41', '/local-questions.js?v=43', '/progression-ui.css',
-  '/game-catalog.js?v=41', '/game-catalog.css?v=40', '/game-sfx.js?v=40',
+  '/oman-villages.js?v=45', '/approval-flow.css', '/approval-flow.js?v=43', '/approval-sync.js?v=40',
+  '/village-directory-ui.js?v=1', '/progression-ui.js?v=45', '/local-questions.js?v=45', '/progression-ui.css',
+  '/game-catalog.js?v=41', '/game-catalog.css?v=40', '/game-sfx.js?v=40', '/game-enhancements.js?v=45', '/uno.js?v=45', '/uno.css?v=45',
   '/omani-characters.css?v=41', '/omani-characters.js?v=41', '/omani-characters-ref.b64?v=38',
   '/omani-characters.png?v=40', '/omani-heritage-characters.png?v=40',
   '/omani-traditional.mp3?v=40',

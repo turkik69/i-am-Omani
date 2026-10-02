@@ -1,0 +1,33 @@
+(() => {
+  const socket=window.socket, $=s=>document.querySelector(s);
+  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const colorNames={red:'أحمر',yellow:'أصفر',green:'أخضر',blue:'أزرق',wild:'متعدد'};
+  const valueNames={skip:'تخطّي',reverse:'عكس',draw2:'+2',wild:'تغيير اللون',draw4:'+4'};
+  const label=c=>valueNames[c.value]||c.value;
+  const layer=document.createElement('div');layer.className='uno-layer hidden';layer.innerHTML='<div class="uno-shell"><header><h2>أونو • أنا عُماني</h2><button id="unoClose" aria-label="إغلاق">✕</button></header><div id="unoBody"></div></div>';document.body.appendChild(layer);
+  const body=()=>$('#unoBody');let session=null,view=null,declared=false;
+  try{session=JSON.parse(localStorage.getItem('iamOmaniUnoSession')||'null')}catch{}
+  const open=()=>layer.classList.remove('hidden'),close=()=>layer.classList.add('hidden');$('#unoClose').onclick=close;
+  function save(d){session=d;localStorage.setItem('iamOmaniUnoSession',JSON.stringify(d))}
+  function say(message){const toast=$('#toast');if(toast){toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),3500)}}
+  function emit(event,data,done=()=>{}){socket.emit(event,{...data,code:session?.code,token:session?.token},r=>{if(!r?.ok)say(r?.error||'تعذر تنفيذ الحركة');done(r)})}
+  function entry(){open();if(view?.code===session?.code){render(view);return}body().innerHTML=`<div class="uno-intro"><p>اللعب الكلاسيكي من لاعبين إلى عشرة: طابق اللون أو الرقم، واستخدم ورقات الحركة. ارفع رصيدك إلى 500 نقطة.</p><label>اسمك<input id="unoName" maxlength="28" placeholder="اسم اللاعب"></label><div class="uno-entry"><button id="unoCreate">إنشاء غرفة</button><label>رمز الغرفة<input id="unoCode" inputmode="numeric" maxlength="6" placeholder="000000"></label><button id="unoJoin">الانضمام</button></div></div>`;
+    $('#unoCreate').onclick=()=>socket.emit('uno:create',{name:$('#unoName').value.trim()},r=>{if(!r?.ok)return say(r?.error||'تعذر الإنشاء');save(r);socket.emit('uno:reconnect',session);open()});
+    $('#unoJoin').onclick=()=>socket.emit('uno:join',{code:$('#unoCode').value.trim(),name:$('#unoName').value.trim()},r=>{if(!r?.ok)return say(r?.error||'تعذر الانضمام');save(r);socket.emit('uno:reconnect',session);open()});
+  }
+  function cardHTML(c,attrs=''){return `<button class="uno-card uno-${escape(c.color)}" ${attrs}><b>${escape(label(c))}</b><small>${colorNames[c.color]}</small></button>`}
+  function colors(card){return card.color==='wild'?`<div class="uno-colors" role="group" aria-label="اختر اللون">${Object.keys(colorNames).filter(x=>x!=='wild').map(c=>`<button data-color="${c}" class="uno-color-${c}" aria-label="${colorNames[c]}">${colorNames[c]}</button>`).join('')}</div>`:''}
+  function render(s){view=s;if(layer.classList.contains('hidden'))return;const self=s.players.find(p=>p.id===s.selfId),myTurn=s.status==='playing'&&s.players[s.turn]?.id===s.selfId&&!s.pending;
+    if(s.status==='lobby'){body().innerHTML=`<div class="uno-info"><h3>رمز الغرفة ${escape(s.code)}</h3><p>أرسل الرمز لأصدقائك. يبدأ المضيف عند انضمام لاعبين.</p><div class="uno-players">${s.players.map(p=>`<span>${escape(p.name)}</span>`).join('')}</div>${s.hostId===s.selfId?'<button id="unoStart">ابدأ اللعب</button>':'<p>بانتظار المضيف…</p>'}</div>`;if($('#unoStart'))$('#unoStart').onclick=()=>emit('uno:start');return}
+    if(s.status==='round-end'||s.status==='finished'){body().innerHTML=`<div class="uno-info"><h3>${s.winner?.champion?'بطل أونو':'نهاية الجولة'}: ${escape(s.winner?.name)}</h3><p>+${s.winner?.reward||0} نقطة</p><div class="uno-players">${s.players.map(p=>`<span>${escape(p.name)} • ${p.score} نقطة</span>`).join('')}</div>${s.status==='round-end'&&s.hostId===s.selfId?'<button id="unoStart">جولة جديدة</button>':''}</div>`;if($('#unoStart'))$('#unoStart').onclick=()=>emit('uno:start');return}
+    body().innerHTML=`<div class="uno-table"><p>الجولة ${s.round} • غرفة ${escape(s.code)} • الاتجاه ${s.direction===1?'↶':'↷'}</p><div class="uno-players">${s.players.map((p,i)=>`<span class="${i===s.turn?'active':''}">${escape(p.name)} • ${p.count} ورقات • ${p.score} نقطة</span>`).join('')}</div><div class="uno-center">${cardHTML(s.top,'disabled')}<b>اللون: ${colorNames[s.color]}</b></div><p class="uno-turn">${s.pending?s.pending.target===s.selfId?'عليك سحب أربع ورقات أو الاعتراض':'بانتظار قرار اللاعب التالي':myTurn?'دورك الآن':`دور ${escape(s.players[s.turn]?.name||'اللاعب')}`}</p><div class="uno-hand">${s.hand.map(c=>cardHTML(c,`data-card="${c.id}" ${!myTurn||s.drawnId&&s.drawnId!==c.id?'disabled':''}`)).join('')}</div><div class="uno-actions">${myTurn?`<button id="unoDraw" ${s.drawnId?'disabled':''}>اسحب ورقة</button>${s.drawnId?'<button id="unoKeep">احتفظ بالورقة وأنهِ دورك</button>':''}`:''}<button id="unoCall" ${s.hand.length!==2&&s.uno!==s.selfId?'disabled':''}>أونو!</button>${s.uno&&s.uno!==s.selfId?'<button id="unoCatch">أمسك أونو (+2)</button>':''}${s.pending?.target===s.selfId?'<button id="unoAccept">اسحب +4</button><button id="unoChallenge">اعتراض على +4</button>':''}</div><div id="unoColorPicker"></div></div>`;
+    $('#unoDraw')?.addEventListener('click',()=>emit('uno:draw'));$('#unoKeep')?.addEventListener('click',()=>emit('uno:keep'));
+    $('#unoCall')?.addEventListener('click',()=>{if(s.hand.length===2){declared=true;say('سيتم إعلان أونو عند لعب الورقة التالية')}else emit('uno:call')});
+    $('#unoCatch')?.addEventListener('click',()=>emit('uno:catch'));$('#unoAccept')?.addEventListener('click',()=>emit('uno:penalty',{challenge:false}));$('#unoChallenge')?.addEventListener('click',()=>emit('uno:penalty',{challenge:true}));
+    body().querySelectorAll('[data-card]').forEach(el=>el.onclick=()=>{const c=s.hand.find(x=>x.id===Number(el.dataset.card));if(!c)return;const play=color=>emit('uno:play',{cardId:c.id,color,uno:declared},r=>{if(r?.ok){declared=false;window.GameSFX?.play('card-play')}});if(c.color==='wild'){const picker=$('#unoColorPicker');picker.innerHTML=colors(c);picker.querySelectorAll('[data-color]').forEach(btn=>btn.onclick=()=>play(btn.dataset.color))}else play()});
+  }
+  document.addEventListener('click',e=>{if(e.target.closest('#unoEntry'))entry()});
+  socket.on('uno:state',s=>{if(session?.code===s.code)render(s)});
+  socket.on('connect',()=>{if(session?.token)socket.emit('uno:reconnect',session,r=>{if(!r?.ok){session=null;localStorage.removeItem('iamOmaniUnoSession')}})});
+  window.IAM_OMANI_UNO={open:entry};
+})();

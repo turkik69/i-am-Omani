@@ -21,12 +21,12 @@
 
   function addBalootEntry(){
     document.querySelectorAll('.game-switcher').forEach(x=>x.remove());
-    const picker=$('#competitionCategory');if(!picker||picker.querySelector('[data-baloot-entry]'))return;
-    const b=document.createElement('button');
-    b.type='button';b.className='category-choice baloot-category-choice';b.dataset.balootEntry='1';
-    b.innerHTML='<span style="display:grid;place-items:center"><img src="/baloot-icon.svg?v=37" alt="" style="width:42px;height:42px;object-fit:contain"></span><b>الورقة • البلوت</b><small>صن، حكم، وتحديات الطاولات</small>';
-    b.addEventListener('click',()=>{SFX.select();window.IAM_OMANI_BALOUT?.openHost?.()});
-    picker.appendChild(b);
+    const picker=$('#competitionCategory');
+    if(!picker||picker.querySelector('#unoEntry'))return;
+    const uno=document.createElement('button');
+    uno.type='button';uno.id='unoEntry';uno.className='category-choice';
+    uno.innerHTML='<span>🟥</span><b>أونو</b><small>القواعد العالمية • 2 إلى 10 لاعبين</small>';
+    picker.appendChild(uno);
   }
   const uiObserver=new MutationObserver(addBalootEntry);uiObserver.observe(document.documentElement,{subtree:true,childList:true});addBalootEntry();
 })();

@@ -82,3 +82,15 @@ html,body{background:#060a2c!important}
 /* The panorama already contains the side landmarks; keep the wordmark clear. */
 #homeScreen>.home-municipality,#homeScreen>.home-riyam,
 #homeScreen>.home-glow-a,#homeScreen>.home-glow-b{display:none!important}
+
+/* Each landmark is now a separate 3:2 artwork, so the complete building stays in frame. */
+.oman-art img,.oman-art.municipality img,.oman-art.opera img,.oman-art.riyam img{
+  inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;
+  object-fit:contain!important;object-position:center!important;
+}
+.oman-card-art{top:5px!important;right:0!important;width:100%!important;height:170px!important;aspect-ratio:auto!important}
+.mode-card{min-height:285px!important;padding-top:180px!important}
+@media(max-width:760px){
+  .oman-card-art{top:4px!important;right:0!important;width:100%!important;height:145px!important}
+  .mode-card{min-height:245px!important;padding-top:153px!important}
+}

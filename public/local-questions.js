@@ -12,6 +12,10 @@
     }));
     const unique = places => places.filter(place => owners.get(place)?.size === 1);
     const local = unique(target);
+    const cycleKey = `iamOmaniLocalCycle:${wilayat}`;
+    const offset = Number(localStorage.getItem(cycleKey) || 0) % Math.max(1, local.length);
+    const rotated = local.slice(offset).concat(local.slice(0, offset));
+    if (local.length) localStorage.setItem(cycleKey, String((offset + limit) % local.length));
     const other = Object.entries(directory)
       .filter(([w]) => w !== wilayat)
       .flatMap(([, places]) => unique(places));
@@ -19,20 +23,21 @@
     const governorate = Object.keys(governorates).find(name => governorates[name].includes(wilayat));
     if (!governorate) return [];
     const questions = [];
-    for (let i = 0; i < Math.min(limit, local.length); i++) {
+    for (let i = 0; i < Math.min(limit, rotated.length); i++) {
       if (other.length < 6) break;
-      const answer = local[i];
-      const choices = [answer];
-      for (let j = 0; choices.length < 4 && j < other.length; j++) {
-        const candidate = other[(i * 17 + j * 11) % other.length];
+      const answer = rotated[i];
+      const distractors = Object.keys(directory).filter(w => w !== wilayat);
+      const choices = [wilayat];
+      for (let j = 0; choices.length < 4 && j < distractors.length; j++) {
+        const candidate = distractors[(i * 17 + j * 11) % distractors.length];
         if (!choices.includes(candidate)) choices.push(candidate);
       }
       if (choices.length !== 4) break;
       const correct = i % 4;
       const options = [...choices.slice(1)];
-      options.splice(correct, 0, answer);
+      options.splice(correct, 0, wilayat);
       questions.push({
-        question: `أيّ من هذه المناطق تتبع ولاية ${wilayat}؟`,
+        question: `في أي ولاية تقع منطقة ${answer}؟`,
         options, correct, category: `مناطق ولاية ${wilayat}`
       });
     }
