@@ -336,6 +336,8 @@ io.on('connection', socket => {
   socket.on('host:reconnect', ({code,hostToken}={}, ack=()=>{}) => {
     const room=getRoom(code);
     if(!room || room.hostToken!==hostToken) return ack({ok:false,error:'تعذر استعادة جلسة المضيف'});
+    clearTimeout(room.hostDisconnectTimer);
+    room.hostDisconnectTimer=null;
     room.hostSocketId=socket.id; socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='host';
     ack({ok:true,room:publicRoom(room),pending:pendingList(room)}); emitRoom(room);
   });
@@ -454,6 +456,19 @@ io.on('connection', socket => {
       pendingRoom.pending.delete(socket.data.pendingRequestId); emitRoom(pendingRoom);
     }
     const room=getRoom(socket.data.roomCode); if(!room)return;
+    if(socket.data.role==='host' && room.hostSocketId===socket.id){
+      room.hostSocketId=null;
+      if(room.status==='lobby'){
+        room.hostDisconnectTimer=setTimeout(()=>{
+          if(room.hostSocketId || rooms.get(room.code)!==room || room.status!=='lobby') return;
+          for(const request of room.pending.values()) io.to(request.socketId).emit('join:rejected',{message:'أُغلق المجلس لغياب مشرفه'});
+          io.to(room.code).emit('room:closed',{message:'أُغلق المجلس لغياب مشرفه'});
+          rooms.delete(room.code);
+          broadcastCouncils();
+        },5*60*1000);
+        room.hostDisconnectTimer.unref?.();
+      }
+    }
     if(socket.data.role==='player'){ room.players.delete(socket.id); room.answers.delete(socket.id); emitRoom(room); }
     if(room.players.size===0 && room.status==='finished') setTimeout(()=>{
       if(rooms.get(room.code)===room) rooms.delete(room.code);

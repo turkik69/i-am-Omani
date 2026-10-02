@@ -1,6 +1,6 @@
-const CACHE = 'iam-omani-v41';
+const CACHE = 'iam-omani-v42';
 const CORE = [
-  '/', '/index.html', '/styles.css?v=28', '/app.js?v=41',
+  '/', '/index.html', '/styles.css?v=28', '/app.js?v=42',
   '/manifest.json?v=30', '/icon-180.png?v=30', '/icon-192.png?v=30',
   '/icon-512.png?v=30', '/oman-premium.css?v=6',
   '/oman-home-v2.css?v=30', '/oman-reference-v29.css?v=31',
