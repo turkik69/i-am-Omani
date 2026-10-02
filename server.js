@@ -23,23 +23,33 @@ const firebaseConfig = {
 let firebaseAdmin = null;
 try {
   const secretsDir = '/etc/secrets';
-  const preferredFile = `${secretsDir}/firebase-service-account.json`;
-  const originalFirebaseFile = fs.existsSync(secretsDir)
-    ? fs.readdirSync(secretsDir).find(name => /^.+-firebase-adminsdk-.+\.json$/.test(name))
+  const secretNames = fs.existsSync(secretsDir) ? fs.readdirSync(secretsDir) : [];
+  const preferred = ['firebase-service-account.json', ...secretNames.filter(name => name.endsWith('.json'))];
+  let serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
     : null;
-  const serviceAccountFile = fs.existsSync(preferredFile)
-    ? preferredFile
-    : originalFirebaseFile && `${secretsDir}/${originalFirebaseFile}`;
-  const serviceAccountJSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
-    (serviceAccountFile ? fs.readFileSync(serviceAccountFile, 'utf8') : null);
-  if (serviceAccountJSON) {
-    const serviceAccount = JSON.parse(serviceAccountJSON);
+  if (!serviceAccount) {
+    for (const name of new Set(preferred)) {
+      const candidate = `${secretsDir}/${name}`;
+      if (!fs.existsSync(candidate) || !fs.statSync(candidate).isFile()) continue;
+      try {
+        const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+        if (parsed.type === 'service_account' && parsed.project_id === firebaseConfig.projectId) {
+          serviceAccount = parsed;
+          break;
+        }
+      } catch { /* Another secret file is not a Firebase service account. */ }
+    }
+  }
+  if (serviceAccount) {
     if (serviceAccount.type !== 'service_account' || serviceAccount.project_id !== firebaseConfig.projectId) {
       throw new Error('Firebase service account does not match the configured project');
     }
     firebaseAdmin = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
+  } else {
+    console.warn(`Firebase Admin credentials not found (${secretNames.length} secret file(s) mounted)`);
   }
 } catch (error) { console.error('Firebase Admin initialization failed:', error.message); }
 
