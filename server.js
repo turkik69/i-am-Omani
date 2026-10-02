@@ -31,7 +31,7 @@ try {
 
 app.get('/api/firebase-config', (_req, res) => {
   res.set('Cache-Control', 'no-store');
-  if (Object.values(firebaseConfig).some(v => !v) || !firebaseAdmin) return res.status(503).json({ configured: false });
+  if (Object.values(firebaseConfig).some(v => !v)) return res.status(503).json({ configured: false });
   res.json(firebaseConfig);
 });
 
