@@ -22,9 +22,12 @@ const firebaseConfig = {
 };
 let firebaseAdmin = null;
 try {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+  const serviceAccountFile = '/etc/secrets/firebase-service-account.json';
+  const serviceAccountJSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
+    (fs.existsSync(serviceAccountFile) ? fs.readFileSync(serviceAccountFile, 'utf8') : null);
+  if (serviceAccountJSON) {
     firebaseAdmin = admin.initializeApp({
-      credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON))
+      credential: admin.credential.cert(JSON.parse(serviceAccountJSON))
     });
   }
 } catch (error) { console.error('Firebase Admin initialization failed:', error.message); }
