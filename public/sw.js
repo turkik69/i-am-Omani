@@ -1,4 +1,4 @@
-const CACHE = 'iam-omani-v49';
+const CACHE = 'iam-omani-v50';
 const CORE = [
   '/', '/index.html', '/styles.css?v=28', '/app.js?v=45',
   '/manifest.json?v=30', '/icon-180.png?v=30', '/icon-192.png?v=30',
@@ -9,7 +9,7 @@ const CORE = [
   '/omani-traditional-loop.mp3?v=35',
   '/oman-villages.js?v=45', '/approval-flow.css', '/approval-flow.js?v=43', '/approval-sync.js?v=40',
   '/village-directory-ui.js?v=1', '/progression-ui.js?v=45', '/local-questions.js?v=45', '/progression-ui.css',
-  '/game-catalog.js?v=49', '/game-catalog.css?v=40', '/game-sfx.js?v=40', '/game-enhancements.js?v=47', '/uno.js?v=47', '/uno.css?v=45', '/card-games.js?v=48', '/card-games.css?v=48',
+  '/game-catalog.js?v=49', '/game-catalog.css?v=40', '/game-sfx.js?v=40', '/game-enhancements.js?v=47', '/uno.js?v=47', '/uno.css?v=45', '/card-games.js?v=48', '/card-games.css?v=49',
   '/omani-characters.css?v=46', '/omani-characters.js?v=46', '/omani-characters-ref.b64?v=38',
   '/omani-characters.png?v=40', '/omani-heritage-characters.png?v=40',
   '/omani-traditional.mp3?v=40',
