@@ -153,9 +153,10 @@
     $('#competitionMode').onchange=e=>currentMode=e.target.value;
   }
 
-  function questionsForSelection(){
+  function questionsForSelection(wilayat){
     const base=(BANKS[currentCategory]||BANKS.mixed).map((q,i)=>({id:i+1,question:q[0],options:q[1],correct:q[2],category:q[3],difficulty:currentDifficulty,time:currentMode==='سريعة'?10:currentDifficulty==='نخبة'?12:15}));
-    return base;
+    const local=window.OMANI_LOCAL_QUESTIONS?.(wilayat)||[];
+    return base.concat(local.map((q,i)=>({...q,id:base.length+i+1,difficulty:currentDifficulty,time:currentMode==='سريعة'?10:15})));
   }
 
   document.addEventListener('click',e=>{
@@ -165,8 +166,9 @@
   socket.on('room:update',room=>{
     if(pendingSeed&&state.role==='host'&&room?.status==='lobby'){
       pendingSeed=false;
-      const qs=questionsForSelection();
-      socket.emit('host:setQuestions',{questions:qs},r=>{if(r?.ok){toast(`${CATEGORIES.find(c=>c.id===currentCategory)?.icon||'🎯'} تم تجهيز ${r.count} أسئلة: ${categoryName(currentCategory)}`);}});
+      const qs=questionsForSelection(room.wilayat);
+      window.OMANI_SET_QUESTIONS?.(qs);
+      socket.emit('host:setQuestions',{questions:qs},r=>{if(r?.ok){$('#questionCount').textContent=r.count;toast(`${CATEGORIES.find(c=>c.id===currentCategory)?.icon||'🎯'} تم تجهيز ${r.count} أسئلة، منها ${qs.length-(BANKS[currentCategory]||BANKS.mixed).length} عن ولاية ${room.wilayat}`);}});
     }
     decorateSelf();
   });

@@ -34,14 +34,16 @@
   }
   function add(sel,type){const host=q(sel);if(!host||host.querySelector(`:scope > .omani-character.${type}`))return;host.appendChild(make(type))}
 
+  function addPhoto(sel,file){const host=q(sel);if(!host||host.querySelector(':scope > .photo-feature'))return;const im=document.createElement('img');im.className='photo-feature';im.src=`/characters/${file}.jpeg?v=41`;im.alt='شخصية عُمانية';im.loading='lazy';host.appendChild(im)}
   function decorate(){
+    addPhoto('#homeScreen','man-bisht');addPhoto('#resultScreen','elder-portrait');addPhoto('#finalScreen','boy-kumma');
     add('#homeScreen','elder');add('#homeScreen','woman');
     add('#hostCreateScreen','young');add('#hostCreateScreen','khanjar');
     add('#joinScreen','woman');
     add('#questionScreen','elder');
     add('#resultScreen','khanjar');
     add('#finalScreen','young');add('#finalScreen','khanjar');
-    qa('.baloot-panel').forEach(p=>{
+    qa('.baloot-panel').forEach(p=>{if(!p.querySelector(':scope > .photo-feature')){const im=document.createElement('img');im.className='photo-feature';im.src='/characters/seated-omani-man.jpeg?v=41';im.alt='شخصية عُمانية';im.loading='lazy';p.appendChild(im)}
       if(!p.querySelector(':scope > .omani-character.elder'))p.appendChild(make('elder'));
       if(!p.querySelector(':scope > .omani-character.khanjar'))p.appendChild(make('khanjar'));
     });

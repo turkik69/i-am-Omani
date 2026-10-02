@@ -55,3 +55,5 @@
 .omani-portrait.portrait-4{background-position-x:0%}
 .omani-portrait.portrait-5{background-position-x:50%}
 .omani-portrait.portrait-6{background-position-x:100%}
+
+.omani-portrait.photo-portrait{object-fit:cover;object-position:center 30%;background:none;border:2px solid rgba(255,212,119,.65)}#avatars .avatar .photo-portrait{width:62px;height:62px}.photo-feature{position:absolute;z-index:3;width:96px;height:112px;border-radius:22px;border:2px solid rgba(255,211,119,.7);object-fit:cover;object-position:center 22%;pointer-events:none;box-shadow:0 0 22px rgba(255,192,80,.35),0 14px 30px rgba(0,0,0,.45)}#homeScreen>.photo-feature{left:18px;top:118px}#resultScreen>.photo-feature{right:18px;top:24px}#finalScreen>.photo-feature{right:18px;top:24px}.baloot-panel>.photo-feature{left:18px;bottom:18px;width:74px;height:90px}@media(max-width:620px){#homeScreen>.photo-feature{width:58px;height:72px;left:10px;top:94px}#resultScreen>.photo-feature,#finalScreen>.photo-feature{width:58px;height:72px;right:10px;top:16px}.baloot-panel>.photo-feature{width:48px;height:60px;left:8px;bottom:8px;opacity:.8}}
