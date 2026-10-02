@@ -1,59 +1,22 @@
-/* Photo-based Omani character layer from the user-approved visual references. */
-.omani-character{position:absolute;z-index:2;pointer-events:none;user-select:none;filter:drop-shadow(0 18px 28px rgba(0,0,0,.42));opacity:.98}
-.omani-character-photo{display:block;width:100%;height:100%;background-image:var(--omani-character-sprite);background-repeat:no-repeat;background-size:300% 100%;background-position-y:center}
-.omani-character.elder .omani-character-photo{background-position-x:0%}
-.omani-character.young .omani-character-photo{background-position-x:50%}
-.omani-character.woman .omani-character-photo{background-position-x:100%}
+/* Photo-based Omani character layer from user-approved references. */
+.omani-character{position:absolute;z-index:2;pointer-events:none;user-select:none;filter:drop-shadow(0 18px 28px rgba(0,0,0,.42));opacity:.96;overflow:hidden;border-radius:24px}
+.omani-character>img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 24%;border-radius:inherit;border:1px solid rgba(255,220,150,.45)}
+.omani-character.khanjar{overflow:visible;border-radius:0;width:82px;right:18px;top:18px;opacity:.92;filter:drop-shadow(0 8px 18px rgba(246,195,91,.32))}
 .omani-character.khanjar svg{display:block;width:100%;height:auto}
-.omani-character.khanjar{width:82px;right:18px;top:18px;opacity:.92;filter:drop-shadow(0 8px 18px rgba(246,195,91,.32))}
-#homeScreen,#hostCreateScreen,#joinScreen,#questionScreen,#resultScreen,#finalScreen,#displayScreen,.baloot-panel{position:relative;overflow:hidden}
-#homeScreen>.omani-character.elder{width:172px;height:328px;left:-18px;bottom:-32px;opacity:.9}
-#homeScreen>.omani-character.woman{width:156px;height:300px;right:-14px;bottom:-28px;opacity:.9}
-#hostCreateScreen>.omani-character.young{width:150px;height:286px;right:-8px;bottom:-22px;opacity:.9}
-#joinScreen>.omani-character.woman{width:142px;height:276px;right:-10px;bottom:-24px;opacity:.88}
-#questionScreen>.omani-character.elder{width:122px;height:234px;left:-12px;bottom:-28px;opacity:.62}
-#resultScreen>.omani-character.khanjar,#finalScreen>.omani-character.khanjar{width:94px;top:18px;right:18px}
-#finalScreen>.omani-character.young{width:150px;height:286px;left:-8px;bottom:-22px;opacity:.86}
-.baloot-panel>.omani-character.elder{width:140px;height:268px;left:-16px;bottom:-30px;opacity:.82}
-.baloot-panel>.omani-character.khanjar{width:72px;right:14px;top:12px;opacity:.82}
-#avatars .avatar[data-oman-photo]{padding:0;overflow:hidden;background:linear-gradient(145deg,#0c1438,#1b1d58);position:relative}
-#avatars .avatar[data-oman-photo] .avatar-token{position:absolute;opacity:0;pointer-events:none}
-#avatars .avatar-photo{display:block;width:100%;height:100%;background-image:var(--omani-character-sprite);background-repeat:no-repeat;background-size:300% 100%;background-position-y:center;transform:scale(1.08)}
-#avatars .avatar-photo.elder{background-position-x:0%}
-#avatars .avatar-photo.young{background-position-x:50%}
-#avatars .avatar-photo.woman{background-position-x:100%}
-@media(max-width:620px){
-  #homeScreen>.omani-character.elder{width:128px;height:244px;left:-18px;bottom:-24px;opacity:.78}
-  #homeScreen>.omani-character.woman{width:120px;height:230px;right:-18px;bottom:-22px;opacity:.78}
-  #hostCreateScreen>.omani-character.young{width:116px;height:222px;right:-12px;bottom:-18px;opacity:.78}
-  #joinScreen>.omani-character.woman{width:108px;height:208px;right:-14px;bottom:-18px;opacity:.74}
-  #questionScreen>.omani-character.elder{width:86px;height:166px;left:-16px;bottom:-20px;opacity:.42}
-  #finalScreen>.omani-character.young{width:110px;height:210px;left:-14px;bottom:-20px;opacity:.74}
-  .baloot-panel>.omani-character.elder{width:98px;height:188px;left:-16px;bottom:-20px;opacity:.62}
-  .baloot-panel>.omani-character.khanjar{width:54px}
-}
-/* Four character portraits share one asset and stay consistent across the live game. */
+#homeScreen,#hostCreateScreen,#joinScreen,#questionScreen,#resultScreen,#finalScreen,#displayScreen,.baloot-panel,.uno-panel{position:relative;overflow:hidden}
+#homeScreen>.omani-character.bisht{width:116px;height:160px;left:14px;bottom:18px}
+#hostCreateScreen>.omani-character.young{width:100px;height:145px;right:14px;bottom:16px;opacity:.88}
+#questionScreen>.omani-character.elder{width:82px;height:112px;left:10px;bottom:12px;opacity:.58}
+#resultScreen>.omani-character.elder{width:92px;height:126px;left:14px;bottom:14px;opacity:.78}
+#finalScreen>.omani-character.boy{width:96px;height:132px;left:14px;bottom:14px;opacity:.86}
+#resultScreen>.omani-character.khanjar,#finalScreen>.omani-character.khanjar{width:90px;top:18px;right:18px}
+.baloot-panel>.omani-character.majlis{width:88px;height:116px;left:12px;bottom:12px;opacity:.78}
+.baloot-panel>.omani-character.khanjar{width:68px;right:14px;top:12px;opacity:.82}
+.uno-panel>.omani-character.young{width:82px;height:108px;right:12px;bottom:12px;opacity:.7}
 .omani-portrait{display:inline-block;flex:none;width:44px;height:44px;vertical-align:middle;border-radius:50%;background-image:url('/omani-characters.png?v=40');background-repeat:no-repeat;background-size:400% auto;background-position-y:center;filter:drop-shadow(0 0 8px rgba(39,212,255,.25))}
-.omani-portrait.portrait-0{background-position-x:0%}
-.omani-portrait.portrait-1{background-position-x:33.333%}
-.omani-portrait.portrait-2{background-position-x:66.667%}
-.omani-portrait.portrait-3{background-position-x:100%}
-#avatars .avatar{aspect-ratio:auto;min-height:108px!important;padding:8px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff}
-#avatars .avatar .omani-portrait{width:min(70px,17vw);height:min(70px,17vw)}
-#avatars .avatar small{font:700 10px/1.25 Cairo,system-ui,sans-serif;white-space:normal}
-#myAvatar.big-avatar{width:132px;height:132px;margin:0 auto 12px;font-size:0}
-#myAvatar .omani-portrait{width:100%;height:100%}
-.player-chip .omani-portrait,.pending-avatar .omani-portrait,.avatar-mini .omani-portrait,.board-row .omani-portrait,.display-board .omani-portrait{width:42px;height:42px}
-.pending-avatar{width:48px;height:48px;overflow:visible}
-.winner>span .omani-portrait{width:68px;height:68px}
-.display-players .omani-portrait{width:54px;height:54px}
-.board-row .omani-portrait,.display-board .omani-portrait{margin-inline:4px}
+.omani-portrait.portrait-0{background-position-x:0%}.omani-portrait.portrait-1{background-position-x:33.333%}.omani-portrait.portrait-2{background-position-x:66.667%}.omani-portrait.portrait-3{background-position-x:100%}
+.omani-portrait.portrait-4,.omani-portrait.portrait-5,.omani-portrait.portrait-6{background-image:url('/omani-heritage-characters.png?v=40');background-size:300% auto}.omani-portrait.portrait-4{background-position-x:0%}.omani-portrait.portrait-5{background-position-x:50%}.omani-portrait.portrait-6{background-position-x:100%}
+#avatars .avatar{aspect-ratio:auto;min-height:108px!important;padding:8px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff}#avatars .avatar .omani-portrait{width:min(70px,17vw);height:min(70px,17vw)}#avatars .avatar small{font:700 10px/1.25 Cairo,system-ui,sans-serif;white-space:normal}
+#myAvatar.big-avatar{width:132px;height:132px;margin:0 auto 12px;font-size:0}#myAvatar .omani-portrait{width:100%;height:100%}.player-chip .omani-portrait,.pending-avatar .omani-portrait,.avatar-mini .omani-portrait,.board-row .omani-portrait,.display-board .omani-portrait{width:42px;height:42px}.pending-avatar{width:48px;height:48px;overflow:visible}.winner>span .omani-portrait{width:68px;height:68px}.display-players .omani-portrait{width:54px;height:54px}.board-row .omani-portrait,.display-board .omani-portrait{margin-inline:4px}
 #musicBtn.music-on{border-color:rgba(48,224,255,.85);box-shadow:0 0 18px rgba(48,224,255,.3)}
-@media(max-width:420px){#avatars .avatar{min-height:94px!important}#avatars .avatar small{font-size:9px}.winner>span .omani-portrait{width:50px;height:50px}}
-
-.omani-portrait.portrait-4,.omani-portrait.portrait-5,.omani-portrait.portrait-6{background-image:url('/omani-heritage-characters.png?v=40');background-size:300% auto}
-.omani-portrait.portrait-4{background-position-x:0%}
-.omani-portrait.portrait-5{background-position-x:50%}
-.omani-portrait.portrait-6{background-position-x:100%}
-
-.omani-portrait.photo-portrait{object-fit:cover;object-position:center 30%;background:none;border:2px solid rgba(255,212,119,.65)}#avatars .avatar .photo-portrait{width:62px;height:62px}.photo-feature{position:absolute;z-index:3;width:96px;height:112px;border-radius:22px;border:2px solid rgba(255,211,119,.7);object-fit:cover;object-position:center 22%;pointer-events:none;box-shadow:0 0 22px rgba(255,192,80,.35),0 14px 30px rgba(0,0,0,.45)}#homeScreen>.photo-feature{left:18px;top:118px}#resultScreen>.photo-feature{right:18px;top:24px}#finalScreen>.photo-feature{right:18px;top:24px}.baloot-panel>.photo-feature{left:18px;bottom:18px;width:74px;height:90px}@media(max-width:620px){#homeScreen>.photo-feature{width:58px;height:72px;left:10px;top:94px}#resultScreen>.photo-feature,#finalScreen>.photo-feature{width:58px;height:72px;right:10px;top:16px}.baloot-panel>.photo-feature{width:48px;height:60px;left:8px;bottom:8px;opacity:.8}}
+@media(max-width:620px){#homeScreen>.omani-character.bisht{width:78px;height:108px;left:8px;bottom:10px;opacity:.78}#hostCreateScreen>.omani-character.young{width:72px;height:100px;right:8px;bottom:10px;opacity:.7}#questionScreen>.omani-character.elder{width:58px;height:80px;left:6px;bottom:8px;opacity:.42}#resultScreen>.omani-character.elder,#finalScreen>.omani-character.boy{width:64px;height:88px;left:8px;bottom:8px}.baloot-panel>.omani-character.majlis,.uno-panel>.omani-character.young{width:58px;height:78px;opacity:.55}.baloot-panel>.omani-character.khanjar{width:50px}#avatars .avatar{min-height:94px!important}#avatars .avatar small{font-size:9px}.winner>span .omani-portrait{width:50px;height:50px}}
