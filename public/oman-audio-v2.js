@@ -5,7 +5,9 @@
   audio.loop = true;
   audio.preload = 'metadata';
   let enabled = localStorage.getItem(KEY) !== 'off';
-  let attempted = false;
+  let active = !document.hidden;
+  let playVersion = 0;
+  let playPending = false;
 
   function updateVolume() {
     audio.volume = document.querySelector('.screen.active')?.id === 'questionScreen' ? .06 : .15;
@@ -27,41 +29,63 @@
     setTimeout(() => toast.classList.remove('show'), 3500);
   }
   function play() {
-    if (!enabled || document.hidden || !audio.paused) return;
+    if (!enabled || !active || document.hidden || !audio.paused || playPending) return;
     updateVolume();
+    const version = ++playVersion;
+    playPending = true;
     // Keep play() in the user gesture for mobile browsers.
-    audio.play().then(updateButton).catch(error => {
+    audio.play().then(() => {
+      playPending = false;
+      if (version !== playVersion || !active || document.hidden || !enabled) audio.pause();
+      updateButton();
+    }).catch(error => {
+      playPending = false;
+      if (version !== playVersion || !active) return;
       console.warn('Omani music playback:', error);
       updateButton();
       notify('تعذر تشغيل الموسيقى. اضغط زر ♫ للمحاولة مجددًا.');
     });
   }
 
+  function stop() {
+    playVersion++;
+    playPending = false;
+    audio.pause();
+    try { audio.currentTime = 0; } catch { /* Media may not have loaded yet. */ }
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+    updateButton();
+  }
+
   button?.addEventListener('click', event => {
     event.stopPropagation();
-    attempted = true;
-    if (!audio.paused) {
+    if (enabled && !audio.paused) {
       enabled = false;
-      audio.pause();
+      stop();
     } else {
       enabled = true;
+      active = true;
       play();
     }
     localStorage.setItem(KEY, enabled ? 'on' : 'off');
     updateButton();
   });
   document.addEventListener('pointerdown', event => {
-    if (!attempted && enabled && !event.target.closest?.('#musicBtn')) {
-      attempted = true;
+    if (active && enabled && audio.paused && !event.target.closest?.('#musicBtn')) {
       play();
     }
   }, { passive: true });
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) audio.pause();
-    else if (attempted) play();
-    updateButton();
+    if (document.hidden) { active = false; stop(); }
+    else { active = true; updateButton(); }
   });
-  audio.addEventListener('playing', updateButton);
+  window.addEventListener('pagehide', () => { active = false; stop(); });
+  window.addEventListener('beforeunload', () => { active = false; stop(); });
+  window.addEventListener('pageshow', () => { active = !document.hidden; updateButton(); });
+  document.addEventListener('freeze', () => { active = false; stop(); });
+  audio.addEventListener('playing', () => {
+    if (!active || document.hidden || !enabled) stop();
+    else updateButton();
+  });
   audio.addEventListener('pause', updateButton);
   new MutationObserver(updateVolume).observe(document.querySelector('main'), {
     subtree: true, attributes: true, attributeFilter: ['class']
