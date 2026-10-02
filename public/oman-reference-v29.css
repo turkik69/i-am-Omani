@@ -79,3 +79,6 @@ html,body{background:#060a2c!important}
 .mode-card>div{z-index:3!important}
 .oman-avatar-landmark{aspect-ratio:1!important;border-radius:50%}
 .oman-avatar-landmark img{width:200%!important;height:200%!important}
+/* The panorama already contains the side landmarks; keep the wordmark clear. */
+#homeScreen>.home-municipality,#homeScreen>.home-riyam,
+#homeScreen>.home-glow-a,#homeScreen>.home-glow-b{display:none!important}
