@@ -12,8 +12,8 @@ module.exports = function registerCardGames(io) {
   const handPoints = c => c.v===0?15:c.v===1?11:Math.min(c.v,10);
   function publicState(r,p){
     const base={code:r.code,mode:r.mode,status:r.status,hostId:r.hostId,selfId:p.id,players:r.players.map(x=>({id:x.id,name:x.name,count:x.hand.length,score:x.score,laid:x.laid})),hand:p.hand,turn:r.turn,round:r.round,required:r.required};
-    if(r.mode==='hand')return {...base,stage:r.stage,stock:r.stock.length,top:r.discard.at(-1)||null,melds:r.melds,roundResult:r.result,drawnFromDiscard:r.drawnFromDiscard};
-    return {...base,top:r.trumpCard,stock:r.stock.length,trump:r.trump,trick:r.trick,teamMoney:r.teamMoney,teamSecondary:r.teamSecondary,external:r.external,result:r.result};
+    if(r.mode==='hand')return {...base,stage:r.stage,stock:r.stock?.length||0,top:r.discard?.at(-1)||null,melds:r.melds||[],roundResult:r.result,drawnFromDiscard:r.drawnFromDiscard};
+    return {...base,top:r.trumpCard||null,stock:r.stock?.length||0,trump:r.trump||null,trick:r.trick||[],teamMoney:r.teamMoney||[0,0],teamSecondary:r.teamSecondary||[0,0],external:r.external,result:r.result};
   }
   function emit(r){for(const p of r.players)if(p.socket)io.to(p.socket).emit('cards:state',publicState(r,p));}
   const auth=(socket,d)=>{const r=rooms.get(String(d?.code||''));return [r,r?.players.find(p=>p.token===d?.token&&p.socket===socket.id)];};
