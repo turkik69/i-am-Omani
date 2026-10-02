@@ -1,68 +1,41 @@
 (() => {
   const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
-  let spriteUrl='';
-
-  async function loadSprite(){
-    try{
-      const r=await fetch('/omani-characters-ref.b64?v=38',{cache:'no-store'});
-      if(!r.ok) throw new Error('character sprite unavailable');
-      const raw=(await r.text()).replace(/\s+/g,'');
-      const bin=atob(raw), bytes=new Uint8Array(bin.length);
-      for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-      spriteUrl=URL.createObjectURL(new Blob([bytes],{type:'image/webp'}));
-      document.documentElement.style.setProperty('--omani-character-sprite',`url("${spriteUrl}")`);
-      document.documentElement.dataset.omaniCharacters='photo';
-    }catch(e){
-      console.warn('Omani character references:',e?.message||e);
-      document.documentElement.dataset.omaniCharacters='error';
-    }
-  }
-
   const khanjar=()=>`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="k1" x1="0" x2="1"><stop stop-color="#fff7e5"/><stop offset=".38" stop-color="#d6b36d"/><stop offset=".72" stop-color="#f2d28b"/><stop offset="1" stop-color="#aa7b35"/></linearGradient></defs><path d="M49 10c6 3 16 3 22 0l-2 19c8 8 12 18 10 30-3 17-15 33-35 50-5 5-12 4-17-1 18-15 29-30 33-43 4-14 0-26-10-35L49 10Z" fill="none" stroke="url(#k1)" stroke-width="5"/><path d="M39 29h42M43 38h34" stroke="url(#k1)" stroke-width="5" stroke-linecap="round"/><path d="M40 67c16 2 29 10 39 24" fill="none" stroke="url(#k1)" stroke-width="4"/></svg>`;
 
-  function make(type){
-    const e=document.createElement('span');
-    e.className=`omani-character ${type}`;
-    if(type==='khanjar') e.innerHTML=khanjar();
-    else {
-      const photo=document.createElement('span');
-      photo.className='omani-character-photo';
-      photo.setAttribute('aria-hidden','true');
-      e.appendChild(photo);
-    }
-    return e;
+  const photoMap={
+    elder:'elder-portrait',young:'man-white-dishdasha',woman:'woman-traditional',boy:'boy-kumma',majlis:'seated-omani-man'
+  };
+  function photo(type,cls='omani-character'){
+    const e=document.createElement('span');e.className=`${cls} ${type}`;
+    const im=document.createElement('img');im.src=`/characters/${photoMap[type]||photoMap.young}.jpeg?v=44`;im.alt='شخصية عُمانية';im.loading='lazy';im.decoding='async';
+    e.appendChild(im);return e;
   }
-  function add(sel,type){const host=q(sel);if(!host||host.querySelector(`:scope > .omani-character.${type}`))return;host.appendChild(make(type))}
-
-  function addPhoto(sel,file){const host=q(sel);if(!host||host.querySelector(':scope > .photo-feature'))return;const im=document.createElement('img');im.className='photo-feature';im.src=`/characters/${file}.jpeg?v=41`;im.alt='شخصية عُمانية';im.loading='lazy';host.appendChild(im)}
+  function addPhoto(sel,type){const host=q(sel);if(!host||host.querySelector(`:scope > .omani-character.${type}`))return;host.appendChild(photo(type))}
+  function addKhanjar(sel){const host=q(sel);if(!host||host.querySelector(':scope > .omani-character.khanjar'))return;const e=document.createElement('span');e.className='omani-character khanjar';e.innerHTML=khanjar();host.appendChild(e)}
   function decorate(){
-    addPhoto('#homeScreen','man-bisht');addPhoto('#resultScreen','elder-portrait');addPhoto('#finalScreen','boy-kumma');
-    add('#homeScreen','elder');add('#homeScreen','woman');
-    add('#hostCreateScreen','young');add('#hostCreateScreen','khanjar');
-    add('#joinScreen','woman');
-    add('#questionScreen','elder');
-    add('#resultScreen','khanjar');
-    add('#finalScreen','young');add('#finalScreen','khanjar');
-    qa('.baloot-panel').forEach(p=>{if(!p.querySelector(':scope > .photo-feature')){const im=document.createElement('img');im.className='photo-feature';im.src='/characters/seated-omani-man.jpeg?v=41';im.alt='شخصية عُمانية';im.loading='lazy';p.appendChild(im)}
-      if(!p.querySelector(':scope > .omani-character.elder'))p.appendChild(make('elder'));
-      if(!p.querySelector(':scope > .omani-character.khanjar'))p.appendChild(make('khanjar'));
-    });
+    addPhoto('#homeScreen','young');addPhoto('#homeScreen','woman');
+    addPhoto('#hostCreateScreen','young');addKhanjar('#hostCreateScreen');
+    addPhoto('#joinScreen','woman');addPhoto('#questionScreen','elder');
+    addPhoto('#resultScreen','elder');addKhanjar('#resultScreen');
+    addPhoto('#finalScreen','boy');addKhanjar('#finalScreen');
+    qa('.baloot-panel').forEach(p=>{if(!p.querySelector(':scope > .omani-character.majlis'))p.appendChild(photo('majlis'));if(!p.querySelector(':scope > .omani-character.khanjar')){const e=document.createElement('span');e.className='omani-character khanjar';e.innerHTML=khanjar();p.appendChild(e)}});
+    qa('.uno-panel').forEach(p=>{if(!p.querySelector(':scope > .omani-character.young'))p.appendChild(photo('young'));});
   }
-
-  function avatars(){
-    const btns=qa('#avatars .avatar');if(btns.length<3)return;
-    const defs=[['elder','🧔'],['woman','👩'],['young','🧑']];
-    defs.forEach(([type,token],i)=>{
-      const b=btns[i];if(!b||b.dataset.omanPhoto)return;
-      b.dataset.omanPhoto=type;b.dataset.token=token;
-      b.innerHTML=`<span class="avatar-photo ${type}" aria-hidden="true"></span><span class="avatar-token">${token}</span>`;
-    });
+  function cleanLegacy(){qa('.omani-character-photo,.avatar-photo').forEach(x=>x.remove())}
+  function avatarPhotos(){
+    const defs=['man-bisht','man-white-dishdasha','woman-traditional','woman-abaya','elder-portrait','boy-kumma','woman-heritage'];
+    qa('#avatars .avatar').forEach((b,i)=>{if(!defs[i]||b.querySelector('img.avatar-real'))return;const im=document.createElement('img');im.className='avatar-real';im.src=`/characters/${defs[i]}.jpeg?v=44`;im.alt=b.getAttribute('aria-label')||'شخصية عُمانية';const small=b.querySelector('small');b.querySelectorAll('span').forEach(x=>x.remove());b.insertBefore(im,small||null)});
   }
-
-  async function init(){
-    await loadSprite();
-    decorate();
-    new MutationObserver(()=>{decorate();avatars()}).observe(document.body,{subtree:true,childList:true});
+  function loadAsset(tag,attrs){return new Promise((resolve,reject)=>{const el=document.createElement(tag);Object.assign(el,attrs);el.onload=resolve;el.onerror=reject;document.head.appendChild(el)})}
+  async function loadUno(){
+    if(window.IAM_OMANI_UNO)return;
+    try{
+      if(!q('link[data-uno-css]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/uno-game.css?v=44';l.dataset.unoCss='1';document.head.appendChild(l)}
+      await loadAsset('script',{src:'/uno-game.js?v=44',async:false});
+      await loadAsset('script',{src:'/uno-entry.js?v=44',async:false});
+    }catch(e){console.warn('UNO load failed',e)}
   }
-  init();
+  document.documentElement.dataset.omaniCharacters='photo';
+  cleanLegacy();avatarPhotos();decorate();loadUno();
+  new MutationObserver(()=>{cleanLegacy();avatarPhotos();decorate()}).observe(document.body,{subtree:true,childList:true});
 })();
