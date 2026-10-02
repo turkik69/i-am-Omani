@@ -142,6 +142,7 @@
       setRole('host');
       state.code = res.code;
       state.hostToken = res.hostToken;
+      localStorage.removeItem('quizPlayer');
       localStorage.setItem('quizHost', JSON.stringify({code:res.code,hostToken:res.hostToken}));
       renderRoom(res.room);
       show('hostLobby');
@@ -179,6 +180,9 @@
     const res = payload || {};
     state.player = res.player;
     state.code = res.room?.code || state.code;
+    state.playerToken = res.reconnectToken;
+    localStorage.removeItem('quizHost');
+    localStorage.setItem('quizPlayer',JSON.stringify({code:state.code,reconnectToken:res.reconnectToken}));
     setRole('player');
     renderRoom(res.room);
     document.querySelector('#myAvatar').innerHTML = avatarHTML(state.avatar);
