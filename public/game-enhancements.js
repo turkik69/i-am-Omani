@@ -70,11 +70,17 @@
     const n=Number(t.textContent);if(n>0&&n<=5&&t.textContent!==lastTick){lastTick=t.textContent;SFX.tick()}
   }).observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class']});
 
+  function hideOuterGameSwitcher(){
+    const sw=$('.game-switcher');
+    if(sw)sw.style.display='none';
+  }
+
   function addBalootEntry(){
+    hideOuterGameSwitcher();
     const picker=$('#competitionCategory');if(!picker||picker.querySelector('[data-baloot-entry]'))return;
     const b=document.createElement('button');
     b.type='button';b.className='category-choice baloot-category-choice';b.dataset.balootEntry='1';
-    b.innerHTML='<span style="display:grid;place-items:center"><img src="/baloot-icon.svg?v=33" alt="" style="width:42px;height:42px;object-fit:contain"></span><b>الورقة • البلوت</b><small>صن، حكم، وتحديات الطاولات</small>';
+    b.innerHTML='<span style="display:grid;place-items:center"><img src="/baloot-icon.svg?v=34" alt="" style="width:42px;height:42px;object-fit:contain"></span><b>الورقة • البلوت</b><small>صن، حكم، وتحديات الطاولات</small>';
     b.addEventListener('click',()=>{
       SFX.select();
       const choice=$('.game-choice[data-game="baloot"]');
@@ -83,6 +89,8 @@
     });
     picker.appendChild(b);
   }
-  new MutationObserver(addBalootEntry).observe(document.documentElement,{subtree:true,childList:true});
+  const uiObserver=new MutationObserver(()=>{hideOuterGameSwitcher();addBalootEntry()});
+  uiObserver.observe(document.documentElement,{subtree:true,childList:true});
+  hideOuterGameSwitcher();
   addBalootEntry();
 })();
