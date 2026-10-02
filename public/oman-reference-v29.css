@@ -67,3 +67,15 @@ html,body{background:#060a2c!important}
   .final-podium{gap:6px!important}.winner{padding:14px 4px!important}.winner b{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.oman-art,.floating-trophy .hero-sahwa{animation:none!important}.mode-card,.answer-btn{transition:none}}
+
+/* Four fully rendered landmarks share one lossless-layout 2×2 image. */
+.oman-art{overflow:hidden!important;aspect-ratio:3/2}
+.oman-art img{position:absolute!important;display:block!important;max-width:none!important;width:200%!important;height:200%!important;object-fit:fill!important;top:0;left:0}
+.oman-art.municipality img{left:-100%}
+.oman-art.opera img{top:-100%}
+.oman-art.riyam img{left:-100%;top:-100%}
+#homeScreen .floating-trophy .hero-sahwa{z-index:2!important}
+.mode-card .oman-card-art{z-index:2!important}
+.mode-card>div{z-index:3!important}
+.oman-avatar-landmark{aspect-ratio:1!important;border-radius:50%}
+.oman-avatar-landmark img{width:200%!important;height:200%!important}
