@@ -73,7 +73,11 @@
     try {
       const res = await fetch('/api/oman-locations');
       locations = await res.json();
-      hostWilaya.innerHTML = '<option value="">اختر الولاية</option>' + locations.map(x => `<option value="${esc(x.wilayat)}">${esc(x.wilayat)}</option>`).join('');
+      const grouped = new Map();
+      locations.forEach(x => {const key=x.governorate||'ولايات عُمان';grouped.set(key,[...(grouped.get(key)||[]),x])});
+      hostWilaya.innerHTML = '<option value="">اختر الولاية</option>' + [...grouped].map(([governorate, entries]) =>
+        `<optgroup label="محافظة ${esc(governorate)}">${entries.map(x => `<option value="${esc(x.wilayat)}">${esc(x.wilayat)}</option>`).join('')}</optgroup>`
+      ).join('');
     } catch {
       toast('تعذر تحميل قائمة الولايات');
     }
