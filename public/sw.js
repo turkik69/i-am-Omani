@@ -1,4 +1,4 @@
-const CACHE = 'iam-omani-v33';
+const CACHE = 'iam-omani-v34';
 const CORE = [
   '/', '/index.html', '/styles.css?v=28', '/app.js?v=30',
   '/manifest.json?v=30', '/icon-180.png?v=30', '/icon-192.png?v=30',
@@ -8,8 +8,8 @@ const CORE = [
   '/oman-identity.js?v=30', '/oman-music.js?v=33', '/oman-audio-v2.js?v=33',
   '/oman-villages.js?v=1', '/approval-flow.css', '/approval-flow.js',
   '/village-directory-ui.js?v=1', '/progression-ui.js', '/progression-ui.css',
-  '/game-catalog.js?v=33', '/game-catalog.css?v=33', '/game-enhancements.js?v=33',
-  '/baloot-icon.svg?v=33', '/firebase-auth-ui.css?v=32', '/firebase-auth-ui.js?v=32'
+  '/game-catalog.js?v=33', '/game-catalog.css?v=33', '/game-enhancements.js?v=34',
+  '/baloot-icon.svg?v=34', '/firebase-auth-ui.css?v=32', '/firebase-auth-ui.js?v=32'
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)));
