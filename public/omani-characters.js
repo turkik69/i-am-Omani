@@ -1,21 +1,66 @@
 (() => {
   const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
-  const elder=()=>`<svg viewBox="0 0 120 180" aria-hidden="true"><defs><linearGradient id="e1" x1="0" x2="1"><stop stop-color="#f5efe4"/><stop offset="1" stop-color="#d8c7a6"/></linearGradient><linearGradient id="e2" x1="0" x2="1"><stop stop-color="#70462d"/><stop offset="1" stop-color="#3e281e"/></linearGradient></defs><ellipse cx="60" cy="171" rx="34" ry="6" fill="rgba(0,0,0,.28)"/><path d="M31 165c2-52 9-85 29-85 22 0 29 34 30 85" fill="url(#e2)"/><circle cx="60" cy="57" r="25" fill="#b87955"/><path d="M37 52c4-30 42-34 48-2-7-5-16-8-25-8-8 0-16 3-23 10Z" fill="url(#e1)" stroke="#7a4833" stroke-width="3"/><path d="M38 57c3 20 10 33 22 33 13 0 21-14 23-33-6 8-13 12-23 12-9 0-16-4-22-12Z" fill="#efe9dd"/><path d="M50 58h4m12 0h4" stroke="#241811" stroke-width="3" stroke-linecap="round"/><path d="M61 62c-2 5-3 8 0 10" fill="none" stroke="#7a4e3a" stroke-width="2"/><path d="M51 77c6 4 12 4 18 0" fill="none" stroke="#5a3326" stroke-width="2"/><path d="M89 100v62" stroke="#2d2420" stroke-width="5" stroke-linecap="round"/><path d="M88 99l8-36" stroke="#2d2420" stroke-width="4" stroke-linecap="round"/><path d="M96 63l3-8" stroke="#2d2420" stroke-width="4" stroke-linecap="round"/></svg>`;
-  const woman=()=>`<svg viewBox="0 0 120 180" aria-hidden="true"><defs><linearGradient id="w1" x1="0" x2="1"><stop stop-color="#b82747"/><stop offset="1" stop-color="#7d162e"/></linearGradient><linearGradient id="w2" x1="0" x2="1"><stop stop-color="#f0bf7a"/><stop offset="1" stop-color="#b66b4f"/></linearGradient></defs><ellipse cx="60" cy="171" rx="33" ry="6" fill="rgba(0,0,0,.25)"/><path d="M26 165c5-48 14-82 34-82 21 0 30 35 34 82" fill="#c9a56c"/><circle cx="60" cy="58" r="22" fill="url(#w2)"/><path d="M29 74c3-42 17-64 31-64 18 0 32 25 32 66-10-9-20-13-31-13-12 0-22 4-32 11Z" fill="url(#w1)" stroke="#e6ad58" stroke-width="3"/><path d="M34 74c8-9 17-14 27-14 11 0 20 5 28 14" fill="none" stroke="#f0cf83" stroke-width="3"/><path d="M42 58h5m25 0h5" stroke="#2d1c19" stroke-width="3" stroke-linecap="round"/><path d="M51 77c6 3 12 3 18 0" fill="none" stroke="#6d3d35" stroke-width="2"/><path d="M32 109l56 39" stroke="#9b1c3b" stroke-width="6" opacity=".75"/><path d="M30 126l58 39" stroke="#e3b568" stroke-width="3" opacity=".8"/></svg>`;
-  const young=()=>`<svg viewBox="0 0 120 180" aria-hidden="true"><defs><linearGradient id="y1" x1="0" x2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#ece6d8"/></linearGradient><linearGradient id="y2" x1="0" x2="1"><stop stop-color="#2b1713"/><stop offset="1" stop-color="#6d402a"/></linearGradient></defs><ellipse cx="60" cy="171" rx="32" ry="6" fill="rgba(0,0,0,.24)"/><path d="M29 165c3-50 13-80 31-80 19 0 29 31 31 80" fill="url(#y1)"/><circle cx="60" cy="57" r="22" fill="#c88c65"/><path d="M34 48c7-24 43-26 52 0-8-5-17-8-26-8-9 0-18 3-26 8Z" fill="#f2e7cc" stroke="#8f5d45" stroke-width="3"/><path d="M39 41c10-6 31-7 42 0" fill="none" stroke="#af2849" stroke-width="3"/><path d="M44 59h5m22 0h5" stroke="#241914" stroke-width="3" stroke-linecap="round"/><path d="M52 75c5 3 11 3 16 0" fill="none" stroke="#6e4336" stroke-width="2"/><path d="M39 95c12 7 30 7 42 0" fill="none" stroke="url(#y2)" stroke-width="6" opacity=".9"/></svg>`;
-  const khanjar=()=>`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="k1" x1="0" x2="1"><stop stop-color="#f8e6b8"/><stop offset=".45" stop-color="#c9a15a"/><stop offset="1" stop-color="#f7d27b"/></linearGradient></defs><path d="M49 10c6 3 16 3 22 0l-2 19c8 8 12 18 10 30-3 17-15 33-35 50-5 5-12 4-17-1 18-15 29-30 33-43 4-14 0-26-10-35L49 10Z" fill="none" stroke="url(#k1)" stroke-width="5"/><path d="M39 29h42M43 38h34" stroke="url(#k1)" stroke-width="5" stroke-linecap="round"/><path d="M40 67c16 2 29 10 39 24" fill="none" stroke="url(#k1)" stroke-width="4"/></svg>`;
-  const make=(type)=>{const e=document.createElement('span');e.className=`omani-character ${type}`;e.innerHTML=type==='elder'?elder():type==='woman'?woman():type==='young'?young():khanjar();return e};
+  let spriteUrl='';
+
+  async function loadSprite(){
+    try{
+      const r=await fetch('/omani-characters-ref.b64?v=38',{cache:'no-store'});
+      if(!r.ok) throw new Error('character sprite unavailable');
+      const raw=(await r.text()).replace(/\s+/g,'');
+      const bin=atob(raw), bytes=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+      spriteUrl=URL.createObjectURL(new Blob([bytes],{type:'image/webp'}));
+      document.documentElement.style.setProperty('--omani-character-sprite',`url("${spriteUrl}")`);
+      document.documentElement.dataset.omaniCharacters='photo';
+    }catch(e){
+      console.warn('Omani character references:',e?.message||e);
+      document.documentElement.dataset.omaniCharacters='error';
+    }
+  }
+
+  const khanjar=()=>`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="k1" x1="0" x2="1"><stop stop-color="#fff7e5"/><stop offset=".38" stop-color="#d6b36d"/><stop offset=".72" stop-color="#f2d28b"/><stop offset="1" stop-color="#aa7b35"/></linearGradient></defs><path d="M49 10c6 3 16 3 22 0l-2 19c8 8 12 18 10 30-3 17-15 33-35 50-5 5-12 4-17-1 18-15 29-30 33-43 4-14 0-26-10-35L49 10Z" fill="none" stroke="url(#k1)" stroke-width="5"/><path d="M39 29h42M43 38h34" stroke="url(#k1)" stroke-width="5" stroke-linecap="round"/><path d="M40 67c16 2 29 10 39 24" fill="none" stroke="url(#k1)" stroke-width="4"/></svg>`;
+
+  function make(type){
+    const e=document.createElement('span');
+    e.className=`omani-character ${type}`;
+    if(type==='khanjar') e.innerHTML=khanjar();
+    else {
+      const photo=document.createElement('span');
+      photo.className='omani-character-photo';
+      photo.setAttribute('aria-hidden','true');
+      e.appendChild(photo);
+    }
+    return e;
+  }
   function add(sel,type){const host=q(sel);if(!host||host.querySelector(`:scope > .omani-character.${type}`))return;host.appendChild(make(type))}
+
   function decorate(){
     add('#homeScreen','elder');add('#homeScreen','woman');
     add('#hostCreateScreen','young');add('#hostCreateScreen','khanjar');
     add('#joinScreen','woman');
     add('#questionScreen','elder');
     add('#resultScreen','khanjar');
-    add('#finalScreen','elder');add('#finalScreen','khanjar');
-    qa('.baloot-panel').forEach(p=>{if(!p.querySelector(':scope > .omani-character.elder'))p.appendChild(make('elder'));if(!p.querySelector(':scope > .omani-character.khanjar'))p.appendChild(make('khanjar'))});
+    add('#finalScreen','young');add('#finalScreen','khanjar');
+    qa('.baloot-panel').forEach(p=>{
+      if(!p.querySelector(':scope > .omani-character.elder'))p.appendChild(make('elder'));
+      if(!p.querySelector(':scope > .omani-character.khanjar'))p.appendChild(make('khanjar'));
+    });
   }
-  function avatars(){const btns=qa('#avatars .avatar');if(btns.length<3)return;const defs=[['elder','🧔'],['woman','👩'],['young','🧑']];defs.forEach(([type,token],i)=>{const b=btns[i];if(!b||b.dataset.omanChar)return;b.dataset.omanChar=type;b.dataset.token=token;b.innerHTML=(type==='elder'?elder():type==='woman'?woman():young())+`<span class="avatar-token">${token}</span>`})}
-  decorate();avatars();
-  new MutationObserver(()=>{decorate();avatars()}).observe(document.body,{subtree:true,childList:true});
+
+  function avatars(){
+    const btns=qa('#avatars .avatar');if(btns.length<3)return;
+    const defs=[['elder','🧔'],['woman','👩'],['young','🧑']];
+    defs.forEach(([type,token],i)=>{
+      const b=btns[i];if(!b||b.dataset.omanPhoto)return;
+      b.dataset.omanPhoto=type;b.dataset.token=token;
+      b.innerHTML=`<span class="avatar-photo ${type}" aria-hidden="true"></span><span class="avatar-token">${token}</span>`;
+    });
+  }
+
+  async function init(){
+    await loadSprite();
+    decorate();avatars();
+    new MutationObserver(()=>{decorate();avatars()}).observe(document.body,{subtree:true,childList:true});
+  }
+  init();
 })();
