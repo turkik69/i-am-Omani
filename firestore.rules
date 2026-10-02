@@ -25,7 +25,7 @@ service cloud.firestore {
         && request.resource.data.level == 1
         && request.resource.data.badges == []
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid;
-      allow update: if mine(uid)
+      allow update: if mine(uid) && request.auth.token.email_verified == true
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['progress','xp','level','badges'])
         && request.resource.data.xp is int
         && request.resource.data.xp >= 0
