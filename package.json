@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node baloot-bootstrap.js",
     "dev": "nodemon baloot-bootstrap.js",
-    "check": "node --check server.js && node --check baloot-server.js && node --check baloot-bootstrap.js && node --check uno-server.js"
+    "check": "node --check server.js && node --check baloot-server.js && node --check baloot-bootstrap.js && node --check uno-server.js && node --check card-games-server.js && node --check public/card-games.js"
   },
   "engines": {
     "node": ">=20 <23"
