@@ -199,6 +199,7 @@ function scoreAnswer(elapsedMs, limitMs, rank) {
 function sendQuestion(room) {
   if (!room || room.currentQuestionIndex >= room.questions.length) return finishQuiz(room);
   clearTimeout(room.timer);
+  clearTimeout(room.resultTimer);
   room.answers.clear();
   room.lastResult = null;
   room.status = 'question';
@@ -251,15 +252,28 @@ function revealAnswer(room) {
     correctIndex:q.correct,
     correctText:q.options[q.correct],
     podium,
-    leaderboard:publicRoom(room).leaderboard
+    leaderboard:publicRoom(room).leaderboard,
+    nextAt:Date.now()+8000
   };
   io.to(room.code).emit('quiz:result', room.lastResult);
   emitRoom(room);
+  room.resultTimer = setTimeout(() => advanceQuestion(room), 8000);
+}
+
+function advanceQuestion(room) {
+  if (!room || room.status !== 'result') return false;
+  clearTimeout(room.resultTimer);
+  room.resultTimer = null;
+  room.currentQuestionIndex++;
+  sendQuestion(room);
+  return true;
 }
 
 function finishQuiz(room) {
   if (!room) return;
   clearTimeout(room.timer);
+  clearTimeout(room.resultTimer);
+  room.resultTimer = null;
   const board = publicRoom(room).leaderboard;
   if (room.status === 'finished' && room.persisted) {
     io.to(room.code).emit('quiz:finished', board);
@@ -336,7 +350,7 @@ io.on('connection', socket => {
     const room = {
       code, title, roomIdentity, location, hostToken, hostSocketId:socket.id,
       status:'lobby', questions:DEFAULT_QUESTIONS.map(q=>({...q, options:[...q.options]})),
-      currentQuestionIndex:0, players:new Map(), pending:new Map(), answers:new Map(), timer:null,
+      currentQuestionIndex:0, players:new Map(), pending:new Map(), answers:new Map(), timer:null, resultTimer:null,
       startedAt:null, persisted:false
     };
     rooms.set(code, room); socket.join(code); socket.data.roomCode=code; socket.data.role='host';
@@ -447,14 +461,14 @@ io.on('connection', socket => {
   socket.on('host:next', (ack=()=>{}) => {
     const room=getRoom(socket.data.roomCode);
     if(!isHost(socket,room)||room.status!=='result')return ack({ok:false,error:'تعذر المتابعة. انتظر استعادة الاتصال بالمجلس'});
-    room.currentQuestionIndex++;ack({ok:true});sendQuestion(room);
+    ack({ok:true});advanceQuestion(room);
   });
   socket.on('host:finish', () => {
     const room=getRoom(socket.data.roomCode); if(isHost(socket,room)) finishQuiz(room);
   });
   socket.on('host:reset', () => {
     const room=getRoom(socket.data.roomCode); if(!isHost(socket,room))return;
-    clearTimeout(room.timer); room.status='lobby'; room.currentQuestionIndex=0; room.answers.clear(); room.persisted=false;
+    clearTimeout(room.timer); clearTimeout(room.resultTimer); room.resultTimer=null; room.status='lobby'; room.currentQuestionIndex=0; room.answers.clear(); room.persisted=false;
     for(const p of room.players.values()){p.score=0;p.correct=0;p.answered=false;p.lastPoints=0;}
     io.to(room.code).emit('quiz:reset'); emitRoom(room);
   });
