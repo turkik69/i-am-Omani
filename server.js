@@ -122,40 +122,7 @@ const DEFAULT_QUESTIONS = [
   { id: 6, question: 'ما أكبر حيوان حي على الأرض؟', options: ['الفيل','الحوت الأزرق','الزرافة','فرس النهر'], correct: 1, category: 'طبيعة', difficulty: 'سهل', time: 12 }
 ];
 
-const OMAN_LOCATIONS = [
-  {
-    wilayat: 'بركاء',
-    villages: [
-      'الحرادي','مزرع الحرادي','المراغ','الباسط','الصومحان','الجحيلة','حلة الفوارس','حلة العجم',
-      'قرحة البلوش','الجنينة','الثرامد','حفري الجنوبية','الخويرات','مزرع الحرث','المذرية','حرادي الساحل',
-      'الهرم','السلاحة','وادي آمون','حي عاصم','مزغيو','الرميس','أبو النخيل','الشخاخيط'
-    ]
-  },
-  {
-    wilayat: 'صحار',
-    villages: [
-      'الهمبار','الحجرة','صلان','الطريف','الوقيبة','عوتب','الصويحرة','مجز الكبرى','غيل الشبول','العوينات',
-      'العوهي','فلج القبائل','العفيفة','مجيس','الجفرة','الملعب','الخويرية','حلة الشيزاو','حلة الصبارة',
-      'حلة الشيخ حسان','حيبي','الحجال','شام','السهيلة','الخان','الجاهلي'
-    ]
-  },
-  { wilayat: 'السيب', villages: [] },
-  { wilayat: 'المصنعة', villages: [] },
-  { wilayat: 'السويق', villages: [] },
-  { wilayat: 'نزوى', villages: [] },
-  { wilayat: 'بهلاء', villages: [] },
-  { wilayat: 'مطرح', villages: [] },
-  { wilayat: 'بوشر', villages: [] },
-  { wilayat: 'قريات', villages: [] },
-  { wilayat: 'صور', villages: [] },
-  { wilayat: 'إبراء', villages: [] },
-  { wilayat: 'الرستاق', villages: [] },
-  { wilayat: 'نخل', villages: [] },
-  { wilayat: 'العوابي', villages: [] },
-  { wilayat: 'صلالة', villages: [] },
-  { wilayat: 'خصب', villages: [] },
-  { wilayat: 'البريمي', villages: [] }
-];
+const OMAN_LOCATIONS = require('./config/oman-locations.json');
 
 const rooms = new Map();
 const roomCode = () => String(Math.floor(100000 + Math.random() * 900000));
