@@ -143,6 +143,8 @@
       state.code = res.code;
       state.hostToken = res.hostToken;
       localStorage.removeItem('quizPlayer');
+      sessionStorage.removeItem('quizPlayer');
+      sessionStorage.setItem('quizHost',JSON.stringify({code:res.code,hostToken:res.hostToken}));
       localStorage.setItem('quizHost', JSON.stringify({code:res.code,hostToken:res.hostToken}));
       renderRoom(res.room);
       show('hostLobby');
@@ -182,6 +184,8 @@
     state.code = res.room?.code || state.code;
     state.playerToken = res.reconnectToken;
     localStorage.removeItem('quizHost');
+    sessionStorage.removeItem('quizHost');
+    sessionStorage.setItem('quizPlayer',JSON.stringify({code:state.code,reconnectToken:res.reconnectToken}));
     localStorage.setItem('quizPlayer',JSON.stringify({code:state.code,reconnectToken:res.reconnectToken}));
     setRole('player');
     renderRoom(res.room);
