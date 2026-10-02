@@ -155,9 +155,9 @@ function publicRoom(room) {
     status: room.status,
     currentQuestionIndex: room.currentQuestionIndex,
     totalQuestions: room.questions.length,
-    players: [...room.players.values()].map(p => ({ ...p })),
+    players: [...room.players.values()].map(p => ({id:p.id,name:p.name,avatar:p.avatar,score:p.score,correct:p.correct,answered:p.answered,lastPoints:p.lastPoints})),
     pendingCount: room.pending.size,
-    leaderboard: [...room.players.values()].sort((a,b)=>b.score-a.score).map((p,i)=>({...p,rank:i+1}))
+    leaderboard: [...room.players.values()].sort((a,b)=>b.score-a.score).map((p,i)=>({id:p.id,name:p.name,avatar:p.avatar,score:p.score,correct:p.correct,rank:i+1}))
   };
 }
 
@@ -200,6 +200,7 @@ function sendQuestion(room) {
   if (!room || room.currentQuestionIndex >= room.questions.length) return finishQuiz(room);
   clearTimeout(room.timer);
   room.answers.clear();
+  room.lastResult = null;
   room.status = 'question';
   room.startedAt = Date.now();
   const q = room.questions[room.currentQuestionIndex];
@@ -216,6 +217,14 @@ function sendQuestion(room) {
   });
   emitRoom(room);
   room.timer = setTimeout(() => revealAnswer(room), q.time * 1000);
+}
+function restoreQuizState(socket,room){
+  if(room.status==='question'){
+    const q=room.questions[room.currentQuestionIndex];
+    socket.emit('quiz:question',{number:room.currentQuestionIndex+1,total:room.questions.length,question:q.question,options:q.options,category:q.category,difficulty:q.difficulty,timeLimit:q.time*1000,startedAt:room.startedAt,alreadyAnswered:room.players.get(socket.id)?.answered||false});
+    socket.emit('quiz:progress',{answered:room.answers.size,total:room.players.size});
+  }else if(room.status==='result'&&room.lastResult)socket.emit('quiz:result',room.lastResult);
+  else if(room.status==='finished')socket.emit('quiz:finished',publicRoom(room).leaderboard);
 }
 
 function revealAnswer(room) {
@@ -238,12 +247,13 @@ function revealAnswer(room) {
     return p ? {rank:rank+1,name:p.name,avatar:p.avatar,points:p.lastPoints,time:(a.elapsed/1000).toFixed(2)} : null;
   }).filter(Boolean);
 
-  io.to(room.code).emit('quiz:result', {
+  room.lastResult = {
     correctIndex:q.correct,
     correctText:q.options[q.correct],
     podium,
     leaderboard:publicRoom(room).leaderboard
-  });
+  };
+  io.to(room.code).emit('quiz:result', room.lastResult);
   emitRoom(room);
 }
 
@@ -339,7 +349,7 @@ io.on('connection', socket => {
     clearTimeout(room.hostDisconnectTimer);
     room.hostDisconnectTimer=null;
     room.hostSocketId=socket.id; socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='host';
-    ack({ok:true,room:publicRoom(room),pending:pendingList(room)}); emitRoom(room);
+    ack({ok:true,room:publicRoom(room),pending:pendingList(room)}); emitRoom(room);restoreQuizState(socket,room);
   });
 
   socket.on('player:requestJoin', (payload={},ack=()=>{}) => requestJoin(socket,payload,ack));
@@ -363,13 +373,23 @@ io.on('connection', socket => {
     const playerSocket=io.sockets.sockets.get(req.socketId);
     if(!playerSocket){ room.pending.delete(requestId); emitRoom(room); return ack({ok:false,error:'اللاعب غير متصل الآن'}); }
 
-    const player={id:req.socketId,name:req.name,avatar:req.avatar,score:0,correct:0,answered:false,lastPoints:0};
+    const player={id:req.socketId,name:req.name,avatar:req.avatar,score:0,correct:0,answered:false,lastPoints:0,reconnectToken:randomUUID()};
     room.players.set(req.socketId,player); room.pending.delete(requestId);
     playerSocket.join(room.code); playerSocket.data.roomCode=room.code; playerSocket.data.role='player';
     playerSocket.data.pendingRoomCode=null; playerSocket.data.pendingRequestId=null;
-    io.to(req.socketId).emit('join:approved',{player,room:publicRoom(room)});
+    io.to(req.socketId).emit('join:approved',{player,room:publicRoom(room),reconnectToken:player.reconnectToken});
     io.to(room.code).emit('fx:join',{name:player.name,avatar:player.avatar});
     ack({ok:true}); emitRoom(room);
+  });
+
+  socket.on('player:reconnect',({code,reconnectToken}={},ack=()=>{})=>{
+    const room=getRoom(code),entry=room&&[...room.players.entries()].find(([,p])=>p.reconnectToken===reconnectToken);
+    if(!entry)return ack({ok:false,error:'انتهت جلسة اللاعب'});
+    const [oldId,p]=entry;clearTimeout(p.leaveTimer);p.leaveTimer=null;
+    room.players.delete(oldId);room.players.set(socket.id,p);
+    if(room.answers.has(oldId)){room.answers.set(socket.id,room.answers.get(oldId));room.answers.delete(oldId)}
+    p.id=socket.id;socket.join(room.code);socket.data.roomCode=room.code;socket.data.role='player';
+    ack({ok:true,player:p,room:publicRoom(room)});emitRoom(room);restoreQuizState(socket,room);
   });
 
   socket.on('host:rejectJoin', ({requestId}={},ack=()=>{}) => {
@@ -424,10 +444,10 @@ io.on('connection', socket => {
   socket.on('host:reveal', () => {
     const room=getRoom(socket.data.roomCode); if(isHost(socket,room)) revealAnswer(room);
   });
-  socket.on('host:next', () => {
+  socket.on('host:next', (ack=()=>{}) => {
     const room=getRoom(socket.data.roomCode);
-    if(!isHost(socket,room)||room.status!=='result')return;
-    room.currentQuestionIndex++; sendQuestion(room);
+    if(!isHost(socket,room)||room.status!=='result')return ack({ok:false,error:'تعذر المتابعة. انتظر استعادة الاتصال بالمجلس'});
+    room.currentQuestionIndex++;ack({ok:true});sendQuestion(room);
   });
   socket.on('host:finish', () => {
     const room=getRoom(socket.data.roomCode); if(isHost(socket,room)) finishQuiz(room);
@@ -469,7 +489,10 @@ io.on('connection', socket => {
         room.hostDisconnectTimer.unref?.();
       }
     }
-    if(socket.data.role==='player'){ room.players.delete(socket.id); room.answers.delete(socket.id); emitRoom(room); }
+    if(socket.data.role==='player'){
+      const p=room.players.get(socket.id);
+      if(p){p.leaveTimer=setTimeout(()=>{if(room.players.get(socket.id)!==p)return;room.players.delete(socket.id);room.answers.delete(socket.id);emitRoom(room);},2*60*1000);p.leaveTimer.unref?.();}
+    }
     if(room.players.size===0 && room.status==='finished') setTimeout(()=>{
       if(rooms.get(room.code)===room) rooms.delete(room.code);
     }, 30*60*1000);
