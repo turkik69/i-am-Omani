@@ -1,4 +1,4 @@
-const CACHE = 'iam-omani-v45';
+const CACHE = 'iam-omani-v46';
 const CORE = [
   '/', '/index.html', '/styles.css?v=28', '/app.js?v=45',
   '/manifest.json?v=30', '/icon-180.png?v=30', '/icon-192.png?v=30',
@@ -9,11 +9,11 @@ const CORE = [
   '/omani-traditional-loop.mp3?v=35',
   '/oman-villages.js?v=45', '/approval-flow.css', '/approval-flow.js?v=43', '/approval-sync.js?v=40',
   '/village-directory-ui.js?v=1', '/progression-ui.js?v=45', '/local-questions.js?v=45', '/progression-ui.css',
-  '/game-catalog.js?v=41', '/game-catalog.css?v=40', '/game-sfx.js?v=40', '/game-enhancements.js?v=45', '/uno.js?v=45', '/uno.css?v=45',
-  '/omani-characters.css?v=41', '/omani-characters.js?v=41', '/omani-characters-ref.b64?v=38',
+  '/game-catalog.js?v=41', '/game-catalog.css?v=40', '/game-sfx.js?v=40', '/game-enhancements.js?v=46', '/uno.js?v=45', '/uno.css?v=45',
+  '/omani-characters.css?v=46', '/omani-characters.js?v=46', '/omani-characters-ref.b64?v=38',
   '/omani-characters.png?v=40', '/omani-heritage-characters.png?v=40',
   '/omani-traditional.mp3?v=40',
-  '/characters/boy-kumma.jpeg?v=41', '/characters/two-boys-majlis.jpeg?v=41', '/characters/man-khanjar.jpeg?v=41', '/characters/elder-portrait.jpeg?v=41', '/characters/man-white-dishdasha.jpeg?v=41', '/characters/man-bisht.jpeg?v=41', '/characters/two-boys-outdoors.jpeg?v=41', '/characters/boy-purple-glasses.jpeg?v=41', '/characters/seated-omani-man.jpeg?v=41', '/baloot-icon.svg?v=37', '/firebase-auth-ui.css?v=32', '/firebase-auth-ui.js?v=32'
+  '/characters/styled-boy-older.png?v=46', '/characters/styled-boy-younger.png?v=46', '/characters/styled-seated-man.png?v=46', '/characters/styled-khanjar-man.png?v=46', '/baloot-icon.svg?v=37', '/firebase-auth-ui.css?v=32', '/firebase-auth-ui.js?v=32'
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)));
