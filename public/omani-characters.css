@@ -1,0 +1,28 @@
+/* Omani character layer — decorative only, keeps game logic untouched */
+.omani-character{position:absolute;z-index:1;pointer-events:none;user-select:none;filter:drop-shadow(0 16px 24px rgba(0,0,0,.38));opacity:.96}
+.omani-character svg{display:block;width:100%;height:auto}
+.omani-character.elder{width:118px;left:10px;bottom:16px}
+.omani-character.woman{width:108px;right:12px;bottom:18px}
+.omani-character.young{width:105px;right:8px;bottom:12px}
+.omani-character.khanjar{width:86px;right:18px;top:16px;opacity:.9;filter:drop-shadow(0 8px 18px rgba(246,195,91,.28))}
+#homeScreen,#hostCreateScreen,#joinScreen,#questionScreen,#resultScreen,#finalScreen,#displayScreen,.baloot-panel{position:relative;overflow:hidden}
+#homeScreen>.omani-character.elder{width:132px;bottom:6px;left:0;opacity:.88}
+#homeScreen>.omani-character.woman{width:116px;bottom:8px;right:0;opacity:.82}
+#hostCreateScreen>.omani-character.young{width:112px;bottom:8px;right:6px;opacity:.9}
+#joinScreen>.omani-character.woman{width:112px;bottom:6px;right:4px;opacity:.88}
+#questionScreen>.omani-character.elder{width:96px;bottom:8px;left:4px;opacity:.66}
+#resultScreen>.omani-character.khanjar,#finalScreen>.omani-character.khanjar{width:92px;top:18px;right:18px}
+#finalScreen>.omani-character.elder{width:118px;left:8px;bottom:10px;opacity:.9}
+.baloot-panel>.omani-character.elder{width:104px;left:8px;bottom:6px;opacity:.9}
+.baloot-panel>.omani-character.khanjar{width:72px;right:14px;top:12px;opacity:.82}
+#avatars .avatar[data-oman-char] .avatar-token{display:none}
+#avatars .avatar[data-oman-char]{padding:2px;overflow:hidden;background:linear-gradient(145deg,#0c1438,#1b1d58)}
+#avatars .avatar[data-oman-char] svg{width:100%;height:100%;display:block}
+@media(max-width:620px){
+  .omani-character.elder{width:90px}.omani-character.woman{width:82px}.omani-character.young{width:82px}.omani-character.khanjar{width:64px}
+  #homeScreen>.omani-character.elder{width:100px;opacity:.72}
+  #homeScreen>.omani-character.woman{width:88px;opacity:.68}
+  #questionScreen>.omani-character.elder{width:74px;opacity:.5}
+  .baloot-panel>.omani-character.elder{width:78px;opacity:.72}
+  .baloot-panel>.omani-character.khanjar{width:56px}
+}
