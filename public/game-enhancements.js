@@ -23,7 +23,6 @@
     document.querySelectorAll('.game-switcher').forEach(x=>x.remove());
     const picker=$('#competitionCategory');
     if(!picker||picker.querySelector('#unoEntry'))return;
-    const baloot=document.createElement('button');baloot.type='button';baloot.id='balootEntry';baloot.className='category-choice';baloot.innerHTML='<span><img src="/baloot-icon.svg?v=37" alt="" width="42" height="42"></span><b>الورقة • البلوت</b><small>ادخل مجلس الورقة</small>';baloot.onclick=()=>window.IAM_OMANI_BALOUT?.openHost?.();picker.appendChild(baloot);
     const uno=document.createElement('button');
     uno.type='button';uno.id='unoEntry';uno.className='category-choice';
     uno.innerHTML='<span>🟥</span><b>أونو</b><small>لعبة واحدة • 2 إلى 10 لاعبين</small>';
