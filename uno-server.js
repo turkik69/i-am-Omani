@@ -1,0 +1,25 @@
+'use strict';
+const { randomUUID } = require('crypto');
+module.exports = function attachUno(io){
+  const rooms=new Map();
+  const colors=['red','yellow','green','blue'];
+  const code=()=>String(Math.floor(100000+Math.random()*900000));
+  const clean=(v='',n=40)=>String(v).trim().replace(/[<>]/g,'').slice(0,n);
+  function deck(){const d=[];for(const c of colors){d.push({id:randomUUID(),c,v:'0'});for(let n=1;n<=9;n++)for(let k=0;k<2;k++)d.push({id:randomUUID(),c,v:String(n)});for(const v of ['skip','reverse','draw2'])for(let k=0;k<2;k++)d.push({id:randomUUID(),c,v});}for(let k=0;k<4;k++){d.push({id:randomUUID(),c:'wild',v:'wild'});d.push({id:randomUUID(),c:'wild',v:'draw4'});}return d.sort(()=>Math.random()-.5)}
+  function pub(r){return{code:r.code,title:r.title,status:r.status,wilayat:r.wilayat,village:r.village,direction:r.direction,top:r.discard.at(-1)||null,currentColor:r.currentColor,turn:r.turn,players:r.players.map((p,i)=>({id:p.id,name:p.name,avatar:p.avatar,count:p.hand.length,seat:i})),winner:r.winner||null}}
+  function playerView(r,p){return{...pub(r),you:p.id,hand:p.hand}}
+  function emit(r){r.players.forEach(p=>io.to(p.socketId).emit('uno:state',playerView(r,p)));if(r.hostSocketId)io.to(r.hostSocketId).emit('uno:host',pub(r));io.emit('uno:list',[...rooms.values()].filter(x=>x.status==='lobby').map(pub))}
+  function next(r,steps=1){const n=r.players.length;if(!n)return;r.turn=(r.turn+r.direction*steps)%n;if(r.turn<0)r.turn+=n}
+  function drawOne(r){if(!r.draw.length){const top=r.discard.pop();r.draw=r.discard.splice(0).sort(()=>Math.random()-.5);r.discard=[top]}return r.draw.pop()}
+  function canPlay(card,r){const top=r.discard.at(-1);return card.c==='wild'||card.c===r.currentColor||card.v===top.v}
+  io.on('connection',socket=>{
+    socket.on('uno:create',(p={},ack=()=>{})=>{let c=code();while(rooms.has(c))c=code();const r={code:c,title:clean(p.title||'بطولة أونو',50),wilayat:clean(p.wilayat||'عُمان',30),village:clean(p.village||'المجلس',40),hostToken:randomUUID(),hostSocketId:socket.id,status:'lobby',players:[],draw:[],discard:[],turn:0,direction:1,currentColor:null,winner:null};rooms.set(c,r);socket.join(c);ack({ok:true,code:c,hostToken:r.hostToken,room:pub(r)});emit(r)});
+    socket.on('uno:list',()=>socket.emit('uno:list',[...rooms.values()].filter(x=>x.status==='lobby').map(pub)));
+    socket.on('uno:join',(p={},ack=()=>{})=>{const r=rooms.get(String(p.code||''));if(!r||r.status!=='lobby')return ack({ok:false,error:'بطولة أونو غير متاحة'});const name=clean(p.name,28);if(!name)return ack({ok:false,error:'اكتب اسم اللاعب'});const pl={id:randomUUID(),socketId:socket.id,name,avatar:clean(p.avatar||'OM1',12),hand:[]};r.players.push(pl);socket.join(r.code);socket.data.uno={code:r.code,id:pl.id};ack({ok:true,playerId:pl.id,room:pub(r)});emit(r)});
+    socket.on('uno:start',(p={},ack=()=>{})=>{const r=rooms.get(String(p.code||''));if(!r||r.hostToken!==p.hostToken)return ack({ok:false,error:'غير مصرح'});if(r.players.length<2)return ack({ok:false,error:'يحتاج أونو لاعبين على الأقل'});r.draw=deck();r.players.forEach(pl=>pl.hand=Array.from({length:7},()=>r.draw.pop()));let first=r.draw.pop();while(first.c==='wild'){r.draw.unshift(first);first=r.draw.pop()}r.discard=[first];r.currentColor=first.c;r.status='playing';r.turn=0;r.direction=1;r.winner=null;emit(r);ack({ok:true})});
+    socket.on('uno:draw',(p={},ack=()=>{})=>{const r=rooms.get(String(p.code||'')),pl=r?.players.find(x=>x.id===p.playerId);if(!r||!pl||r.players[r.turn]?.id!==pl.id)return ack({ok:false,error:'ليس دورك'});const c=drawOne(r);if(c)pl.hand.push(c);next(r);emit(r);ack({ok:true})});
+    socket.on('uno:play',(p={},ack=()=>{})=>{const r=rooms.get(String(p.code||'')),pl=r?.players.find(x=>x.id===p.playerId);if(!r||!pl||r.status!=='playing'||r.players[r.turn]?.id!==pl.id)return ack({ok:false,error:'ليس دورك'});const i=pl.hand.findIndex(x=>x.id===p.cardId);if(i<0||!canPlay(pl.hand[i],r))return ack({ok:false,error:'لا يمكن لعب هذه الورقة'});const card=pl.hand.splice(i,1)[0];r.discard.push(card);r.currentColor=card.c==='wild'&&colors.includes(p.color)?p.color:(card.c==='wild'?r.currentColor:card.c);if(!pl.hand.length){r.status='finished';r.winner={id:pl.id,name:pl.name,avatar:pl.avatar};emit(r);io.to(r.code).emit('uno:finished',r.winner);return ack({ok:true,finished:true})}
+      if(card.v==='reverse'){r.direction*=-1;if(r.players.length===2)next(r,2);else next(r)}else if(card.v==='skip'){next(r,2)}else if(card.v==='draw2'){next(r);const t=r.players[r.turn];for(let k=0;k<2;k++){const x=drawOne(r);if(x)t.hand.push(x)}next(r)}else if(card.v==='draw4'){next(r);const t=r.players[r.turn];for(let k=0;k<4;k++){const x=drawOne(r);if(x)t.hand.push(x)}next(r)}else next(r);emit(r);io.to(r.code).emit('uno:played',{player:pl.name,card});ack({ok:true})});
+    socket.on('disconnect',()=>{for(const r of rooms.values()){if(r.hostSocketId===socket.id&&r.status==='lobby')setTimeout(()=>{if(r.hostSocketId===socket.id)rooms.delete(r.code)},60000);const p=r.players.find(x=>x.socketId===socket.id);if(p&&r.status==='lobby'){r.players=r.players.filter(x=>x!==p);emit(r)}}});
+  });
+};
