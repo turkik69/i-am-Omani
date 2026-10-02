@@ -24,7 +24,7 @@ let firebaseAdmin = null;
 try {
   const secretsDir = '/etc/secrets';
   const secretNames = fs.existsSync(secretsDir) ? fs.readdirSync(secretsDir) : [];
-  const preferred = ['firebase-service-account.json', ...secretNames.filter(name => name.endsWith('.json'))];
+  const preferred = ['firebase-service-account.json', ...secretNames];
   let serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
     ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
     : null;
@@ -33,7 +33,7 @@ try {
       const candidate = `${secretsDir}/${name}`;
       if (!fs.existsSync(candidate) || !fs.statSync(candidate).isFile()) continue;
       try {
-        const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+        const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8').replace(/^\uFEFF/, ''));
         if (parsed.type === 'service_account' && parsed.project_id === firebaseConfig.projectId) {
           serviceAccount = parsed;
           break;
