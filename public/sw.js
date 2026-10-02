@@ -1,11 +1,11 @@
-const CACHE = 'iam-omani-v53';
+const CACHE = 'iam-omani-v54';
 const CORE = [
-  '/', '/index.html', '/styles.css?v=28', '/app.js?v=53',
+  '/', '/index.html', '/styles.css?v=28', '/app.js?v=54',
   '/manifest.json?v=30', '/icon-180.png?v=30', '/icon-192.png?v=30',
   '/icon-512.png?v=30', '/oman-premium.css?v=6',
   '/oman-home-v2.css?v=30', '/oman-reference-v29.css?v=45',
   '/oman-night-scene.webp?v=29', '/landmarks/sahwa.webp?v=45', '/landmarks/municipality.webp?v=45', '/landmarks/opera.webp?v=45', '/landmarks/riyam.webp?v=45',
-  '/oman-identity.js?v=45', '/oman-music.js?v=33', '/oman-audio-v2.js?v=45',
+  '/oman-identity.js?v=45', '/oman-music.js?v=33', '/oman-audio-v2.js?v=54',
   '/omani-traditional-loop.mp3?v=35',
   '/oman-villages.js?v=45', '/approval-flow.css', '/approval-flow.js?v=53', '/approval-sync.js?v=40',
   '/village-directory-ui.js?v=1', '/progression-ui.js?v=45', '/local-questions.js?v=45', '/progression-ui.css',
