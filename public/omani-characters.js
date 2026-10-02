@@ -59,7 +59,7 @@
 
   async function init(){
     await loadSprite();
-    decorate();avatars();
+    decorate();
     new MutationObserver(()=>{decorate();avatars()}).observe(document.body,{subtree:true,childList:true});
   }
   init();

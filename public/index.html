@@ -18,12 +18,12 @@
   <link rel="stylesheet" href="/styles.css?v=28" />
   <link rel="stylesheet" href="/approval-flow.css" />
   <link rel="stylesheet" href="/progression-ui.css" />
-  <link rel="stylesheet" href="/game-catalog.css?v=37" />
+  <link rel="stylesheet" href="/game-catalog.css?v=40" />
   <link rel="stylesheet" href="/oman-premium.css?v=6" />
   <link rel="stylesheet" href="/oman-home-v2.css?v=28" data-oman-home-final="1" />
   <link rel="stylesheet" href="/firebase-auth-ui.css?v=32" />
   <link rel="stylesheet" href="/oman-reference-v29.css?v=31" />
-  <link rel="stylesheet" href="/omani-characters.css?v=38" />
+  <link rel="stylesheet" href="/omani-characters.css?v=40" />
 </head>
 <body>
   <div class="ambient"><i></i><i></i><i></i><i></i></div><div id="confetti" class="confetti" aria-hidden="true"></div>
@@ -31,7 +31,7 @@
   <main id="app">
     <section id="homeScreen" class="screen active"><div class="hero"><div class="floating-trophy" aria-label="برج الصحوة"></div><div class="eyebrow">I AM OMANI • QUIZ ARENA</div><h1><span>أنا عُماني</span></h1><p>اعرف عُمان… وتحدَّ غيرك في مسابقات حية من ساحات الولايات ومجالس القرى.</p><div class="hero-stats"><div><b>🇴🇲</b><span>عُماني</span></div><div><b>⚡</b><span>مباشر</span></div><div><b>🏅</b><span>تنافسي</span></div></div></div><div class="mode-grid"><button class="mode-card host-card" data-open="hostCreate"><span class="mode-icon purple">🏰</span><div><strong>أنشئ مسابقة</strong><small>اختر الولاية والمجلس وأدر طلبات الدخول</small></div><span class="arrow">←</span></button><button class="mode-card player-card" data-open="join"><span class="mode-icon cyan">🧭</span><div><strong>انضم للمسابقة</strong><small>اختر مجلسًا نشطًا واطلب الانضمام</small></div><span class="arrow">←</span></button><button class="mode-card display-card" data-open="displayJoin"><span class="mode-icon pink">📺</span><div><strong>شاشة العرض</strong><small>للتلفزيون أو البروجكتر</small></div><span class="arrow">←</span></button></div></section>
     <section id="hostCreateScreen" class="screen compact-screen"><div class="panel glow-panel"><button class="back" data-go="home">→ رجوع</button><div class="panel-icon">✦</div><h2>أنشئ مسابقة</h2><p>صمم مسابقتك الخاصة واختر الولاية والمجلس ثم ابدأ التحدي.</p><label>اسم المسابقة</label><input id="quizTitle" maxlength="28" placeholder="مثال: تحدي عُمان" value="تحدي الأبطال" /><button id="createRoomBtn" class="primary-btn"><span>▶</span> ابدأ الإعداد</button></div></section>
-    <section id="joinScreen" class="screen compact-screen"><div class="panel glow-panel"><button class="back" data-go="home">→ رجوع</button><div class="panel-icon">♢</div><h2>انضم للمسابقة</h2><p>أدخل رمز الغرفة واسمك واختر شخصيتك العُمانية.</p><label>رمز المسابقة</label><input id="joinCode" class="code-input" inputmode="numeric" maxlength="6" placeholder="000000" /><label>اسمك</label><input id="playerName" maxlength="28" placeholder="اكتب اسمك" /><label>اختر شخصيتك</label><div id="avatars" class="avatars"><button class="avatar selected">🦁</button><button class="avatar">🦅</button><button class="avatar">🐪</button><button class="avatar">🐬</button><button class="avatar">⛰️</button><button class="avatar">🏰</button><button class="avatar">🗡️</button><button class="avatar">⛵</button></div><button id="joinRoomBtn" class="primary-btn cyan-btn"><span>⚔</span> ابدأ المنافسة</button></div></section>
+    <section id="joinScreen" class="screen compact-screen"><div class="panel glow-panel"><button class="back" data-go="home">→ رجوع</button><div class="panel-icon">♢</div><h2>انضم للمسابقة</h2><p>أدخل رمز الغرفة واسمك واختر شخصيتك العُمانية.</p><label>رمز المسابقة</label><input id="joinCode" class="code-input" inputmode="numeric" maxlength="6" placeholder="000000" /><label>اسمك</label><input id="playerName" maxlength="28" placeholder="اكتب اسمك" /><label>اختر شخصيتك</label><div id="avatars" class="avatars"><button class="avatar selected" data-character="OM1" aria-label="عُماني بالمصر" aria-pressed="true"><span class="omani-portrait portrait-0"></span><small>عُماني بالمصر</small></button><button class="avatar" data-character="OM2" aria-label="عُماني بالكُمّة" aria-pressed="false"><span class="omani-portrait portrait-1"></span><small>عُماني بالكُمّة</small></button><button class="avatar" data-character="OM3" aria-label="عُمانية بالزي المطرز" aria-pressed="false"><span class="omani-portrait portrait-2"></span><small>عُمانية بالزي المطرز</small></button><button class="avatar" data-character="OM4" aria-label="عُمانية بالعباءة" aria-pressed="false"><span class="omani-portrait portrait-3"></span><small>عُمانية بالعباءة</small></button><button class="avatar" data-character="OM5" aria-label="الجد العُماني" aria-pressed="false"><span class="omani-portrait portrait-4"></span><small>الجد العُماني</small></button><button class="avatar" data-character="OM6" aria-label="الطفل العُماني" aria-pressed="false"><span class="omani-portrait portrait-5"></span><small>الطفل العُماني</small></button><button class="avatar" data-character="OM7" aria-label="عُمانية بالزي التراثي" aria-pressed="false"><span class="omani-portrait portrait-6"></span><small>عُمانية بالزي التراثي</small></button></div><button id="joinRoomBtn" class="primary-btn cyan-btn"><span>⚔</span> ابدأ المنافسة</button></div></section>
     <section id="displayJoinScreen" class="screen compact-screen"><div class="panel glow-panel"><button class="back" data-go="home">→ رجوع</button><div class="panel-icon">▣</div><h2>شاشة العرض</h2><p>أدخل رمز الساحة لفتح العرض على التلفزيون أو البروجكتر.</p><input id="displayCode" class="code-input" inputmode="numeric" maxlength="6" placeholder="000000" /><button id="displayJoinBtn" class="primary-btn pink-btn">فتح شاشة العرض</button></div></section>
     <section id="hostLobbyScreen" class="screen"><div class="game-head"><div><small>أنت المضيف والمشرف</small><h2 id="hostRoomTitle">المسابقة</h2></div><div class="room-code"><small>رمز الدخول</small><b id="hostCode">------</b><button id="copyCodeBtn">نسخ</button></div></div><div class="dashboard-grid"><div class="panel"><div class="section-title"><h3>👥 اللاعبون المقبولون</h3><span id="hostPlayersCount" class="pill">0</span></div><div id="hostPlayers" class="players-grid empty-state">بانتظار اللاعبين…</div></div><div class="panel"><div class="section-title"><h3>📚 بنك الأسئلة</h3><button id="toggleEditorBtn" class="mini-btn">تعديل</button></div><p class="muted"><span id="questionCount">6</span> أسئلة جاهزة. يمكنك تعديلها قبل البداية.</p><div id="questionEditor" class="question-editor hidden"><div id="questionCards"></div><button id="addQuestionBtn" class="secondary-btn">＋ إضافة سؤال</button><button id="saveQuestionsBtn" class="primary-btn small-btn">حفظ بنك الأسئلة</button></div><button id="startQuizBtn" class="primary-btn mega-btn">🎮 ابدأ المسابقة</button><button id="openDisplayBtn" class="secondary-btn">📺 فتح شاشة العرض</button></div></div></section>
     <section id="playerLobbyScreen" class="screen compact-screen"><div class="panel lobby-player"><div id="myAvatar" class="big-avatar">🏰</div><div class="pulse-ring"></div><h2>تم قبولك في المجلس!</h2><p id="myName">جاهز للتحدي؟</p><div class="waiting"><span></span> بانتظار المضيف لبدء المسابقة</div><div class="room-code slim"><small>رمز الساحة</small><b id="playerCode">------</b></div><div id="playerLobbyList" class="mini-player-list"></div></div></section>
@@ -42,16 +42,17 @@
   </main><div id="toast" class="toast"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/oman-music.js?v=33"></script>
-  <script src="/app.js?v=30"></script>
-  <script src="/oman-identity.js?v=30"></script>
-  <script src="/oman-audio-v2.js?v=35"></script>
+  <script src="/game-sfx.js?v=40"></script>
+  <script src="/app.js?v=40"></script>
+  <script src="/oman-identity.js?v=40"></script>
+  <script src="/oman-audio-v2.js?v=40"></script>
   <script src="/oman-villages.js?v=1"></script>
-  <script src="/approval-flow.js?v=39"></script>
-  <script src="/approval-sync.js?v=39"></script>
+  <script src="/approval-flow.js?v=40"></script>
+  <script src="/approval-sync.js?v=40"></script>
   <script src="/village-directory-ui.js?v=1"></script>
-  <script src="/progression-ui.js"></script>
-  <script src="/game-catalog.js?v=37"></script>
-  <script src="/game-enhancements.js?v=37"></script>
-  <script src="/omani-characters.js?v=38"></script>
+  <script src="/progression-ui.js?v=40"></script>
+  <script src="/game-catalog.js?v=40"></script>
+
+  <script src="/omani-characters.js?v=40"></script>
   <script src="/firebase-auth-ui.js?v=32"></script>
 </body></html>

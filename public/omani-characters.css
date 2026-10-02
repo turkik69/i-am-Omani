@@ -32,3 +32,26 @@
   .baloot-panel>.omani-character.elder{width:98px;height:188px;left:-16px;bottom:-20px;opacity:.62}
   .baloot-panel>.omani-character.khanjar{width:54px}
 }
+/* Four character portraits share one asset and stay consistent across the live game. */
+.omani-portrait{display:inline-block;flex:none;width:44px;height:44px;vertical-align:middle;border-radius:50%;background-image:url('/omani-characters.png?v=40');background-repeat:no-repeat;background-size:400% auto;background-position-y:center;filter:drop-shadow(0 0 8px rgba(39,212,255,.25))}
+.omani-portrait.portrait-0{background-position-x:0%}
+.omani-portrait.portrait-1{background-position-x:33.333%}
+.omani-portrait.portrait-2{background-position-x:66.667%}
+.omani-portrait.portrait-3{background-position-x:100%}
+#avatars .avatar{aspect-ratio:auto;min-height:108px!important;padding:8px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff}
+#avatars .avatar .omani-portrait{width:min(70px,17vw);height:min(70px,17vw)}
+#avatars .avatar small{font:700 10px/1.25 Cairo,system-ui,sans-serif;white-space:normal}
+#myAvatar.big-avatar{width:132px;height:132px;margin:0 auto 12px;font-size:0}
+#myAvatar .omani-portrait{width:100%;height:100%}
+.player-chip .omani-portrait,.pending-avatar .omani-portrait,.avatar-mini .omani-portrait,.board-row .omani-portrait,.display-board .omani-portrait{width:42px;height:42px}
+.pending-avatar{width:48px;height:48px;overflow:visible}
+.winner>span .omani-portrait{width:68px;height:68px}
+.display-players .omani-portrait{width:54px;height:54px}
+.board-row .omani-portrait,.display-board .omani-portrait{margin-inline:4px}
+#musicBtn.music-on{border-color:rgba(48,224,255,.85);box-shadow:0 0 18px rgba(48,224,255,.3)}
+@media(max-width:420px){#avatars .avatar{min-height:94px!important}#avatars .avatar small{font-size:9px}.winner>span .omani-portrait{width:50px;height:50px}}
+
+.omani-portrait.portrait-4,.omani-portrait.portrait-5,.omani-portrait.portrait-6{background-image:url('/omani-heritage-characters.png?v=40');background-size:300% auto}
+.omani-portrait.portrait-4{background-position-x:0%}
+.omani-portrait.portrait-5{background-position-x:50%}
+.omani-portrait.portrait-6{background-position-x:100%}

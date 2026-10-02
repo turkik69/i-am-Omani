@@ -38,13 +38,13 @@
     list.forEach(r => seen.add(r.id));
     if (fresh.length) {
       const name = fresh[fresh.length - 1]?.name || 'لاعب جديد';
-      try { window.IAMSFX?.play?.('join'); } catch {}
+      try { window.GameSFX?.play?.('join'); } catch {}
       try { window.toast?.(`🛡️ طلب انضمام جديد من ${name}`); } catch {}
     }
 
     box.innerHTML = list.map(r => `
       <div class="pending-card" data-request-id="${esc(r.id)}">
-        <div class="pending-avatar">${esc(r.avatar || '🇴🇲')}</div>
+        <div class="pending-avatar">${window.avatarHTML?.(r.avatar || '🇴🇲') || '🇴🇲'}</div>
         <div class="pending-info"><strong>${esc(r.name)}</strong><small>يرغب بالانضمام إلى المسابقة</small></div>
         <div class="pending-actions">
           <button type="button" class="approve-btn" data-approve="${esc(r.id)}">قبول</button>

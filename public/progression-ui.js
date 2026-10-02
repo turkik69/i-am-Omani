@@ -141,13 +141,14 @@
     fields.insertAdjacentHTML('beforebegin',`
       <div class="competition-setup">
         <label>اتجاه المسابقة</label>
-        <div id="competitionCategory" class="category-picker">${CATEGORIES.map(c=>`<button type="button" data-cat="${c.id}" class="category-choice ${c.id==='mixed'?'selected':''}"><span>${c.icon}</span><b>${c.name}</b><small>${c.desc}</small></button>`).join('')}</div>
+        <div id="competitionCategory" class="category-picker">${CATEGORIES.map(c=>`<button type="button" data-cat="${c.id}" class="category-choice ${c.id==='mixed'?'selected':''}"><span>${c.icon}</span><b>${c.name}</b><small>${c.desc}</small></button>`).join('')}<button type="button" id="competitionBaloot" class="category-choice baloot-category"><span>🃏</span><b>الورقة • البلوت</b><small>طاولة من أربعة لاعبين، صن وحكم</small></button></div>
         <div class="setup-row">
           <label>المستوى<select id="competitionDifficulty"><option>سهل</option><option selected>متوسط</option><option>متقدم</option><option>نخبة</option></select></label>
           <label>نمط اللعب<select id="competitionMode"><option>سريعة</option><option selected>عادية</option><option>بطولة</option><option>إقصائية</option></select></label>
         </div>
       </div>`);
     $$('#competitionCategory [data-cat]').forEach(b=>b.onclick=()=>{$$('#competitionCategory [data-cat]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');currentCategory=b.dataset.cat;});
+    $('#competitionBaloot').onclick=()=>window.IAM_OMANI_BALOUT?.openHost?.();
     $('#competitionDifficulty').onchange=e=>currentDifficulty=e.target.value;
     $('#competitionMode').onchange=e=>currentMode=e.target.value;
   }

@@ -177,7 +177,7 @@
     state.code = res.room?.code || state.code;
     setRole('player');
     renderRoom(res.room);
-    document.querySelector('#myAvatar').textContent = state.avatar;
+    document.querySelector('#myAvatar').innerHTML = avatarHTML(state.avatar);
     document.querySelector('#myName').textContent = `${res.player?.name || ''} — تم قبولك في المجلس`;
     document.querySelector('#playerCode').textContent = state.code || '------';
     show('playerLobby');
@@ -204,7 +204,7 @@
     }
     pendingRequests.innerHTML = items.map(r => `
       <div class="pending-card">
-        <div class="pending-avatar">${esc(r.avatar)}</div>
+        <div class="pending-avatar">${avatarHTML(r.avatar)}</div>
         <div class="pending-info"><strong>${esc(r.name)}</strong><small>بانتظار موافقتك</small></div>
         <div class="pending-actions">
           <button type="button" class="approve-btn" data-approve="${esc(r.id)}">قبول</button>
