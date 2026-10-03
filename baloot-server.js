@@ -81,9 +81,14 @@ module.exports = function registerBaloot(io) {
 
   io.on('connection',socket=>{
     socket.on('baloot:list',()=>socket.emit('baloot:rooms',[...rooms.values()].filter(r=>r.status==='lobby').map(roomPublic)));
-    socket.on('baloot:create',(d={},cb=()=>{})=>{
+    socket.on('baloot:create',async(d={},cb=()=>{})=>{
+      let identity;
+      try{identity=await global.__IAM_OMANI_VERIFY_ACCOUNT__(d.idToken);}catch(error){return cb({ok:false,error:error.message});}
+      if(rooms.size>=100)return cb({ok:false,error:'بلغ عدد المجالس المفتوحة الحد المؤقت'});
+      if([...rooms.values()].some(room=>room.hostUid===identity.uid&&room.status!=='round-result'))
+        return cb({ok:false,error:'لديك مجلس بلوت نشط بالفعل'});
       let c=code();while(rooms.has(c))c=code();const token=require('crypto').randomUUID();
-      const r={code:c,hostSocket:socket.id,hostToken:token,title:clean(d.title||'الورقة • البلوت',60),wilayat:clean(d.wilayat||'مسقط'),village:clean(d.village||'المجلس'),variant:['sun','hokm','mixed'].includes(d.variant)?d.variant:'mixed',status:'lobby',players:new Map(),pending:new Map(),tables:new Map(),round:0,waiting:[]};
+      const r={code:c,hostSocket:socket.id,hostToken:token,hostUid:identity.uid,title:clean(d.title||'الورقة • البلوت',60),wilayat:clean(d.wilayat||'مسقط'),village:clean(d.village||'المجلس'),variant:['sun','hokm','mixed'].includes(d.variant)?d.variant:'mixed',status:'lobby',players:new Map(),pending:new Map(),tables:new Map(),round:0,waiting:[]};
       rooms.set(c,r);socket.join(`baloot:${c}`);cb({ok:true,code:c,hostToken:token,room:roomPublic(r)});emitRoom(r);
     });
     socket.on('baloot:join-request',async(d={},cb=()=>{})=>{
@@ -91,10 +96,26 @@ module.exports = function registerBaloot(io) {
       let identity;try{identity=global.__IAM_OMANI_VERIFY_ACCOUNT__?await global.__IAM_OMANI_VERIFY_ACCOUNT__(d.idToken):{uid:null,data:{username:d.name}};}catch(e){return cb({ok:false,error:e.message});}
       const name=clean(identity.data.nickname||identity.data.username,28);if(!name)return cb({ok:false,error:'أكمل ملفك الشخصي أولًا'});
       if([...r.pending.values(),...r.players.values()].some(x=>x.uid&&x.uid===identity.uid))return cb({ok:false,error:'طلبك موجود في المجلس'});
-      const id=require('crypto').randomUUID();const p={id,uid:identity.uid,name,avatar:clean(d.avatar||'OM1',8),hasPhoto:!!identity.data.photoData,socket:socket.id,approved:false,score:0};r.pending.set(id,p);socket.data.balootPending={code:r.code,id};cb({ok:true,pending:true});emitRoom(r);
+      const id=require('crypto').randomUUID();const p={id,uid:identity.uid,name,avatar:clean(d.avatar||'OM1',8),hasPhoto:!!identity.data.photoData,socket:socket.id,approved:false,score:0,reconnectToken:require('crypto').randomUUID()};r.pending.set(id,p);socket.data.balootPending={code:r.code,id};cb({ok:true,pending:true});emitRoom(r);
     });
     socket.on('baloot:approve',(d={},cb=()=>{})=>{
-      const r=rooms.get(String(d.code||''));if(!hostOk(socket,r,d.hostToken))return cb({ok:false});const p=r.pending.get(d.playerId);if(!p)return cb({ok:false});r.pending.delete(p.id);p.approved=true;r.players.set(p.id,p);io.sockets.sockets.get(p.socket)?.join(`baloot:${r.code}`);io.to(p.socket).emit('baloot:approved',{code:r.code,playerId:p.id,room:roomPublic(r)});cb({ok:true});emitRoom(r);
+      const r=rooms.get(String(d.code||''));if(!hostOk(socket,r,d.hostToken))return cb({ok:false});const p=r.pending.get(d.playerId);if(!p)return cb({ok:false});r.pending.delete(p.id);p.approved=true;r.players.set(p.id,p);io.sockets.sockets.get(p.socket)?.join(`baloot:${r.code}`);io.to(p.socket).emit('baloot:approved',{code:r.code,playerId:p.id,reconnectToken:p.reconnectToken,room:roomPublic(r)});cb({ok:true});emitRoom(r);
+    });
+    socket.on('baloot:reconnect',async(d={},cb=()=>{})=>{
+      const r=rooms.get(String(d.code||''));
+      if(!r)return cb({ok:false,error:'انتهى المجلس'});
+      let identity;
+      try{identity=await global.__IAM_OMANI_VERIFY_ACCOUNT__(d.idToken);}catch(error){return cb({ok:false,error:error.message});}
+      if(d.hostToken&&r.hostToken===d.hostToken&&r.hostUid===identity.uid){
+        r.hostSocket=socket.id;socket.join(`baloot:${r.code}`);
+        cb({ok:true,role:'host',room:roomPublic(r)});emitRoom(r);return;
+      }
+      const p=[...r.players.values()].find(x=>x.reconnectToken===d.reconnectToken&&x.uid===identity.uid);
+      if(!p)return cb({ok:false,error:'تعذر استعادة المقعد'});
+      p.socket=socket.id;socket.join(`baloot:${r.code}`);
+      cb({ok:true,role:'player',playerId:p.id,room:roomPublic(r)});
+      for(const t of r.tables.values())if(t.seats.includes(p.id))emitTable(r,t);
+      emitRoom(r);
     });
     socket.on('baloot:reject',(d={},cb=()=>{})=>{const r=rooms.get(String(d.code||''));if(!hostOk(socket,r,d.hostToken))return cb({ok:false});const p=r.pending.get(d.playerId);if(p)io.to(p.socket).emit('baloot:rejected');r.pending.delete(d.playerId);cb({ok:true});emitRoom(r);});
     socket.on('baloot:start',(d={},cb=()=>{})=>{
