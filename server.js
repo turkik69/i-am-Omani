@@ -134,8 +134,70 @@ function findLocation(wilayat, village) {
   const v = clean(village, 50);
   const entry = OMAN_LOCATIONS.find(x => x.wilayat === w);
   if (!entry || !v) return null;
-  return { wilayat: entry.wilayat, village: v };
+  return { governorate: entry.governorate, wilayat: entry.wilayat, village: v };
 }
+
+async function verifiedAccount(token) {
+  if (!firebaseAdmin || typeof token !== 'string' || !token) throw new Error('سجل الدخول أولًا');
+  const identity = await admin.auth().verifyIdToken(token);
+  if (!identity.email_verified) throw new Error('أكد بريدك الإلكتروني أولًا');
+  const ref = admin.firestore().collection('users').doc(identity.uid);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error('الملف الشخصي غير موجود');
+  return { uid: identity.uid, ref, data: snap.data() };
+}
+function publicAccount(uid, data) {
+  const stats = data.publicStats || {};
+  const categories = stats.categories || {};
+  const strengths = Object.entries(categories)
+    .sort((a,b) => (b[1].correct || 0) - (a[1].correct || 0))
+    .slice(0, 5).map(([name, value]) => ({name, correct:value.correct || 0, answered:value.answered || 0}));
+  return { uid, username:data.username, nickname:data.nickname || '', name:data.nickname || data.username,
+    avatar:data.avatar || 'OM1', hasPhoto:!!data.photoData,
+    level:Math.max(1,Number(data.level)||1), xp:Math.max(0,Number(data.xp)||0),
+    stats:{games:stats.games||0,wins:stats.wins||0,correct:stats.correct||0,
+      totalScore:stats.totalScore||0,bestScore:stats.bestScore||0}, strengths };
+}
+const authToken = req => (req.get('authorization') || '').replace(/^Bearer\s+/i,'');
+app.get('/api/profile/me', async (req,res) => {
+  res.set('Cache-Control','no-store');
+  try { const a=await verifiedAccount(authToken(req));res.json({...publicAccount(a.uid,a.data),photoData:a.data.photoData||null}); }
+  catch(e){res.status(401).json({error:e.message});}
+});
+app.put('/api/profile/me', async (req,res) => {
+  res.set('Cache-Control','no-store');
+  try {
+    const a=await verifiedAccount(authToken(req));
+    const nickname=clean(req.body?.nickname,28).replace(/[\x00-\x1f]/g,'').trim();
+    if(nickname && nickname.length<2) return res.status(400).json({error:'اللقب من حرفين إلى 28 حرفًا'});
+    const patch={nickname};
+    if(req.body?.photoData !== undefined) {
+      const photo=req.body.photoData;
+      if(photo!==null && (typeof photo!=='string' || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(photo) || photo.length>180000))
+        return res.status(400).json({error:'الصورة غير مدعومة أو كبيرة جدًا'});
+      patch.photoData=photo;
+    }
+    await a.ref.set(patch,{merge:true});
+    res.json({...publicAccount(a.uid,{...a.data,...patch}),photoData:patch.photoData===undefined?a.data.photoData||null:patch.photoData});
+  } catch(e){res.status(401).json({error:e.message});}
+});
+app.get('/api/profile/:uid/photo', async (req,res) => {
+  try {
+    const snap=await admin.firestore().collection('users').doc(req.params.uid).get();
+    const match=snap.data()?.photoData?.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+    if(!match) return res.sendStatus(404);
+    res.set('Cache-Control','public,max-age=300');
+    res.type('image/'+match[1]).send(Buffer.from(match[2],'base64'));
+  } catch {res.sendStatus(404);}
+});
+app.get('/api/profile/:uid', async (req,res) => {
+  res.set('Cache-Control','no-store');
+  if(!firebaseAdmin || !/^[A-Za-z0-9_-]{10,128}$/.test(req.params.uid)) return res.sendStatus(404);
+  try { const snap=await admin.firestore().collection('users').doc(req.params.uid).get();
+    if(!snap.exists)return res.sendStatus(404);
+    res.json(publicAccount(req.params.uid,snap.data()));
+  } catch {res.sendStatus(503);}
+});
 
 function locationKey(location) {
   return `${location?.wilayat || ''}:${location?.village || ''}`;
@@ -155,15 +217,15 @@ function publicRoom(room) {
     status: room.status,
     currentQuestionIndex: room.currentQuestionIndex,
     totalQuestions: room.questions.length,
-    players: [...room.players.values()].map(p => ({id:p.id,name:p.name,avatar:p.avatar,score:p.score,correct:p.correct,answered:p.answered,lastPoints:p.lastPoints})),
+    players: [...room.players.values()].map(p => ({id:p.id,uid:p.uid,name:p.name,avatar:p.avatar,hasPhoto:p.hasPhoto,score:p.score,correct:p.correct,answered:p.answered,lastPoints:p.lastPoints})),
     pendingCount: room.pending.size,
-    leaderboard: [...room.players.values()].sort((a,b)=>b.score-a.score).map((p,i)=>({id:p.id,name:p.name,avatar:p.avatar,score:p.score,correct:p.correct,rank:i+1}))
+    leaderboard: [...room.players.values()].sort((a,b)=>b.score-a.score).map((p,i)=>({id:p.id,uid:p.uid,name:p.name,avatar:p.avatar,hasPhoto:p.hasPhoto,score:p.score,correct:p.correct,rank:i+1}))
   };
 }
 
 function pendingList(room) {
   return [...room.pending.values()].map(r => ({
-    id:r.id, name:r.name, avatar:r.avatar, requestedAt:r.requestedAt
+    id:r.id, uid:r.uid, name:r.name, avatar:r.avatar, hasPhoto:r.hasPhoto, requestedAt:r.requestedAt
   }));
 }
 
@@ -183,10 +245,23 @@ function activeCouncils() {
 }
 
 function broadcastCouncils() { io.emit('councils:update', activeCouncils()); }
+function activityRanking(){
+  const groups={governorates:new Map(),wilayats:new Map(),villages:new Map()};
+  for(const room of rooms.values()){
+    if(room.status==='finished')continue;
+    const n=room.players.size,loc=room.location;
+    for(const [map,label] of [[groups.governorates,loc.governorate],[groups.wilayats,loc.wilayat],[groups.villages,loc.village]]){
+      const item=map.get(label)||{name:label,players:0,rooms:0};
+      item.players+=n;item.rooms++;map.set(label,item);
+    }
+  }
+  return Object.fromEntries(Object.entries(groups).map(([kind,map])=>[kind,[...map.values()].sort((a,b)=>b.players-a.players||b.rooms-a.rooms||a.name.localeCompare(b.name,'ar')).slice(0,10)]));
+}
 function emitRoom(room) {
   io.to(room.code).emit('room:update', publicRoom(room));
   if (room.hostSocketId) io.to(room.hostSocketId).emit('host:pending', pendingList(room));
   broadcastCouncils();
+  io.emit('activity:update',activityRanking());
 }
 function getRoom(code) { return rooms.get(String(code || '').trim()); }
 function isHost(socket, room) { return room && room.hostSocketId === socket.id; }
@@ -241,11 +316,15 @@ function revealAnswer(room) {
     const pts = scoreAnswer(a.elapsed, q.time * 1000, rank);
     p.score += pts; p.correct += 1; p.lastPoints = pts;
   });
+  for(const [id,p] of room.players) {
+    const item=p.categories[q.category]||(p.categories[q.category]={answered:0,correct:0});
+    if(room.answers.has(id)){item.answered++;if(room.answers.get(id).answer===q.correct)item.correct++;}
+  }
 
   room.status = 'result';
   const podium = correct.map(([id,a],rank)=>{
     const p=room.players.get(id);
-    return p ? {rank:rank+1,name:p.name,avatar:p.avatar,points:p.lastPoints,time:(a.elapsed/1000).toFixed(2)} : null;
+    return p ? {rank:rank+1,uid:p.uid,name:p.name,avatar:p.avatar,hasPhoto:p.hasPhoto,points:p.lastPoints,time:(a.elapsed/1000).toFixed(2)} : null;
   }).filter(Boolean);
 
   room.lastResult = {
@@ -284,10 +363,30 @@ function finishQuiz(room) {
   if (!room.persisted) {
     const now = new Date().toISOString();
     board.forEach(p => {
-      const key = p.name.toLowerCase();
+      const key = p.uid||p.name.toLowerCase();
       const s = persistent.players[key] || { name:p.name, avatar:p.avatar, games:0, wins:0, totalScore:0, bestScore:0, correct:0 };
-      s.name=p.name; s.avatar=p.avatar; s.games++; s.totalScore+=p.score; s.bestScore=Math.max(s.bestScore,p.score); s.correct+=p.correct; if(p.rank===1)s.wins++;
+      s.uid=p.uid;s.name=p.name; s.avatar=p.avatar; s.games++; s.totalScore+=p.score; s.bestScore=Math.max(s.bestScore,p.score); s.correct+=p.correct; if(p.rank===1)s.wins++;
       persistent.players[key]=s;
+      if(firebaseAdmin&&p.uid){
+        const categories=room.players.get(p.id)?.categories||{};
+        const increments={};
+        for(const [category,value] of Object.entries(categories)){
+          const safeCategory=category.replace(/[.\[\]*/]/g,'_').slice(0,30);
+          increments[`publicStats.categories.${safeCategory}.answered`]=admin.firestore.FieldValue.increment(value.answered);
+          increments[`publicStats.categories.${safeCategory}.correct`]=admin.firestore.FieldValue.increment(value.correct);
+        }
+        admin.firestore().collection('users').doc(p.uid).update({
+          'publicStats.games':admin.firestore.FieldValue.increment(1),
+          'publicStats.wins':admin.firestore.FieldValue.increment(p.rank===1?1:0),
+          'publicStats.correct':admin.firestore.FieldValue.increment(p.correct),
+          'publicStats.totalScore':admin.firestore.FieldValue.increment(p.score),
+          'publicStats.bestScore':admin.firestore.FieldValue.increment(0),
+          ...increments
+        }).then(async()=>{if(p.score)await admin.firestore().runTransaction(async tx=>{
+          const ref=admin.firestore().collection('users').doc(p.uid),snap=await tx.get(ref);
+          tx.update(ref,{'publicStats.bestScore':Math.max(p.score,snap.data()?.publicStats?.bestScore||0)});
+        })}).catch(e=>console.error('Stats save failed:',e.message));
+      }
     });
     persistent.games.unshift({
       id:randomUUID(), room:room.code, title:room.title, roomIdentity:room.roomIdentity,
@@ -308,20 +407,23 @@ function rejectAllPending(room, message='بدأت المسابقة قبل قبو
   room.pending.clear();
 }
 
-function requestJoin(socket, payload={}, ack=()=>{}) {
+async function requestJoin(socket, payload={}, ack=()=>{}) {
   const room=getRoom(payload.code);
   if(!room) return ack({ok:false,error:'المجلس غير موجود أو لم يعد متاحًا'});
   if(room.status!=='lobby') return ack({ok:false,error:'بدأت المسابقة بالفعل، اختر مجلسًا آخر'});
-  const name=sanitizeName(payload.name);
-  if(!name) return ack({ok:false,error:'اكتب اسم اللاعب'});
-  const duplicatePlayer=[...room.players.values()].some(p=>p.name.toLowerCase()===name.toLowerCase());
-  const duplicatePending=[...room.pending.values()].some(p=>p.name.toLowerCase()===name.toLowerCase());
-  if(duplicatePlayer||duplicatePending) return ack({ok:false,error:'هذا الاسم مستخدم في المجلس'});
+  let account;
+  try{account=await verifiedAccount(payload.idToken);}
+  catch(e){return ack({ok:false,error:e.message});}
+  const name=sanitizeName(account.data.nickname||account.data.username);
+  if(!name)return ack({ok:false,error:'أكمل ملفك الشخصي أولًا'});
+  const duplicatePlayer=[...room.players.values()].some(p=>p.uid===account.uid);
+  const duplicatePending=[...room.pending.values()].some(p=>p.uid===account.uid);
+  if(duplicatePlayer||duplicatePending) return ack({ok:false,error:'طلبك موجود في المجلس'});
   if(socket.data.pendingRoomCode) return ack({ok:false,error:'لديك طلب انضمام قيد الانتظار بالفعل'});
 
   const req={
-    id:randomUUID(), socketId:socket.id, name,
-    avatar:clean(payload.avatar||'🇴🇲',8), requestedAt:Date.now()
+    id:randomUUID(), socketId:socket.id,uid:account.uid,name,
+    avatar:clean(account.data.avatar||payload.avatar||'OM1',8),hasPhoto:!!account.data.photoData,requestedAt:Date.now()
   };
   room.pending.set(req.id,req);
   socket.data.pendingRoomCode=room.code;
@@ -333,6 +435,7 @@ function requestJoin(socket, payload={}, ack=()=>{}) {
 
 io.on('connection', socket => {
   socket.emit('councils:update', activeCouncils());
+  socket.emit('activity:update',activityRanking());
 
   socket.on('councils:list', (ack=()=>{}) => ack({ok:true,councils:activeCouncils()}));
 
@@ -387,7 +490,7 @@ io.on('connection', socket => {
     const playerSocket=io.sockets.sockets.get(req.socketId);
     if(!playerSocket){ room.pending.delete(requestId); emitRoom(room); return ack({ok:false,error:'اللاعب غير متصل الآن'}); }
 
-    const player={id:req.socketId,name:req.name,avatar:req.avatar,score:0,correct:0,answered:false,lastPoints:0,reconnectToken:randomUUID()};
+    const player={id:req.socketId,uid:req.uid,name:req.name,avatar:req.avatar,hasPhoto:req.hasPhoto,score:0,correct:0,categories:{},answered:false,lastPoints:0,reconnectToken:randomUUID()};
     room.players.set(req.socketId,player); room.pending.delete(requestId);
     playerSocket.join(room.code); playerSocket.data.roomCode=room.code; playerSocket.data.role='player';
     playerSocket.data.pendingRoomCode=null; playerSocket.data.pendingRequestId=null;
@@ -515,6 +618,7 @@ io.on('connection', socket => {
 
 app.get('/api/health', (req,res)=>res.json({ok:true,rooms:rooms.size,time:new Date().toISOString()}));
 app.get('/api/leaderboard', (req,res)=>res.json(Object.values(persistent.players).sort((a,b)=>b.totalScore-a.totalScore).slice(0,50)));
+app.get('/api/activity', (req,res)=>res.json(activityRanking()));
 app.get('/api/oman-locations', (req,res)=>res.json(OMAN_LOCATIONS));
 app.get('/api/active-councils', (req,res)=>res.json(activeCouncils()));
 app.get('*', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
