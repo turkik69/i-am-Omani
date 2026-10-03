@@ -107,7 +107,8 @@
   function renderCouncils(list) {
     councils = Array.isArray(list) ? list : [];
     if (!councils.length) {
-      activeCouncils.innerHTML = '<div class="empty-state">لا توجد مجالس بانتظار لاعبين حاليًا. يمكنك الدخول بالرمز إذا أرسل لك المضيف رمزًا.</div>';
+      activeCouncils.innerHTML = '<div class="empty-state">لا توجد مجالس بانتظار لاعبين الآن. <button type="button" id="emptyPracticeBtn" class="secondary-btn">جرّب التدريب الفردي عبر الإنترنت</button></div>';
+      activeCouncils.querySelector('#emptyPracticeBtn')?.addEventListener('click',()=>window.IAM_OMANI_PRACTICE?.open());
       return;
     }
     activeCouncils.innerHTML = councils.map(c => `
@@ -137,7 +138,7 @@
     const village = hostMajlis.value === '__other__' ? hostMajlisOther.value.trim() : hostMajlis.value.trim();
     if (!wilayat) return toast('اختر الولاية أولًا');
     if (!village) return toast('اختر المجلس أو القرية');
-    socket.emit('host:create', { title, wilayat, village }, res => {
+    socket.emit('host:create', { title, wilayat, village, category: document.querySelector('#competitionCategory .selected')?.dataset.cat || 'mixed', difficulty: document.querySelector('#competitionDifficulty')?.value || 'متوسط', mode: document.querySelector('#competitionMode')?.value || 'عادية' }, res => {
       if (!res.ok) return toast(res.error || 'تعذر إنشاء المسابقة');
       setRole('host');
       state.code = res.code;
