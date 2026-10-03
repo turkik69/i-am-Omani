@@ -11,11 +11,44 @@ module.exports = function registerCardGames(io) {
   const sixtyDeck = () => shuffle(suits.flatMap(s=>[3,4,5,6,7,11,12,13,1].map(v=>({id:randomUUID(),s,v}))));
   const handPoints = c => c.v===0?15:c.v===1?11:Math.min(c.v,10);
   function publicState(r,p){
-    const base={code:r.code,mode:r.mode,status:r.status,hostId:r.hostId,selfId:p.id,players:r.players.map(x=>({id:x.id,uid:x.uid,name:x.name,count:x.hand.length,score:x.score,laid:x.laid})),hand:p.hand,turn:r.turn,round:r.round,required:r.required};
+    const base={code:r.code,mode:r.mode,status:r.status,practice:!!r.practice,hostId:r.hostId,selfId:p.id,players:r.players.map(x=>({id:x.id,uid:x.uid,name:x.name,bot:!!x.bot,count:x.hand.length,score:x.score,laid:x.laid})),hand:p.hand,turn:r.turn,round:r.round,required:r.required};
     if(r.mode==='hand')return {...base,stage:r.stage,stock:r.stock?.length||0,top:r.discard?.at(-1)||null,melds:r.melds||[],roundResult:r.result,drawnFromDiscard:r.drawnFromDiscard};
     return {...base,top:r.trumpCard||null,stock:r.stock?.length||0,trump:r.trump||null,trick:r.trick||[],teamMoney:r.teamMoney||[0,0],teamSecondary:r.teamSecondary||[0,0],external:r.external,result:r.result};
   }
-  function emit(r){for(const p of r.players)if(p.socket)io.to(p.socket).emit('cards:state',publicState(r,p));}
+  function emit(r){for(const p of r.players)if(p.socket)io.to(p.socket).emit('cards:state',publicState(r,p));scheduleBot(r);}
+  function scheduleBot(r){
+    if(!r.practice||r.status!=='playing'||r.botTimer||!r.players[r.turn]?.bot)return;
+    r.botTimer=setTimeout(()=>{r.botTimer=null;if(rooms.get(r.code)!==r||r.status!=='playing')return;
+      const p=r.players[r.turn];if(!p?.bot)return;
+      if(r.mode==='sixtyone'){
+        const card=p.hand[0];if(!card)return;
+        r.trick.push({seat:r.turn,card:p.hand.shift()});r.turn=(r.turn+1)%r.players.length;
+        if(r.trick.length===r.players.length)resolveSixty(r);else emit(r);return;
+      }
+      if(r.stage==='draw'){
+        if(!drawHand(r,p)){r.result={winner:null,scores:[],message:'انتهى الورق'};r.status='round-end';emit(r);return;}
+        r.stage='meld';p.laidThisTurn=false;emit(r);return;
+      }
+      if(['meld','discard'].includes(r.stage)){
+        const available=[...p.hand],groups=[];
+        while(available.length>=3){let found=null;
+          for(let i=0;i<available.length&&!found;i++)for(let j=i+1;j<available.length&&!found;j++)for(let k=j+1;k<available.length&&!found;k++){
+            const cards=[available[i],available[j],available[k]];if(group(cards))found=cards;
+          }
+          if(!found)break;groups.push(found);for(const c of found)available.splice(available.indexOf(c),1);
+        }
+        const score=groups.reduce((n,g)=>n+group(g).points,0);
+        if(groups.length&&(p.laid||score>=51)){
+          p.hand=available;p.laid=true;p.laidThisTurn=true;r.melds.push(...groups.map(cards=>({owner:p.id,cards})));if(!p.hand.length){endHand(r,p);return;}
+        }
+        const card=p.hand.reduce((a,b)=>handPoints(a)>handPoints(b)?a:b);
+        r.discard.push(p.hand.splice(p.hand.indexOf(card),1)[0]);
+        if(!p.hand.length){endHand(r,p);return;}
+        r.turns++;if(r.turns>=100){endHand(r,[...r.players].sort((a,b)=>a.hand.reduce((n,c)=>n+handPoints(c),0)-b.hand.reduce((n,c)=>n+handPoints(c),0))[0]);return;}
+        r.turn=(r.turn+1)%r.players.length;r.stage='draw';r.drawnFromDiscard=false;emit(r);
+      }
+    },650);r.botTimer.unref?.();
+  }
   const auth=(socket,d)=>{const r=rooms.get(String(d?.code||''));return [r,r?.players.find(p=>p.token===d?.token&&p.socket===socket.id)];};
   const fail=(cb,message)=>cb({ok:false,error:message});
   function drawHand(r,p,fromDiscard=false){
@@ -23,7 +56,7 @@ module.exports = function registerCardGames(io) {
     if(!r.stock.length&&r.discard.length>1){const top=r.discard.pop();r.stock=shuffle(r.discard);r.discard=[top];}
     if(!r.stock.length)return false;p.hand.push(r.stock.pop());r.drawnFromDiscard=false;return true;
   }
-  function startHand(r){r.round++;r.status='playing';r.result=null;r.stock=normalDeck(2,2);r.discard=[];r.melds=[];r.players.forEach(p=>{p.hand=r.stock.splice(-14);p.laid=false;p.laidThisTurn=false;p.handCandidate=false});r.turn=(r.round-1)%r.players.length;r.players[r.turn].hand.push(r.stock.pop());r.stage='discard';r.drawnFromDiscard=false;emit(r);}
+  function startHand(r){r.round++;r.turns=0;r.status='playing';r.result=null;r.stock=normalDeck(2,2);r.discard=[];r.melds=[];r.players.forEach(p=>{p.hand=r.stock.splice(-14);p.laid=false;p.laidThisTurn=false;p.handCandidate=false});r.turn=(r.round-1)%r.players.length;r.players[r.turn].hand.push(r.stock.pop());r.stage='discard';r.drawnFromDiscard=false;emit(r);}
   function group(cards){
     if(cards.length<3||cards.length>13)return null;
     const regular=cards.filter(c=>c.v!==0),jokers=cards.length-regular.length;
@@ -69,14 +102,15 @@ module.exports = function registerCardGames(io) {
   }
   io.on('connection',socket=>{
     socket.on('cards:create',async(d={},cb=()=>{})=>{if(!['hand','sixtyone'].includes(d.mode))return fail(cb,'نوع اللعبة غير معروف');let account;try{account=global.__IAM_OMANI_VERIFY_ACCOUNT__?await global.__IAM_OMANI_VERIFY_ACCOUNT__(d.idToken):{uid:null,data:{username:d.name}};}catch(e){return fail(cb,e.message)}const name=clean(account.data.nickname||account.data.username);if(!name)return fail(cb,'أكمل ملفك الشخصي');const p={id:randomUUID(),token:randomUUID(),uid:account.uid,name,socket:socket.id,hand:[],score:0,laid:false};const r={code:code(),mode:d.mode,required:d.mode==='sixtyone'?(Number(d.required)===4?4:6):null,players:[p],hostId:p.id,status:'lobby',round:0,turn:0,external:[8,8],carry:1};rooms.set(r.code,r);cb({ok:true,code:r.code,token:p.token});emit(r);});
-    socket.on('cards:join',async(d={},cb=()=>{})=>{const r=rooms.get(String(d.code||''));if(!r||r.status!=='lobby')return fail(cb,'الغرفة غير متاحة');let account;try{account=global.__IAM_OMANI_VERIFY_ACCOUNT__?await global.__IAM_OMANI_VERIFY_ACCOUNT__(d.idToken):{uid:null,data:{username:d.name}};}catch(e){return fail(cb,e.message)}const name=clean(account.data.nickname||account.data.username);if(!name)return fail(cb,'أكمل ملفك الشخصي');if(r.players.some(p=>p.uid&&p.uid===account.uid))return fail(cb,'أنت موجود في الغرفة');if(r.players.length>=(r.mode==='hand'?5:r.required))return fail(cb,'اكتمل عدد اللاعبين');const p={id:randomUUID(),token:randomUUID(),uid:account.uid,name,socket:socket.id,hand:[],score:0,laid:false};r.players.push(p);cb({ok:true,code:r.code,token:p.token});emit(r);});
-    socket.on('cards:reconnect',async(d={},cb=()=>{})=>{const r=rooms.get(String(d.code||'')),p=r?.players.find(x=>x.token===d.token);if(!p)return fail(cb,'انتهت الغرفة');let account;try{account=await global.__IAM_OMANI_VERIFY_ACCOUNT__(d.idToken)}catch{return fail(cb,'تحقق من حسابك أولًا')}if(p.uid!==account.uid)return fail(cb,'هذا المقعد تابع لحساب آخر');clearTimeout(p.leaveTimer);p.leaveTimer=null;p.socket=socket.id;cb({ok:true});emit(r);});
+    socket.on('cards:join',async(d={},cb=()=>{})=>{const r=rooms.get(String(d.code||''));if(!r||r.practice||r.status!=='lobby')return fail(cb,'الغرفة غير متاحة');let account;try{account=global.__IAM_OMANI_VERIFY_ACCOUNT__?await global.__IAM_OMANI_VERIFY_ACCOUNT__(d.idToken):{uid:null,data:{username:d.name}};}catch(e){return fail(cb,e.message)}const name=clean(account.data.nickname||account.data.username);if(!name)return fail(cb,'أكمل ملفك الشخصي');if(r.players.some(p=>p.uid&&p.uid===account.uid))return fail(cb,'أنت موجود في الغرفة');if(r.players.length>=(r.mode==='hand'?5:r.required))return fail(cb,'اكتمل عدد اللاعبين');const p={id:randomUUID(),token:randomUUID(),uid:account.uid,name,socket:socket.id,hand:[],score:0,laid:false};r.players.push(p);cb({ok:true,code:r.code,token:p.token});emit(r);});
+    socket.on('cards:practice',(d={},cb=()=>{})=>{const [r,p]=auth(socket,d);if(!r||p?.id!==r.hostId||r.status!=='lobby'||r.players.length!==1)return fail(cb,'التدريب متاح عندما تكون وحدك في الغرفة');r.practice=true;const count=r.mode==='hand'?2:r.required-1;for(let i=1;i<=count;i++)r.players.push({id:randomUUID(),uid:null,name:`متدرّب ${i}`,bot:true,socket:null,hand:[],score:0,laid:false});r.mode==='hand'?startHand(r):startSixty(r);cb({ok:true});});
+    socket.on('cards:reconnect',async(d={},cb=()=>{})=>{const r=rooms.get(String(d.code||'')),p=r?.players.find(x=>x.token===d.token);if(!p)return fail(cb,'انتهت الغرفة');let account;try{account=await global.__IAM_OMANI_VERIFY_ACCOUNT__(d.idToken)}catch{return fail(cb,'تحقق من حسابك أولًا')}if(p.uid!==account.uid)return fail(cb,'هذا المقعد تابع لحساب آخر');clearTimeout(p.leaveTimer);clearTimeout(r.cleanupTimer);r.cleanupTimer=null;p.leaveTimer=null;p.socket=socket.id;cb({ok:true});emit(r);});
     socket.on('cards:start',(d={},cb=()=>{})=>{const [r,p]=auth(socket,d);if(!r||p?.id!==r.hostId||!['lobby','round-end'].includes(r.status))return fail(cb,'المضيف وحده يبدأ الجولة');if(r.mode==='hand'&&r.players.length<2||r.mode==='sixtyone'&&r.players.length!==r.required)return fail(cb,'عدد اللاعبين غير مكتمل');r.mode==='hand'?startHand(r):startSixty(r);cb({ok:true});});
     socket.on('cards:draw',(d={},cb=()=>{})=>{const [r,p]=auth(socket,d);if(!p||r.mode!=='hand'||r.status!=='playing'||r.players[r.turn]!==p||r.stage!=='draw')return fail(cb,'ليس وقت السحب');if(!drawHand(r,p,d.from==='discard'))return fail(cb,'لا توجد أوراق للسحب');r.stage='meld';p.laidThisTurn=false;cb({ok:true});emit(r);});
     socket.on('cards:meld',(d={},cb=()=>{})=>{const [r,p]=auth(socket,d);if(!p||r.mode!=='hand'||r.status!=='playing'||r.players[r.turn]!==p||!['meld','discard'].includes(r.stage))return fail(cb,'ليس دورك');const groups=d.groups;if(!Array.isArray(groups)||!groups.length||groups.length>6)return fail(cb,'اختر مجموعات صحيحة');const ids=groups.flat(),cards=ids.map(id=>p.hand.find(c=>c.id===id));if(new Set(ids).size!==ids.length||cards.some(c=>!c))return fail(cb,'الورق غير متاح');let score=0;for(const idsOfGroup of groups){const valid=group(idsOfGroup.map(id=>p.hand.find(c=>c.id===id)));if(!valid)return fail(cb,'المجموعة تحتاج ثلاث أوراق متسلسلة أو متشابهة');score+=valid.points;}if(!p.laid&&score<51)return fail(cb,'أول نزول يحتاج 51 نقطة أو أكثر');const firstLay=!p.laid;p.hand=p.hand.filter(c=>!ids.includes(c.id));p.laid=true;p.laidThisTurn=true;p.handCandidate=firstLay&&p.hand.length<=1;r.melds.push(...groups.map(idsOfGroup=>({owner:p.id,cards:idsOfGroup.map(id=>cards.find(c=>c.id===id))})));r.stage='meld';cb({ok:true});if(!p.hand.length)endHand(r,p);else emit(r);});
     socket.on('cards:attach',(d={},cb=()=>{})=>{const [r,p]=auth(socket,d);if(!p||r.mode!=='hand'||r.status!=='playing'||r.players[r.turn]!==p||!p.laid||!['meld','discard'].includes(r.stage))return fail(cb,'نزّل مجموعاتك أولًا');const target=r.melds[Number(d.index)],card=p.hand.find(c=>c.id===d.cardId);if(!target||!card||!group([...target.cards,card]))return fail(cb,'لا يمكن تركيب هذه الورقة');target.cards.push(card);p.hand=p.hand.filter(c=>c.id!==card.id);p.laidThisTurn=true;p.handCandidate=false;r.stage='meld';cb({ok:true});if(!p.hand.length)endHand(r,p);else emit(r);});
-    socket.on('cards:discard',(d={},cb=()=>{})=>{const [r,p]=auth(socket,d);if(!p||r.mode!=='hand'||r.status!=='playing'||r.players[r.turn]!==p||!['discard','meld'].includes(r.stage))return fail(cb,'ليس وقت الرمي');if(r.drawnFromDiscard&&!p.laidThisTurn)return fail(cb,'عند السحب من النار يجب تنزيل مجموعة قبل الرمي');const i=p.hand.findIndex(c=>c.id===d.cardId);if(i<0)return fail(cb,'الورقة غير موجودة');r.discard.push(p.hand.splice(i,1)[0]);cb({ok:true});if(!p.hand.length)return endHand(r,p);r.turn=(r.turn+1)%r.players.length;r.stage='draw';r.drawnFromDiscard=false;emit(r);});
+    socket.on('cards:discard',(d={},cb=()=>{})=>{const [r,p]=auth(socket,d);if(!p||r.mode!=='hand'||r.status!=='playing'||r.players[r.turn]!==p||!['discard','meld'].includes(r.stage))return fail(cb,'ليس وقت الرمي');if(r.drawnFromDiscard&&!p.laidThisTurn)return fail(cb,'عند السحب من النار يجب تنزيل مجموعة قبل الرمي');const i=p.hand.findIndex(c=>c.id===d.cardId);if(i<0)return fail(cb,'الورقة غير موجودة');r.discard.push(p.hand.splice(i,1)[0]);cb({ok:true});if(!p.hand.length)return endHand(r,p);r.turns++;if(r.turns>=100)return endHand(r,[...r.players].sort((a,b)=>a.hand.reduce((n,c)=>n+handPoints(c),0)-b.hand.reduce((n,c)=>n+handPoints(c),0))[0]);r.turn=(r.turn+1)%r.players.length;r.stage='draw';r.drawnFromDiscard=false;emit(r);});
     socket.on('cards:play',(d={},cb=()=>{})=>{const [r,p]=auth(socket,d);if(!p||r.mode!=='sixtyone'||r.status!=='playing'||r.players[r.turn]!==p||r.trick.length===r.players.length)return fail(cb,'ليس دورك');const i=p.hand.findIndex(c=>c.id===d.cardId);if(i<0)return fail(cb,'الورقة غير موجودة');r.trick.push({seat:r.turn,card:p.hand.splice(i,1)[0]});r.turn=(r.turn+1)%r.players.length;cb({ok:true});if(r.trick.length===r.players.length)resolveSixty(r);else emit(r);});
-    socket.on('disconnect',()=>{for(const r of rooms.values()){const p=r.players.find(x=>x.socket===socket.id);if(!p)continue;p.socket=null;if(r.status==='lobby'){p.leaveTimer=setTimeout(()=>{if(p.socket||r.status!=='lobby')return;r.players=r.players.filter(x=>x!==p);if(!r.players.length){rooms.delete(r.code);return;}if(r.hostId===p.id)r.hostId=r.players[0].id;emit(r);},60000);p.leaveTimer.unref?.();}}});
+    socket.on('disconnect',()=>{for(const r of rooms.values()){const p=r.players.find(x=>x.socket===socket.id);if(!p)continue;p.socket=null;if(r.practice&&!r.players.some(x=>!x.bot&&x.socket)){r.cleanupTimer=setTimeout(()=>{if(!r.players.some(x=>!x.bot&&x.socket))rooms.delete(r.code)},5*60*1000);r.cleanupTimer.unref?.()}if(r.status==='lobby'){p.leaveTimer=setTimeout(()=>{if(p.socket||r.status!=='lobby')return;r.players=r.players.filter(x=>x!==p);if(!r.players.length){rooms.delete(r.code);return;}if(r.hostId===p.id)r.hostId=r.players[0].id;emit(r);},60000);p.leaveTimer.unref?.();}}});
   });
 };
