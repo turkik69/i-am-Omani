@@ -31,7 +31,7 @@
   start.onclick=async()=>{
     session++;const current=session;stop();start.disabled=true;start.textContent='جارٍ جلب الأسئلة…';stage.innerHTML='<p>نتصل بمصدر الأسئلة المباشر…</p>';
     try {
-      const params=new URLSearchParams({category:picker.value,count:'8',exclude:seen().slice(-80).join(',')});
+      const params=new URLSearchParams({category:picker.value,difficulty:document.querySelector('#practiceDifficulty')?.value||'متوسط',count:'8',exclude:seen().slice(-80).join(',')});
       const response=await fetch(`/api/questions?${params}`,{cache:'no-store'});
       const data=await response.json();
       if(!response.ok||!Array.isArray(data.questions)||data.questions.length<4)throw Error(data.error||'تعذر تحميل الأسئلة');
