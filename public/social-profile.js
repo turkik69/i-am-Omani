@@ -85,6 +85,7 @@
       const p=await response.json(),s=p.stats||{};
       $('#publicPlayerBody').innerHTML=`<div class="public-player-head"><div class="editable-photo">${photo(p)}</div><div><small>ملف اللاعب</small><h2>${safe(p.name)}</h2><span>المستوى ${p.level} • ${p.xp} XP</span></div></div>
         <div class="profile-stat-grid"><div><b>${s.games||0}</b><span>مسابقة</span></div><div><b>${s.wins||0}</b><span>فوز</span></div><div><b>${s.correct||0}</b><span>إجابة صحيحة</span></div><div><b>${s.bestScore||0}</b><span>أفضل نتيجة</span></div></div>
+        <p class="player-last-active">${s.lastPlayedAt?'آخر مشاركة: '+safe(new Date(s.lastPlayedAt).toLocaleDateString('ar-OM')):'لم يشارك في مسابقة بعد'}</p>
         <h3>مجالات القوة</h3><div class="strengths">${p.strengths?.length?p.strengths.map(x=>`<div><b>${safe(x.name)}</b><span>${x.correct} إجابة صحيحة من ${x.answered}</span></div>`).join(''):'تظهر بعد خوض المسابقات'}</div>`;
     }catch(error){$('#publicPlayerBody').textContent=error.message;}
   }
