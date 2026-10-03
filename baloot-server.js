@@ -16,11 +16,11 @@ module.exports = function registerBaloot(io) {
 
   function roomPublic(r){
     return {code:r.code,title:r.title,wilayat:r.wilayat,village:r.village,variant:r.variant,status:r.status,
-      players:[...r.players.values()].map(p=>({id:p.id,name:p.name,avatar:p.avatar,approved:p.approved,score:p.score||0})),
-      pending:[...r.pending.values()].map(p=>({id:p.id,name:p.name,avatar:p.avatar})),round:r.round||0,
+      players:[...r.players.values()].map(p=>({id:p.id,uid:p.uid,name:p.name,avatar:p.avatar,hasPhoto:p.hasPhoto,approved:p.approved,score:p.score||0})),
+      pending:[...r.pending.values()].map(p=>({id:p.id,uid:p.uid,name:p.name,avatar:p.avatar,hasPhoto:p.hasPhoto})),round:r.round||0,
       tables:[...r.tables.values()].map(t=>({id:t.id,names:t.seats.map(id=>r.players.get(id)?.name||'—'),teamScore:t.teamScore,trump:t.trump,variant:t.variant,stage:t.stage,finished:t.finished}))};
   }
-  function emitRoom(r){io.to(`baloot:${r.code}`).emit('baloot:room',roomPublic(r));if(r.hostSocket)io.to(r.hostSocket).emit('baloot:pending',[...r.pending.values()].map(p=>({id:p.id,name:p.name,avatar:p.avatar})));broadcast();}
+  function emitRoom(r){io.to(`baloot:${r.code}`).emit('baloot:room',roomPublic(r));if(r.hostSocket)io.to(r.hostSocket).emit('baloot:pending',[...r.pending.values()].map(p=>({id:p.id,uid:p.uid,name:p.name,avatar:p.avatar,hasPhoto:p.hasPhoto})));broadcast();}
   function broadcast(){io.emit('baloot:rooms',[...rooms.values()].filter(r=>r.status==='lobby').map(roomPublic));}
   function hostOk(socket,r,token){return r && r.hostSocket===socket.id && token===r.hostToken;}
 
@@ -59,7 +59,7 @@ module.exports = function registerBaloot(io) {
     t.winnerTeam=t.resultScore[0]===t.resultScore[1]?null:(t.resultScore[0]>t.resultScore[1]?0:1);
     t.seats.forEach((id,seat)=>{const p=r.players.get(id);if(p)p.score=(p.score||0)+t.resultScore[seat%2];});
     emitTable(r,t); emitRoom(r);
-    if([...r.tables.values()].every(x=>x.finished)){r.status='round-result';io.to(`baloot:${r.code}`).emit('baloot:round-finished',{round:r.round,leaderboard:[...r.players.values()].sort((a,b)=>(b.score||0)-(a.score||0)).map((p,i)=>({rank:i+1,name:p.name,avatar:p.avatar,score:p.score||0}))});emitRoom(r);}
+    if([...r.tables.values()].every(x=>x.finished)){r.status='round-result';io.to(`baloot:${r.code}`).emit('baloot:round-finished',{round:r.round,leaderboard:[...r.players.values()].sort((a,b)=>(b.score||0)-(a.score||0)).map((p,i)=>({rank:i+1,uid:p.uid,name:p.name,avatar:p.avatar,hasPhoto:p.hasPhoto,score:p.score||0}))});emitRoom(r);}
   }
   function resolveTrick(r,t){
     let best=t.tricks[0];for(const x of t.tricks.slice(1))if(compareCards(x.card,best.card,t.leadSuit,t.trump)>0)best=x;
@@ -86,10 +86,12 @@ module.exports = function registerBaloot(io) {
       const r={code:c,hostSocket:socket.id,hostToken:token,title:clean(d.title||'الورقة • البلوت',60),wilayat:clean(d.wilayat||'مسقط'),village:clean(d.village||'المجلس'),variant:['sun','hokm','mixed'].includes(d.variant)?d.variant:'mixed',status:'lobby',players:new Map(),pending:new Map(),tables:new Map(),round:0,waiting:[]};
       rooms.set(c,r);socket.join(`baloot:${c}`);cb({ok:true,code:c,hostToken:token,room:roomPublic(r)});emitRoom(r);
     });
-    socket.on('baloot:join-request',(d={},cb=()=>{})=>{
+    socket.on('baloot:join-request',async(d={},cb=()=>{})=>{
       const r=rooms.get(String(d.code||''));if(!r||r.status!=='lobby')return cb({ok:false,error:'المجلس غير متاح حاليًا'});
-      const name=clean(d.name,28);if(!name)return cb({ok:false,error:'اكتب اسم اللاعب'});
-      const id=require('crypto').randomUUID();const p={id,name,avatar:clean(d.avatar||'🂡',8),socket:socket.id,approved:false,score:0};r.pending.set(id,p);socket.data.balootPending={code:r.code,id};cb({ok:true,pending:true});emitRoom(r);
+      let identity;try{identity=global.__IAM_OMANI_VERIFY_ACCOUNT__?await global.__IAM_OMANI_VERIFY_ACCOUNT__(d.idToken):{uid:null,data:{username:d.name}};}catch(e){return cb({ok:false,error:e.message});}
+      const name=clean(identity.data.nickname||identity.data.username,28);if(!name)return cb({ok:false,error:'أكمل ملفك الشخصي أولًا'});
+      if([...r.pending.values(),...r.players.values()].some(x=>x.uid&&x.uid===identity.uid))return cb({ok:false,error:'طلبك موجود في المجلس'});
+      const id=require('crypto').randomUUID();const p={id,uid:identity.uid,name,avatar:clean(d.avatar||'OM1',8),hasPhoto:!!identity.data.photoData,socket:socket.id,approved:false,score:0};r.pending.set(id,p);socket.data.balootPending={code:r.code,id};cb({ok:true,pending:true});emitRoom(r);
     });
     socket.on('baloot:approve',(d={},cb=()=>{})=>{
       const r=rooms.get(String(d.code||''));if(!hostOk(socket,r,d.hostToken))return cb({ok:false});const p=r.pending.get(d.playerId);if(!p)return cb({ok:false});r.pending.delete(p.id);p.approved=true;r.players.set(p.id,p);io.sockets.sockets.get(p.socket)?.join(`baloot:${r.code}`);io.to(p.socket).emit('baloot:approved',{code:r.code,playerId:p.id,room:roomPublic(r)});cb({ok:true});emitRoom(r);
