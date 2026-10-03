@@ -169,7 +169,7 @@ function publicAccount(uid, data) {
 const authToken = req => (req.get('authorization') || '').replace(/^Bearer\s+/i,'');
 app.get('/api/profile/me', async (req,res) => {
   res.set('Cache-Control','no-store');
-  try { const a=await verifiedAccount(authToken(req));res.json({...publicAccount(a.uid,a.data),photoData:a.data.photoData||null}); }
+  try { const a=await verifiedAccount(authToken(req));res.json({...publicAccount(a.uid,a.data),progress:a.data.progress||null,photoData:a.data.photoData||null}); }
   catch(e){res.status(401).json({error:e.message});}
 });
 app.put('/api/profile/me', async (req,res) => {
