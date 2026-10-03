@@ -25,7 +25,7 @@
     if(!picker||picker.querySelector('#unoEntry'))return;
     const uno=document.createElement('button');
     uno.type='button';uno.id='unoEntry';uno.className='category-choice';
-    uno.innerHTML='<span>🟥</span><b>أونو</b><small>لعبة واحدة • 2 إلى 10 لاعبين</small>';
+    uno.innerHTML='<img class="uno-entry-art" src="/uno-icon.svg?v=72" alt=""><b>أونو</b><small>لعبة بطاقات ملونة • 2 إلى 10 لاعبين</small>';
     picker.appendChild(uno);
     const paper=$('#competitionBaloot');if(paper)paper.innerHTML='<span>🃏</span><b>الورقة • البلوت</b><small>البلوت، هند، 61</small>';
   }
