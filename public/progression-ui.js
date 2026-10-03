@@ -15,12 +15,12 @@
 
   const CATEGORIES = [
     {id:'oman',name:'عُمان',icon:'🇴🇲',desc:'حكام، تاريخ، مؤسسات وولايات'},
-    {id:'sports',name:'رياضة',icon:'⚽',desc:'كرة القدم والرياضات العالمية'},
-    {id:'culture',name:'ثقافة عامة',icon:'📚',desc:'معرفة وأدب وفنون'},
-    {id:'geography',name:'جغرافيا',icon:'🌍',desc:'دول ومدن وطبيعة'},
-    {id:'science',name:'علوم',icon:'🔬',desc:'فضاء وطبيعة وعلوم'},
+    {id:'sports',name:'رياضة عُمانية',icon:'⚽',desc:'لاعبون ورياضيون من عُمان'},
+    {id:'culture',name:'ثقافة عُمانية',icon:'📚',desc:'رؤية 2040 وفعاليات ومؤسسات عُمان'},
+    {id:'geography',name:'جغرافية عُمان',icon:'🌍',desc:'محافظات وولايات ومناطق'},
+    {id:'science',name:'مؤسسات وتنمية',icon:'🔬',desc:'مؤسسات عُمان ورؤيتها الوطنية'},
     {id:'social',name:'مجتمع وتراث',icon:'☕',desc:'عادات وتراث وموروث عُماني'},
-    {id:'mixed',name:'متنوعة',icon:'🎲',desc:'مزيج من جميع المجالات'}
+    {id:'mixed',name:'عُمان المتنوعة',icon:'🎲',desc:'مزيج من المجالات العُمانية'}
   ];
 
   const profileDefault = () => ({
@@ -36,7 +36,7 @@
 
   let cloudUser=null,cloudFirebase=null,cloudSave=Promise.resolve();
   const save = () => {
-    localStorage.setItem('iamOmaniProgress',JSON.stringify(profile));
+    localStorage.setItem(cloudUser?'iamOmaniProgress:'+cloudUser.uid:'iamOmaniProgress',JSON.stringify(profile));
     if(!cloudUser||!cloudFirebase)return;
     const uid=cloudUser.uid,f=cloudFirebase,snapshot=JSON.parse(JSON.stringify(profile));
     const level=levelInfo(snapshot.xp).cur.level;
@@ -48,10 +48,20 @@
     const {user,firebase,profile:account}=event.detail;
     cloudUser=user;cloudFirebase=user?firebase:null;
     if(user){
-      profile={...profileDefault(),...(account?.progress||{}),lastName:account?.nickname||account?.username||profile.lastName};
-      localStorage.setItem('iamOmaniProgress',JSON.stringify(profile));
+      let local={};try{local=JSON.parse(localStorage.getItem('iamOmaniProgress:'+user.uid)||'{}')}catch{}
+      profile={...profileDefault(),...(account?.progress||local),lastName:account?.nickname||account?.username||local.lastName||''};
+      localStorage.setItem('iamOmaniProgress:'+user.uid,JSON.stringify(profile));
       renderProfile();decorateSelf();
+    }else{
+      profile=profileDefault();renderProfile();
     }
+  });
+  window.addEventListener('iam-omani-profile-loaded',event=>{
+    if(!cloudUser||event.detail?.uid!==cloudUser.uid)return;
+    const account=event.detail;
+    profile={...profileDefault(),...(account.progress||profile),lastName:account.name||profile.lastName};
+    localStorage.setItem('iamOmaniProgress:'+cloudUser.uid,JSON.stringify(profile));
+    renderProfile();decorateSelf();
   });
   window.addEventListener('iam-omani-profile-updated',event=>{
     profile.lastName=event.detail?.name||profile.lastName;
