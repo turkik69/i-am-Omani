@@ -38,11 +38,13 @@
   const save = () => {
     localStorage.setItem(cloudUser?'iamOmaniProgress:'+cloudUser.uid:'iamOmaniProgress',JSON.stringify(profile));
     if(!cloudUser||!cloudFirebase)return;
-    const uid=cloudUser.uid,f=cloudFirebase,snapshot=JSON.parse(JSON.stringify(profile));
-    const level=levelInfo(snapshot.xp).cur.level;
-    cloudSave=cloudSave.catch(()=>{}).then(()=>f.dbMod.updateDoc(f.dbMod.doc(f.db,'users',uid),{
-      progress:snapshot,xp:snapshot.xp,level,badges:snapshot.badges
-    })).catch(error=>console.error('Cloud progress save failed',error));
+    const user=cloudUser,snapshot=JSON.parse(JSON.stringify(profile));
+    cloudSave=cloudSave.catch(()=>{}).then(async()=>{
+      const response=await fetch('/api/profile/progress',{method:'PUT',headers:{
+        'content-type':'application/json',Authorization:'Bearer '+await user.getIdToken()
+      },body:JSON.stringify({progress:snapshot})});
+      if(!response.ok)throw Error('تعذر حفظ التقدم');
+    }).catch(error=>console.error('Cloud progress save failed',error));
   };
   window.addEventListener('iam-omani-auth',event=>{
     const {user,firebase,profile:account}=event.detail;
