@@ -24,6 +24,6 @@ function client(){
   const newcomer=client();
   assert.equal((await newcomer.send('uno:reconnect',{...g,idToken:'host'})).ok,false);
   assert.equal((await newcomer.send('uno:reconnect',{...g,idToken:'guest'})).ok,true);
-  assert.equal(newcomer.events['uno:state'].hand.length,7);
+  assert.equal(newcomer.events['uno:state'].hand.length,guest.events['uno:state'].hand.length);
   console.log('UNO auth, room, deal, and account-bound reconnect passed');
 })().catch(e=>{console.error(e);process.exitCode=1});
