@@ -1,7 +1,7 @@
 (() => {
   const $ = s => document.querySelector(s);
   const safe = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let me=null, editedPhoto;
+  let me=null, editedPhoto, cropImage=null, cropOffset={x:0,y:0}, cropZoom=1, refreshSequence=0;
   const auth = () => window.IAmOmaniFirebase?.user;
   const photo = p => p?.hasPhoto
     ? `<img src="/api/profile/${encodeURIComponent(p.uid)}/photo?v=${Date.now()}" alt="صورة اللاعب">`
@@ -21,15 +21,30 @@
   }
   async function refresh() {
     if(!auth())return;
+    const userId=auth().uid, sequence=++refreshSequence;
     try {
-      me=await api('/api/profile/me');
+      const loaded=await api('/api/profile/me');
+      if(sequence!==refreshSequence||auth()?.uid!==userId)return;
+      me=loaded;
       window.IAmOmaniFirebase.profile={...(window.IAmOmaniFirebase.profile||{}),...me};
       const input=$('#profileNickname');if(input&&!input.matches(':focus'))input.value=me.nickname||'';
       const avatar=$('#editablePhoto');if(avatar)avatar.innerHTML=photo(me);
       const summary=$('#profilePublicName');if(summary)summary.textContent=me.name;
       const joinLabel=$('#joinAccountName');if(joinLabel)joinLabel.textContent=`ستدخل باسم: ${me.name}`;
       syncPhoto();
+      window.dispatchEvent(new CustomEvent('iam-omani-profile-loaded',{detail:me}));
     } catch(error){const status=$('#profileEditStatus');if(status)status.textContent=error.message;}
+  }
+  function renderCrop(){
+    if(!cropImage)return;
+    const canvas=$('#photoCropCanvas');if(!canvas)return;
+    const ctx=canvas.getContext('2d'),side=Math.min(cropImage.width,cropImage.height)/cropZoom;
+    const maxX=(cropImage.width-side)/2,maxY=(cropImage.height-side)/2;
+    const x=maxX+cropOffset.x*maxX,y=maxY+cropOffset.y*maxY;
+    ctx.clearRect(0,0,256,256);
+    ctx.drawImage(cropImage,x,y,side,side,0,0,256,256);
+    editedPhoto=canvas.toDataURL('image/jpeg',0.78);
+    $('#editablePhoto').innerHTML=`<img alt="معاينة الصورة" src="${editedPhoto}">`;
   }
   function injectEditor() {
     const body=$('#progressProfileBody');
@@ -42,6 +57,7 @@
           <div class="profile-current-name">الاسم الظاهر: <b id="profilePublicName">ملفي الشخصي</b></div><small>بريدك ورقم هاتفك لا يظهران للاعبين.</small>
           <label>لقبي في اللعبة <input id="profileNickname" maxlength="28" placeholder="اتركه فارغًا لاستخدام اسم المستخدم"></label>
           <label class="photo-upload">📷 اختر صورة من جهازك <input id="profilePhoto" type="file" accept="image/png,image/jpeg,image/webp"></label>
+          <div id="photoCropControls" class="photo-crop-controls" hidden><span>حرّك الصورة لتوسيط وجهك داخل الإطار، ثم احفظ.</span><canvas id="photoCropCanvas" width="256" height="256" aria-label="معاينة موضع الصورة"></canvas><label>تقريب الصورة <input id="photoCropZoom" type="range" min="1" max="3" step=".05" value="1"></label></div>
           <div class="profile-edit-actions"><button id="profileSave" type="button" class="primary-btn small-btn">حفظ الملف</button><button id="profileRemovePhoto" type="button" class="secondary-btn">حذف الصورة</button></div>
           <small id="profileEditStatus" role="status"></small>
         </div>
@@ -50,24 +66,32 @@
       const file=e.target.files?.[0];if(!file)return;
       if(file.size>8*1024*1024){$('#profileEditStatus').textContent='اختر صورة أصغر من 8 ميغابايت';return;}
       try {
-        const img=await createImageBitmap(file);
-        const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
-        const ctx=canvas.getContext('2d'),side=Math.min(img.width,img.height);
-        ctx.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,256,256);
-        editedPhoto=canvas.toDataURL('image/jpeg',0.78);
-        img.close?.();
-        $('#editablePhoto').innerHTML=`<img alt="معاينة الصورة" src="${editedPhoto}">`;
+        cropImage?.close?.();cropImage=await createImageBitmap(file);
+        cropOffset={x:0,y:0};cropZoom=1;$('#photoCropZoom').value='1';
+        $('#photoCropControls').hidden=false;renderCrop();
         $('#profileEditStatus').textContent='اضغط حفظ الملف لتثبيت الصورة';
       }catch{$('#profileEditStatus').textContent='تعذر قراءة الصورة';}
     };
-    $('#profileRemovePhoto').onclick=()=>{editedPhoto=null;$('#editablePhoto').innerHTML=window.avatarHTML?.(me?.avatar||'OM1')||'🇴🇲';$('#profileEditStatus').textContent='اضغط حفظ الملف لحذف الصورة';};
+    $('#photoCropZoom').oninput=e=>{cropZoom=Number(e.target.value);renderCrop();};
+    const canvas=$('#photoCropCanvas');let drag=null;
+    canvas.onpointerdown=e=>{drag={x:e.clientX,y:e.clientY,offset:{...cropOffset}};canvas.setPointerCapture(e.pointerId);};
+    canvas.onpointermove=e=>{
+      if(!drag||!cropImage)return;
+      const side=Math.min(cropImage.width,cropImage.height)/cropZoom;
+      const maxX=(cropImage.width-side)/2,maxY=(cropImage.height-side)/2;
+      cropOffset.x=maxX?Math.max(-1,Math.min(1,drag.offset.x-(e.clientX-drag.x)*side/(canvas.clientWidth*maxX))):0;
+      cropOffset.y=maxY?Math.max(-1,Math.min(1,drag.offset.y-(e.clientY-drag.y)*side/(canvas.clientHeight*maxY))):0;
+      renderCrop();
+    };
+    canvas.onpointerup=canvas.onpointercancel=()=>{drag=null;};
+    $('#profileRemovePhoto').onclick=()=>{cropImage?.close?.();cropImage=null;editedPhoto=null;$('#photoCropControls').hidden=true;$('#editablePhoto').innerHTML=window.avatarHTML?.(me?.avatar||'OM1')||'🇴🇲';$('#profileEditStatus').textContent='اضغط حفظ الملف لحذف الصورة';};
     $('#profileSave').onclick=async()=>{
       const button=$('#profileSave');button.disabled=true;
       try {
         const nickname=$('#profileNickname').value.trim();
         if(nickname&&nickname.length<2)throw new Error('اللقب من حرفين إلى 28 حرفًا');
         me=await api('/api/profile/me',{method:'PUT',body:JSON.stringify({nickname,...(editedPhoto!==undefined?{photoData:editedPhoto}:{})})});
-        editedPhoto=undefined;$('#profileEditStatus').textContent='تم حفظ الملف الشخصي';
+        editedPhoto=undefined;cropImage?.close?.();cropImage=null;$('#photoCropControls').hidden=true;$('#profileEditStatus').textContent='تم حفظ الملف الشخصي';
         $('#profilePublicName').textContent=me.name;
         $('#editablePhoto').innerHTML=photo(me);
         window.IAmOmaniFirebase.profile={...(window.IAmOmaniFirebase.profile||{}),...me};
@@ -75,7 +99,7 @@
         window.dispatchEvent(new CustomEvent('iam-omani-profile-updated',{detail:me}));
       }catch(error){$('#profileEditStatus').textContent=error.message;}finally{button.disabled=false;}
     };
-    if(me)refresh();
+    if(me){$('#profileNickname').value=me.nickname||'';$('#editablePhoto').innerHTML=photo(me);$('#profilePublicName').textContent=me.name;}
   }
   function injectJoinIdentity(){
     const input=$('#playerName');if(!input)return;
@@ -111,7 +135,7 @@
     fetch('/api/activity').then(r=>r.json()).then(renderActivity).catch(()=>{});
   }
   window.socket?.on('activity:update',renderActivity);
-  window.addEventListener('iam-omani-auth',()=>{me=null;syncPhoto();refresh();});
+  window.addEventListener('iam-omani-auth',()=>{refreshSequence++;me=null;syncPhoto();refresh();});
   window.addEventListener('iam-omani-profile-updated',e=>{const label=$('#joinAccountName');if(label)label.textContent=`ستدخل باسم: ${e.detail.name}`;syncPhoto();});
   const observer=new MutationObserver(injectEditor);
   observer.observe(document.body,{childList:true,subtree:true});
