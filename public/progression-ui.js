@@ -23,78 +23,6 @@
     {id:'mixed',name:'متنوعة',icon:'🎲',desc:'مزيج من جميع المجالات'}
   ];
 
-  const BANKS = {
-    oman:[
-      ['كم عدد محافظات سلطنة عُمان؟',['9','10','11','12'],2,'عُمان'],
-      ['ما عاصمة سلطنة عُمان؟',['صحار','نزوى','مسقط','صلالة'],2,'عُمان'],
-      ['أي قلعة تشتهر ببرجها الدائري الكبير؟',['قلعة نزوى','قلعة صحار','قلعة مطرح','قلعة طاقة'],0,'عُمان'],
-      ['في أي محافظة تشتهر تجارة اللبان تاريخيًا؟',['مسقط','ظفار','البريمي','مسندم'],1,'عُمان'],
-      ['أي موقع عُماني مُدرج ضمن قائمة التراث العالمي لليونسكو؟',['قلعة بهلاء','برج الصحوة','دار الأوبرا','سوق مطرح'],0,'عُمان'],
-      ['ما أعلى جبل في سلطنة عُمان؟',['الجبل الأخضر','جبل سمحان','جبل شمس','جبل حارم'],2,'عُمان']
-    ],
-    sports:[
-      ['كم لاعبًا يبدأ به فريق كرة القدم داخل الملعب؟',['9','10','11','12'],2,'رياضة'],
-      ['كم حلقة في شعار الألعاب الأولمبية؟',['4','5','6','7'],1,'رياضة'],
-      ['كم لاعبًا يوجد في فريق الكرة الطائرة داخل الملعب؟',['5','6','7','8'],1,'رياضة'],
-      ['كم تبلغ مسافة سباق الماراثون تقريبًا؟',['21.1 كم','30 كم','42.195 كم','50 كم'],2,'رياضة'],
-      ['كم نقطة تحتسب للرميّة الحرة في كرة السلة؟',['1','2','3','4'],0,'رياضة'],
-      ['ما المصطلح المستخدم للنقطة صفر في التنس؟',['Love','Zero','Blank','Nil'],0,'رياضة']
-    ],
-    culture:[
-      ['من كتب رواية الحرب والسلام؟',['تولستوي','تشيخوف','بوشكين','دوستويفسكي'],0,'ثقافة'],
-      ['أي فن يعتمد أساسًا على تشكيل الكلمات والحروف بصريًا؟',['النحت','الخط','الخزف','المسرح'],1,'ثقافة'],
-      ['ما اللغة الأكثر انتشارًا من حيث عدد المتحدثين الأصليين؟',['الإنجليزية','الإسبانية','العربية','الصينية المندرينية'],3,'ثقافة'],
-      ['من رسم لوحة الموناليزا؟',['بيكاسو','ليوناردو دافنشي','فان غوخ','مونيه'],1,'ثقافة'],
-      ['أي آلة موسيقية تحتوي عادةً على مفاتيح سوداء وبيضاء؟',['العود','البيانو','الكمان','الناي'],1,'ثقافة'],
-      ['في أي قارة تقع الأهرامات المصرية؟',['آسيا','أفريقيا','أوروبا','أمريكا الجنوبية'],1,'ثقافة']
-    ],
-    geography:[
-      ['ما أكبر محيط على سطح الأرض؟',['الأطلسي','الهندي','الهادئ','المتجمد الشمالي'],2,'جغرافيا'],
-      ['ما أكبر دولة في العالم من حيث المساحة؟',['كندا','الصين','روسيا','الولايات المتحدة'],2,'جغرافيا'],
-      ['أي نهر يمر بمدينة القاهرة؟',['الأمازون','النيل','الدانوب','السين'],1,'جغرافيا'],
-      ['ما عاصمة اليابان؟',['أوساكا','كيوتو','طوكيو','ناغويا'],2,'جغرافيا'],
-      ['في أي قارة تقع البرازيل؟',['آسيا','أفريقيا','أمريكا الجنوبية','أوروبا'],2,'جغرافيا'],
-      ['ما أكبر صحراء حارة في العالم؟',['الربع الخالي','الصحراء الكبرى','جوبي','كالاهاري'],1,'جغرافيا']
-    ],
-    science:[
-      ['ما الكوكب المعروف بالكوكب الأحمر؟',['الزهرة','المريخ','عطارد','المشتري'],1,'علوم'],
-      ['ما الغاز الذي تحتاجه خلايا الإنسان للتنفس؟',['النيتروجين','الأكسجين','الهيدروجين','الهيليوم'],1,'علوم'],
-      ['كم عدد كواكب المجموعة الشمسية؟',['7','8','9','10'],1,'علوم'],
-      ['ما وحدة قياس شدة التيار الكهربائي؟',['فولت','واط','أمبير','أوم'],2,'علوم'],
-      ['أي عضو يضخ الدم في جسم الإنسان؟',['الرئة','القلب','الكبد','الكلية'],1,'علوم'],
-      ['ما الحالة التي يتحول فيها الماء إلى بخار؟',['التجمد','التكثف','التبخر','الترسيب'],2,'علوم']
-    ],
-    social:[
-      ['بماذا يُقدَّم غالبًا القهوة العُمانية للضيف؟',['التمر','الخبز فقط','الأرز','الفاكهة فقط'],0,'مجتمع وتراث'],
-      ['ما اسم الأداة التراثية العُمانية التي تُلبس على الخصر في المناسبات الرسمية؟',['السيف الياباني','الخنجر العُماني','القوس','الرمح'],1,'مجتمع وتراث'],
-      ['أي مادة عطرية ارتبطت تاريخيًا بمحافظة ظفار؟',['العنبر الصناعي','اللبان','الفانيلا','القرفة'],1,'مجتمع وتراث'],
-      ['ما اسم نظام الري التقليدي المشهور في عُمان؟',['الأفلاج','القنوات الرومانية','السواقي الجليدية','الخزانات المعلقة'],0,'مجتمع وتراث'],
-      ['أي مكان يُعد من أشهر الأسواق التقليدية في مسقط؟',['سوق مطرح','سوق صحار المركزي','سوق عبري الجديد','سوق نزوى الصناعي'],0,'مجتمع وتراث'],
-      ['ما الذي يميز المجلس في المجتمع العُماني تقليديًا؟',['مكان لاستقبال الضيوف والتجمع','مخزن للمؤن','ورشة صناعية','مرآب مركبات'],0,'مجتمع وتراث']
-    ]
-  };
-  BANKS.mixed = Object.values(BANKS).flat();
-
-  // Draw unseen questions first; only recycle a category after its available bank is exhausted.
-  function drawQuestions(category, count = 6) {
-    const bank = BANKS[category] || BANKS.mixed;
-    const key = `iamOmaniSeenQuestions:${category}`;
-    let seen;
-    try { seen = new Set(JSON.parse(localStorage.getItem(key) || '[]')); }
-    catch { seen = new Set(); }
-    const fingerprint = q => `${q[0]}|${q[1][q[2]]}`;
-    const shuffle = items => { const copy = [...items]; for (let i=copy.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [copy[i],copy[j]]=[copy[j],copy[i]]; } return copy; };
-    let fresh = shuffle(bank.filter(q => !seen.has(fingerprint(q))));
-    const selected = fresh.slice(0, count);
-    if (selected.length < count) {
-      seen.clear();
-      selected.push(...shuffle(bank.filter(q => !selected.includes(q))).slice(0, count - selected.length));
-    }
-    selected.forEach(q => seen.add(fingerprint(q)));
-    localStorage.setItem(key, JSON.stringify([...seen]));
-    return selected;
-  }
-
   const profileDefault = () => ({
     xp:0,games:0,wins:0,correct:0,fastest:0,maxStreak:0,currentStreak:0,perfect:0,
     categories:{},badges:[],daily:{date:'',games:0,correct:0,fastest:0,claimed:{}},
@@ -104,7 +32,6 @@
   let currentCategory = 'mixed';
   let currentDifficulty = 'متوسط';
   let currentMode = 'عادية';
-  let pendingSeed = false;
   let game = {correct:0,fastest:0,questions:0,categoryHits:{}};
 
   let cloudUser=null,cloudFirebase=null,cloudSave=Promise.resolve();
@@ -178,25 +105,7 @@
     $('#competitionMode').onchange=e=>currentMode=e.target.value;
   }
 
-  function questionsForSelection(wilayat){
-    const base=drawQuestions(currentCategory).map((q,i)=>({id:i+1,question:q[0],options:q[1],correct:q[2],category:q[3],difficulty:currentDifficulty,time:currentMode==='سريعة'?10:currentDifficulty==='نخبة'?12:15}));
-    const local=window.OMANI_LOCAL_QUESTIONS?.(wilayat)||[];
-    return base.concat(local.map((q,i)=>({...q,id:base.length+i+1,difficulty:currentDifficulty,time:currentMode==='سريعة'?10:15})));
-  }
-
-  document.addEventListener('click',e=>{
-    if(e.target.closest('#createRoomBtn')){pendingSeed=true;currentDifficulty=$('#competitionDifficulty')?.value||currentDifficulty;currentMode=$('#competitionMode')?.value||currentMode;}
-  },true);
-
-  socket.on('room:update',room=>{
-    if(pendingSeed&&state.role==='host'&&room?.status==='lobby'){
-      pendingSeed=false;
-      const qs=questionsForSelection(room.wilayat);
-      window.OMANI_SET_QUESTIONS?.(qs);
-      socket.emit('host:setQuestions',{questions:qs},r=>{if(r?.ok){$('#questionCount').textContent=r.count;toast(`${CATEGORIES.find(c=>c.id===currentCategory)?.icon||'🎯'} تم تجهيز ${r.count} أسئلة، منها ${qs.length-6} عن ولاية ${room.wilayat}`);}});
-    }
-    decorateSelf();
-  });
+  socket.on('room:update',()=>decorateSelf());
 
   function injectProfile(){
     if(!$('#profileBtn')){
