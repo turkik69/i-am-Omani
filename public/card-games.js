@@ -14,10 +14,16 @@
   function say(message){let el=$('#cardsMessage');if(!el){el=document.createElement('p');el.id='cardsMessage';body().prepend(el);}el.textContent=message;}
   function call(name,data={},onSuccess=()=>{}){socket.emit(`cards:${name}`,{...data,code:session?.code,token:session?.token},r=>{if(!r?.ok)return say(r?.error||'تعذرت الحركة');onSuccess(r)})}
   const save=r=>{session={code:r.code,token:r.token};localStorage.setItem('iamOmaniCardsSession',JSON.stringify(session));chosen.clear();draft=[];};
+  async function restore(){
+    const user=window.IAmOmaniFirebase?.user;
+    if(!session?.token||!user||!socket.connected)return;
+    let idToken;try{idToken=await user.getIdToken()}catch{return}
+    socket.emit('cards:reconnect',{...session,idToken},r=>{if(!r?.ok){session=null;localStorage.removeItem('iamOmaniCardsSession')}});
+  }
   function entry(kind){mode=kind;layer.classList.remove('hidden');$('#cardsTitle').textContent=`${names[kind]} • أنا عُماني`;if(state&&session&&state.code===session.code&&state.mode===kind)return render(state);
     body().innerHTML=`<section class="cards-intro"><h3>${names[kind]}</h3><p>${kind==='hand'?'لاعبان إلى خمسة • 106 أوراق • خمس جولات':'فريقان • 4 أو 6 لاعبين • أوراق المال والحكم'}</p><p class="join-identity">الاسم من ملفك الشخصي: ${esc(window.IAmOmaniFirebase?.profile?.nickname||window.IAmOmaniFirebase?.profile?.username||"سجّل الدخول")}</p>${kind==='sixtyone'?'<label>عدد اللاعبين<select id="cardsSeats"><option value="6">6 لاعبين</option><option value="4">4 لاعبين</option></select></label>':''}<div class="cards-actions"><button id="cardsCreate">إنشاء غرفة</button><label>رمز الغرفة<input id="cardsCode" inputmode="numeric" maxlength="6" placeholder="000000"></label><button id="cardsJoin">انضمام</button></div></section>`;
-    $('#cardsCreate').onclick=async()=>{const user=window.IAmOmaniFirebase?.user;if(!user)return say('سجّل الدخول أولًا');socket.emit('cards:create',{mode:kind,idToken:await user.getIdToken(),required:$('#cardsSeats')?.value},r=>{if(!r?.ok)return say(r?.error||'تعذر إنشاء الغرفة');save(r);socket.emit('cards:reconnect',session)});};
-    $('#cardsJoin').onclick=async()=>{const user=window.IAmOmaniFirebase?.user;if(!user)return say('سجّل الدخول أولًا');socket.emit('cards:join',{code:$('#cardsCode').value.trim(),idToken:await user.getIdToken()},r=>{if(!r?.ok)return say(r?.error||'تعذر الانضمام');save(r);socket.emit('cards:reconnect',session)});};
+    $('#cardsCreate').onclick=async()=>{const user=window.IAmOmaniFirebase?.user;if(!user)return say('سجّل الدخول أولًا');socket.emit('cards:create',{mode:kind,idToken:await user.getIdToken(),required:$('#cardsSeats')?.value},r=>{if(!r?.ok)return say(r?.error||'تعذر إنشاء الغرفة');save(r);restore()});};
+    $('#cardsJoin').onclick=async()=>{const user=window.IAmOmaniFirebase?.user;if(!user)return say('سجّل الدخول أولًا');socket.emit('cards:join',{code:$('#cardsCode').value.trim(),idToken:await user.getIdToken()},r=>{if(!r?.ok)return say(r?.error||'تعذر الانضمام');save(r);restore()});};
   }
   function card(c,active=true){return `<button type="button" class="playing-card ${red(c)?'red':''} ${chosen.has(c.id)?'selected':''}" data-card="${esc(c.id)}" ${active?'':'disabled'} aria-label="${esc(label(c))}"><b>${esc(rank(c.v))}</b><span>${esc(c.s)}</span></button>`}
   function players(s){return `<div class="cards-players">${s.players.map((p,i)=>`<span class="${s.turn===i&&s.status==='playing'?'current':''}"><span data-player-uid="${esc(p.uid||'')}">${esc(p.name)}</span> · ${p.count} ورقة ${s.mode==='hand'?`· ${p.score} نقطة`:`· فريق ${(i%2)+1}`}</span>`).join('')}</div>`}
@@ -38,6 +44,7 @@
   function render(s){state=s;mode=s.mode;if(layer.classList.contains('hidden'))return;$('#cardsTitle').textContent=`${names[s.mode]} • أنا عُماني`;if(s.status==='lobby')return lobby(s);if(s.status==='round-end'||s.status==='finished')return result(s);s.mode==='hand'?hand(s):sixty(s)}
   document.addEventListener('click',e=>{if(e.target.closest('#handEntry'))entry('hand');if(e.target.closest('#sixtyoneEntry'))entry('sixtyone')});
   socket.on('cards:state',s=>{if(session?.code===s.code)render(s)});
-  socket.on('connect',()=>{if(session?.token)socket.emit('cards:reconnect',session,r=>{if(!r?.ok){session=null;localStorage.removeItem('iamOmaniCardsSession')}})});
+  socket.on('connect',restore);
+  window.addEventListener('iam-omani-auth',restore);
   window.IAM_OMANI_CARDS={open:entry};
 })();
