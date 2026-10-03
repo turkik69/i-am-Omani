@@ -4,7 +4,9 @@ const path = require('path');
 const fs = require('fs');
 const { randomUUID } = require('crypto');
 const { Server } = require('socket.io');
-const admin = require('firebase-admin');
+const {initializeApp,cert}=require('firebase-admin/app');
+const {getAuth}=require('firebase-admin/auth');
+const {getFirestore,FieldValue}=require('firebase-admin/firestore');
 const { onlineQuestions } = require('./questions-service');
 
 const app = express();
@@ -48,8 +50,8 @@ try {
     if (serviceAccount.type !== 'service_account' || serviceAccount.project_id !== firebaseConfig.projectId) {
       throw new Error('Firebase service account does not match the configured project');
     }
-    firebaseAdmin = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+    firebaseAdmin = initializeApp({
+      credential: cert(serviceAccount)
     });
   } else {
     console.warn(`Firebase Admin credentials not found (${secretNames.length} secret file(s) mounted)`);
@@ -77,9 +79,9 @@ app.post('/api/auth/username-login', async (req, res) => {
   if (!/^[a-z0-9_]{3,24}$/.test(username) || typeof password !== 'string' || !password || password.length > 1024)
     return res.status(400).json({ error: 'بيانات الدخول غير صحيحة' });
   try {
-    const nameDoc = await admin.firestore().collection('usernames').doc(username).get();
+    const nameDoc = await getFirestore(firebaseAdmin).collection('usernames').doc(username).get();
     if (!nameDoc.exists) throw new Error('Unknown username');
-    const account = await admin.auth().getUser(nameDoc.data().uid);
+    const account = await getAuth(firebaseAdmin).getUser(nameDoc.data().uid);
     const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(firebaseConfig.apiKey)}`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: account.email, password, returnSecureToken: true })
@@ -87,7 +89,7 @@ app.post('/api/auth/username-login', async (req, res) => {
     if (!response.ok) throw new Error('Invalid password');
     const tokens = await response.json();
     if (tokens.localId !== account.uid) throw new Error('UID mismatch');
-    res.json({ token: await admin.auth().createCustomToken(account.uid) });
+    res.json({ token: await getAuth(firebaseAdmin).createCustomToken(account.uid) });
   } catch (error) {
     console.warn('Username login failed:', error.message);
     res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
@@ -148,9 +150,9 @@ function findLocation(wilayat, village) {
 
 async function verifiedAccount(token) {
   if (!firebaseAdmin || typeof token !== 'string' || !token) throw new Error('سجل الدخول أولًا');
-  const identity = await admin.auth().verifyIdToken(token);
+  const identity = await getAuth(firebaseAdmin).verifyIdToken(token);
   if (!identity.email_verified) throw new Error('أكد بريدك الإلكتروني أولًا');
-  const ref = admin.firestore().collection('users').doc(identity.uid);
+  const ref = getFirestore(firebaseAdmin).collection('users').doc(identity.uid);
   const snap = await ref.get();
   if (!snap.exists) throw new Error('الملف الشخصي غير موجود');
   return { uid: identity.uid, ref, data: snap.data() };
@@ -222,18 +224,18 @@ app.delete('/api/profile/me', async (req,res) => {
   res.set('Cache-Control','no-store');
   try {
     if(req.body?.confirmation!=='DELETE')return res.status(400).json({error:'أكّد رغبتك في حذف الحساب'});
-    const token=authToken(req),identity=await admin.auth().verifyIdToken(token);
+    const token=authToken(req),identity=await getAuth(firebaseAdmin).verifyIdToken(token);
     if(Date.now()/1000-identity.auth_time>15*60)
       return res.status(403).json({error:'سجل الدخول مرة أخرى ثم أعد طلب الحذف'});
     const account=await verifiedAccount(token);
     const username=account.data.username;
-    await admin.firestore().runTransaction(async tx=>{
-      const nameRef=username?admin.firestore().collection('usernames').doc(username):null;
+    await getFirestore(firebaseAdmin).runTransaction(async tx=>{
+      const nameRef=username?getFirestore(firebaseAdmin).collection('usernames').doc(username):null;
       const nameDoc=nameRef?await tx.get(nameRef):null;
       if(nameDoc?.data()?.uid===account.uid)tx.delete(nameRef);
       tx.delete(account.ref);
     });
-    await admin.auth().deleteUser(account.uid);
+    await getAuth(firebaseAdmin).deleteUser(account.uid);
     delete persistent.players[account.uid];
     for(const game of persistent.games)if(game.winnerUid===account.uid){
       game.winner='لاعب محذوف';delete game.winnerUid;
@@ -255,7 +257,7 @@ app.delete('/api/profile/me', async (req,res) => {
 });
 app.get('/api/profile/:uid/photo', async (req,res) => {
   try {
-    const snap=await admin.firestore().collection('users').doc(req.params.uid).get();
+    const snap=await getFirestore(firebaseAdmin).collection('users').doc(req.params.uid).get();
     const match=snap.data()?.photoData?.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
     if(!match) return res.sendStatus(404);
     res.set('Cache-Control','public,max-age=300');
@@ -265,7 +267,7 @@ app.get('/api/profile/:uid/photo', async (req,res) => {
 app.get('/api/profile/:uid', async (req,res) => {
   res.set('Cache-Control','no-store');
   if(!firebaseAdmin || !/^[A-Za-z0-9_-]{10,128}$/.test(req.params.uid)) return res.sendStatus(404);
-  try { const snap=await admin.firestore().collection('users').doc(req.params.uid).get();
+  try { const snap=await getFirestore(firebaseAdmin).collection('users').doc(req.params.uid).get();
     if(!snap.exists)return res.sendStatus(404);
     res.json(publicAccount(req.params.uid,snap.data()));
   } catch {res.sendStatus(503);}
@@ -444,19 +446,19 @@ function finishQuiz(room) {
         const increments={};
         for(const [category,value] of Object.entries(categories)){
           const safeCategory=category.replace(/[.\[\]*/]/g,'_').slice(0,30);
-          increments[`publicStats.categories.${safeCategory}.answered`]=admin.firestore.FieldValue.increment(value.answered);
-          increments[`publicStats.categories.${safeCategory}.correct`]=admin.firestore.FieldValue.increment(value.correct);
+          increments[`publicStats.categories.${safeCategory}.answered`]=FieldValue.increment(value.answered);
+          increments[`publicStats.categories.${safeCategory}.correct`]=FieldValue.increment(value.correct);
         }
-        admin.firestore().collection('users').doc(p.uid).update({
-          'publicStats.games':admin.firestore.FieldValue.increment(1),
-          'publicStats.wins':admin.firestore.FieldValue.increment(p.rank===1?1:0),
-          'publicStats.correct':admin.firestore.FieldValue.increment(p.correct),
-          'publicStats.totalScore':admin.firestore.FieldValue.increment(p.score),
-          'publicStats.bestScore':admin.firestore.FieldValue.increment(0),
+        getFirestore(firebaseAdmin).collection('users').doc(p.uid).update({
+          'publicStats.games':FieldValue.increment(1),
+          'publicStats.wins':FieldValue.increment(p.rank===1?1:0),
+          'publicStats.correct':FieldValue.increment(p.correct),
+          'publicStats.totalScore':FieldValue.increment(p.score),
+          'publicStats.bestScore':FieldValue.increment(0),
           'publicStats.lastPlayedAt':now,
           ...increments
-        }).then(async()=>{if(p.score)await admin.firestore().runTransaction(async tx=>{
-          const ref=admin.firestore().collection('users').doc(p.uid),snap=await tx.get(ref);
+        }).then(async()=>{if(p.score)await getFirestore(firebaseAdmin).runTransaction(async tx=>{
+          const ref=getFirestore(firebaseAdmin).collection('users').doc(p.uid),snap=await tx.get(ref);
           tx.update(ref,{'publicStats.bestScore':Math.max(p.score,snap.data()?.publicStats?.bestScore||0)});
         })}).catch(e=>console.error('Stats save failed:',e.message));
       }
@@ -716,7 +718,7 @@ app.get('/api/leaderboard', async (req,res)=>{
   res.set('Cache-Control','no-store');
   if(firebaseAdmin){
     try {
-      const snapshot=await admin.firestore().collection('users')
+      const snapshot=await getFirestore(firebaseAdmin).collection('users')
         .orderBy('publicStats.totalScore','desc').limit(50).get();
       return res.json(snapshot.docs.map(doc=>{
         const account=publicAccount(doc.id,doc.data());
