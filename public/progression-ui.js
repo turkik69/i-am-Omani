@@ -14,7 +14,7 @@
   ];
 
   const CATEGORIES = [
-    {id:'oman',name:'عُمان',icon:'🇴🇲',desc:'تاريخ، معالم، ولايات وتراث'},
+    {id:'oman',name:'عُمان',icon:'🇴🇲',desc:'حكام، تاريخ، مؤسسات وولايات'},
     {id:'sports',name:'رياضة',icon:'⚽',desc:'كرة القدم والرياضات العالمية'},
     {id:'culture',name:'ثقافة عامة',icon:'📚',desc:'معرفة وأدب وفنون'},
     {id:'geography',name:'جغرافيا',icon:'🌍',desc:'دول ومدن وطبيعة'},
@@ -109,7 +109,7 @@
 
   function injectProfile(){
     if(!$('#profileBtn')){
-      const b=document.createElement('button');b.id='profileBtn';b.className='icon-btn';b.title='ملفي ومستواي';b.textContent='🏅';$('.top-actions')?.prepend(b);b.onclick=()=>{renderProfile();showProfile();};
+      const b=document.createElement('button');b.id='profileBtn';b.className='icon-btn';b.title='ملفي الشخصي';b.setAttribute('aria-label','فتح ملفي الشخصي');b.innerHTML=window.avatarHTML?.('OM1')||'👤';$('.top-actions')?.prepend(b);b.onclick=()=>{renderProfile();showProfile();};
     }
     if(!$('#progressProfileScreen')){
       $('#app')?.insertAdjacentHTML('beforeend',`<section id="progressProfileScreen" class="screen"><div class="profile-shell"><button class="back profile-back">→ رجوع</button><div id="progressProfileBody"></div></div></section>`);
@@ -122,13 +122,14 @@
     computeBadges();ensureDaily();const l=levelInfo(profile.xp);const next=l.next?`${profile.xp.toLocaleString()} / ${l.next.xp.toLocaleString()} XP`:`${profile.xp.toLocaleString()} XP • أعلى مستوى`;
     const cats=Object.entries(profile.categories||{}).sort((a,b)=>(b[1].correct||0)-(a[1].correct||0));
     $('#progressProfileBody').innerHTML=`
-      <div class="profile-hero-card"><div class="profile-avatar">${profile.lastAvatar||'🇴🇲'}</div><div><small>ملف اللاعب</small><h1>${esc(profile.lastName||'لاعب أنا عُماني')}</h1><div class="level-title">${l.cur.icon} ${l.cur.name} • Lv.${l.cur.level}</div></div></div>
+      <div class="profile-hero-card"><div class="profile-avatar" id="profileHeroAvatar">${window.avatarHTML?.(window.IAmOmaniFirebase?.profile?.avatar||'OM1')||'👤'}</div><div class="profile-hero-copy"><small>هويتي في أنا عُماني</small><h1>${esc(profile.lastName||'لاعب أنا عُماني')}</h1><div class="level-title">${l.cur.icon} ${l.cur.name} • المستوى ${l.cur.level}</div><p>اسمك وصورتك يظهران في المجالس ومنافساتك، بينما تبقى بيانات حسابك خاصة.</p></div></div>
       <div class="xp-card"><div><b>${next}</b><span>${l.next?`${l.pct}% إلى ${l.next.name}`:'وصلت إلى القمة'}</span></div><div class="xp-track"><i style="width:${l.pct}%"></i></div></div>
       <div class="profile-stat-grid"><div><b>${profile.games}</b><span>مسابقة</span></div><div><b>${profile.wins}</b><span>فوز</span></div><div><b>${profile.correct}</b><span>إجابة صحيحة</span></div><div><b>${profile.fastest}</b><span>أسرع إجابة</span></div><div><b>${profile.maxStreak}</b><span>أفضل سلسلة</span></div><div><b>${profile.perfect}</b><span>مسابقة كاملة</span></div></div>
       <div class="profile-section"><h3>🏅 الشارات</h3><div class="badge-grid">${profile.badges.length?profile.badges.map(b=>`<div class="achievement-badge"><span>${b.icon}</span><b>${b.name}</b></div>`).join(''):'<div class="empty-state">ابدأ اللعب لفتح أول شارة.</div>'}</div></div>
       <div class="profile-section"><h3>📊 تخصصاتك</h3><div class="specialty-list">${cats.length?cats.map(([id,v])=>`<div><span>${CATEGORIES.find(c=>c.id===id)?.icon||'🎯'}</span><b>${categoryName(id)}</b><i><em style="width:${Math.min(100,(v.correct||0)*3)}%"></em></i><strong>${v.correct||0}</strong></div>`).join(''):'<div class="empty-state">ستظهر هنا المجالات الأقوى لديك.</div>'}</div></div>
       <div class="profile-section daily-card"><h3>🌅 تحديات اليوم</h3>${dailyRows()}</div>${cloudUser?'<button id="profileSignOut" class="secondary-btn">تسجيل الخروج</button>':''}`;
     if(cloudUser)$('#profileSignOut').onclick=()=>cloudFirebase.authMod.signOut(cloudFirebase.auth);
+    window.IAM_OMANI_SYNC_PROFILE_PHOTO?.();
   }
   function dailyRows(){ensureDaily();const d=profile.daily;return [
     ['شارك في مسابقة',d.games,1,100,d.claimed.game],['أجب 5 إجابات صحيحة',d.correct,5,200,d.claimed.correct],['حقق أسرع إجابة',d.fastest,1,150,d.claimed.fastest]
