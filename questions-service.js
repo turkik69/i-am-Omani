@@ -165,7 +165,8 @@ async function onlineQuestions({category='mixed',difficulty='متوسط',count=8
   const level=difficulty==='نخبة'?4:difficulty==='متقدم'?3:difficulty==='متوسط'?2:1;
   const fresh=eligible.filter(f=>!excluded.has(`${f.key}:${f.row.id}`));
   const repeated=eligible.filter(f=>excluded.has(`${f.key}:${f.row.id}`));
-  const ordered=[...spreadTopics(fresh.filter(f=>f.spec.tier>=level)),...spreadTopics(fresh.filter(f=>f.spec.tier<level)),...spreadTopics(repeated)];
+  const preferred=f=>level<=2 ? f.spec.tier<=level : f.spec.tier>=level;
+  const ordered=[...spreadTopics(fresh.filter(preferred)),...spreadTopics(fresh.filter(f=>!preferred(f))),...spreadTopics(repeated)];
   const selected=ordered.slice(0,Math.min(Math.max(1,count),12));
   if(selected.length<Math.min(count,4)) throw Error('Too few live questions');
   return selected.map(({row,spec,key,pool})=>{
