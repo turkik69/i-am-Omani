@@ -2,6 +2,21 @@
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
   const socket=window.io?io():null;
   let hostToken='',roomCode='',playerId='',tableId='',balootRoom=null,balootTable=null,balootAvatar='OM1';
+  const SESSION_KEY='iamOmaniBalootSession';
+  let savedSession=null;
+  try{savedSession=JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch{}
+  const remember=details=>{savedSession=details;localStorage.setItem(SESSION_KEY,JSON.stringify(details));};
+  async function reconnect(){
+    const user=window.IAmOmaniFirebase?.user;
+    if(!savedSession||!user||!socket?.connected)return;
+    let idToken;try{idToken=await user.getIdToken()}catch{return}
+    socket.emit('baloot:reconnect',{...savedSession,idToken},res=>{
+      if(!res?.ok){savedSession=null;localStorage.removeItem(SESSION_KEY);return;}
+      roomCode=savedSession.code;balootRoom=res.room;
+      if(res.role==='host'){hostToken=savedSession.hostToken;hostLobby();}
+      else{playerId=res.playerId;hostToken='';open();body().innerHTML='<div class="baloot-panel"><div class="baloot-wait">أُعيد الاتصال بالمجلس. بانتظار دورك أو بدء الجولة.</div></div>';}
+    });
+  }
   const state={rooms:[]};
   localStorage.setItem('iamOmaniGame','quiz');
   const toast=document.createElement('div');toast.className='baloot-toast';document.body.appendChild(toast);
@@ -34,7 +49,7 @@
     if(!w.options.length){w.innerHTML='<option value="مسقط">مسقط</option><option value="بركاء">بركاء</option><option value="السيب">السيب</option><option value="بوشر">بوشر</option><option value="مطرح">مطرح</option><option value="نزوى">نزوى</option><option value="صلالة">صلالة</option><option value="صحار">صحار</option>'}
     const upd=()=>{v.innerHTML=villages(w.value)||'<option value="المجلس الرئيسي">المجلس الرئيسي</option>';applyWilayatTheme(w.value)};
     w.onchange=upd;upd();
-    $('#bCreate').onclick=()=>socket.emit('baloot:create',{title:$('#bTitle').value,wilayat:w.value,village:v.value,variant:$('#bVariant').value},res=>{if(!res?.ok)return say(res?.error||'تعذر الإنشاء');hostToken=res.hostToken;roomCode=res.code;balootRoom=res.room;hostLobby();});
+    $('#bCreate').onclick=async()=>{const user=window.IAmOmaniFirebase?.user;if(!user)return say('سجّل الدخول أولًا');let idToken;try{idToken=await user.getIdToken()}catch{return say('تعذر التحقق من الحساب')}socket.emit('baloot:create',{idToken,title:$('#bTitle').value,wilayat:w.value,village:v.value,variant:$('#bVariant').value},res=>{if(!res?.ok)return say(res?.error||'تعذر الإنشاء');hostToken=res.hostToken;roomCode=res.code;balootRoom=res.room;remember({code:roomCode,hostToken});hostLobby();})};
     $('#bGoJoin').onclick=joinScreen;
   }
 
@@ -67,9 +82,11 @@
   socket?.on('baloot:rooms',r=>{state.rooms=r||[];renderRooms()});
   socket?.on('baloot:room',r=>{if(r.code!==roomCode)return;balootRoom=r;if(hostToken)renderHost();});
   socket?.on('baloot:pending',p=>{if(balootRoom){balootRoom.pending=p;renderHost();}});
-  socket?.on('baloot:approved',d=>{sound('join');roomCode=d.code;playerId=d.playerId;balootRoom=d.room;body().innerHTML='<div class="baloot-panel"><div class="baloot-wait">تم قبولك. بانتظار المشرف لبدء الجولة وتوزيع الطاولات.</div></div>';});
+  socket?.on('baloot:approved',d=>{sound('join');roomCode=d.code;playerId=d.playerId;balootRoom=d.room;remember({code:roomCode,reconnectToken:d.reconnectToken});body().innerHTML='<div class="baloot-panel"><div class="baloot-wait">تم قبولك. بانتظار المشرف لبدء الجولة وتوزيع الطاولات.</div></div>';});
   socket?.on('baloot:rejected',()=>{say('تم رفض طلب الانضمام');joinScreen()});
   socket?.on('baloot:choose-trump',d=>{tableId=d.table;const pick=prompt(`اختر الحكم: ${d.suits.join(' ')}`,d.suits[0]);if(pick)socket.emit('baloot:trump',{code:roomCode,table:tableId,playerId,suit:pick},res=>{if(!res?.ok)say('تعذر اختيار الحكم');else sound('trump')});});
   socket?.on('baloot:table',t=>{const prev=balootTable;if(!prev||prev.table!==t.table||prev.round!==t.round)sound('card-deal');else if((t.teamScore?.[0]||0)+(t.teamScore?.[1]||0)>(prev.teamScore?.[0]||0)+(prev.teamScore?.[1]||0))sound('trick');else if((t.tricks?.length||0)>(prev.tricks?.length||0)&&t.turn!==t.seat)sound('card-play');balootTable=t;tableId=t.table;tableScreen()});
   socket?.on('baloot:round-finished',d=>{sound('round-end');open();body().innerHTML=`<div class="baloot-panel"><h3>انتهت الجولة ${esc(d.round)}</h3><div class="baloot-players">${d.leaderboard.map(p=>`<div class="baloot-person"><b>${p.rank}. ${esc(p.name)}</b><b>${p.score} نقطة</b></div>`).join('')}</div>${hostToken?'<div class="baloot-actions"><button id="bNext" class="baloot-btn">جولة جديدة</button></div>':''}</div>`;if(hostToken)$('#bNext').onclick=()=>socket.emit('baloot:next-round',{code:roomCode,hostToken},()=>hostLobby());});
+  socket?.on('connect',reconnect);
+  window.addEventListener('iam-omani-auth',reconnect);
 })();
