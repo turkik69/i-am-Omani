@@ -189,6 +189,33 @@ app.put('/api/profile/me', async (req,res) => {
     res.json({...publicAccount(a.uid,{...a.data,...patch}),photoData:patch.photoData===undefined?a.data.photoData||null:patch.photoData});
   } catch(e){res.status(401).json({error:e.message});}
 });
+app.put('/api/profile/progress', async (req,res) => {
+  res.set('Cache-Control','no-store');
+  try {
+    const a=await verifiedAccount(authToken(req)), input=req.body?.progress;
+    if(!input||typeof input!=='object'||Array.isArray(input)||JSON.stringify(input).length>12000)
+      return res.status(400).json({error:'بيانات التقدم غير صالحة'});
+    const fields=['xp','games','wins','correct','fastest','maxStreak','currentStreak','perfect'];
+    const number=value=>Math.min(10000000,Math.max(0,Math.floor(Number(value)||0)));
+    const progress=Object.fromEntries(fields.map(field=>[field,number(input[field])]));
+    progress.categories={};
+    for(const [name,value] of Object.entries(input.categories||{}).slice(0,30))
+      if(name.length<50&&value&&typeof value==='object')progress.categories[name]={correct:number(value.correct)};
+    progress.daily=input.daily&&typeof input.daily==='object'?{
+      date:String(input.daily.date||'').slice(0,10),games:number(input.daily.games),
+      correct:number(input.daily.correct),fastest:number(input.daily.fastest),
+      claimed:Object.fromEntries(['game','correct','fastest'].map(key=>[key,!!input.daily.claimed?.[key]]))
+    }:{date:'',games:0,correct:0,fastest:0,claimed:{}};
+    progress.badges=Array.isArray(input.badges)?input.badges.slice(0,30).map(b=>({
+      id:clean(b?.id,60),icon:clean(b?.icon,12),name:clean(b?.name,60)
+    })):[];
+    progress.lastName=clean(a.data.nickname||a.data.username,28);
+    progress.lastAvatar=clean(input.lastAvatar,12);
+    const level=Math.max(1,Math.min(8,1+[500,1500,3500,7000,12000,20000,35000].filter(x=>progress.xp>=x).length));
+    await a.ref.set({progress,xp:progress.xp,level,badges:progress.badges},{merge:true});
+    res.json({ok:true});
+  }catch(error){res.status(401).json({error:error.message});}
+});
 app.get('/api/profile/:uid/photo', async (req,res) => {
   try {
     const snap=await admin.firestore().collection('users').doc(req.params.uid).get();
