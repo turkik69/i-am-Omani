@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="أونو: بطاقات ملونة">
+<defs><radialGradient id="bg"><stop stop-color="#8c1c23"/><stop offset="1" stop-color="#260d1c"/></radialGradient><filter id="glow"><feGaussianBlur stdDeviation="14"/></filter></defs>
+<rect width="512" height="512" rx="98" fill="url(#bg)"/>
+<circle cx="256" cy="245" r="190" fill="none" stroke="#ffbb72" stroke-opacity=".55" stroke-width="17" filter="url(#glow)"/>
+<g stroke="#fff" stroke-width="9"><rect x="73" y="132" width="181" height="272" rx="26" fill="#2077ce" transform="rotate(-21 163 268)"/><rect x="255" y="110" width="181" height="272" rx="26" fill="#169e60" transform="rotate(19 345 246)"/><rect x="163" y="89" width="186" height="280" rx="27" fill="#eabb1b" transform="rotate(5 256 229)"/><rect x="169" y="154" width="186" height="280" rx="27" fill="#d6263b" transform="rotate(-5 262 294)"/></g>
+<ellipse cx="263" cy="290" rx="74" ry="102" transform="rotate(-5 263 290)" fill="#fff"/>
+<text x="264" y="319" text-anchor="middle" font-family="Arial,sans-serif" font-size="86" font-weight="900" fill="#d6263b">7</text>
+<path d="M57 440q199 50 398-2" fill="none" stroke="#ffd88a" stroke-opacity=".5" stroke-width="5"/>
+</svg>
