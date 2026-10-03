@@ -98,7 +98,7 @@
   }
   function injectActivity(){
     if($('#activityRankings'))return;
-    $('#homeScreen .mode-grid')?.insertAdjacentHTML('afterend','<section class="activity-panel"><h2>🇴🇲 ساحات عُمان الآن</h2><p>نشاط اللاعبين المتصلين في المجالس. يتغير الترتيب مباشرة.</p><div id="activityRankings" class="activity-rankings"></div></section>');
+    $('#homeScreen .mode-grid')?.insertAdjacentHTML('afterend','<section class="activity-panel"><h2>ساحات عُمان الآن</h2><p>نشاط اللاعبين المتصلين في المجالس. يتغير الترتيب مباشرة.</p><div id="activityRankings" class="activity-rankings"></div></section>');
     fetch('/api/activity').then(r=>r.json()).then(renderActivity).catch(()=>{});
   }
   window.socket?.on('activity:update',renderActivity);
