@@ -12,6 +12,7 @@ function harness(register,kind){
 async function until(fn,max=200){for(let i=0;i<max;i++){const result=await fn();if(result)return result;await wait(5)}throw Error('Practice game stalled')}
 async function uno(){const h=harness(require('./uno-server'),'u'),a=await h.send('uno:create',{idToken:'uno'});assert((await h.send('uno:practice',a)).ok);
   await until(async()=>{let s=h.events['uno:state'];if(s.status!=='playing')return s;if(s.pending?.target===s.selfId){assert((await h.send('uno:penalty',{...a,challenge:false})).ok);return false}
+    if(s.pending)return false;
     if(s.players[s.turn].id!==s.selfId)return false;
     const legal=s.hand.filter(c=>c.color==='wild'||c.color===s.color||c.value===s.top.value).filter(c=>!s.drawnId||c.id===s.drawnId);
     if(legal.length){const c=legal[0];assert((await h.send('uno:play',{...a,cardId:c.id,color:c.color==='wild'?'red':undefined,uno:true})).ok)}else if(s.drawnId)assert((await h.send('uno:keep',a)).ok);else assert((await h.send('uno:draw',a)).ok);return false},800);
