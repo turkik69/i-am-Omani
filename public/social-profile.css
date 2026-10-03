@@ -1,10 +1,10 @@
-.omani-flag-orbit{position:fixed;z-index:24;left:16px;top:76px;width:72px;height:72px;border-radius:50%;display:grid;place-items:center;pointer-events:none;background:radial-gradient(circle,#10204e 20%,#071027 65%,transparent 70%);box-shadow:0 0 0 1px #f2c66a99,0 0 20px #ffd07466,0 0 52px #e62e5270;animation:flag-glow 5s ease-in-out infinite}
-.omani-flag-orbit::before,.omani-flag-orbit::after{content:'';position:absolute;inset:-7px;border:1px solid #ffd2708c;border-radius:50%;box-shadow:0 0 13px #ffce79;animation:flag-ring 9s linear infinite}
-.omani-flag-orbit::after{inset:-14px;border-color:#e433594d;animation-direction:reverse}
-.omani-flag-orbit span{font-size:40px;filter:drop-shadow(0 3px 8px #0008);animation:flag-wave 5s ease-in-out infinite}
-@keyframes flag-glow{50%{box-shadow:0 0 0 1px #f2c66acc,0 0 28px #ffd074aa,0 0 66px #e62e5280}}
-@keyframes flag-ring{to{transform:rotate(360deg)}}
-@keyframes flag-wave{50%{transform:perspective(100px) rotateY(12deg) rotate(-4deg)}}
+/* The flag is a luminous ribbon within the scene, not a floating emoji badge. */
+.oman-ribbon-showcase{position:relative;isolation:isolate;width:min(82vw,610px);height:clamp(115px,24vw,205px);margin:2px auto 4px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.oman-ribbon-showcase::before{content:"";position:absolute;inset:20% 10%;z-index:-1;background:radial-gradient(ellipse,#eeb95780 0%,#e4a75d34 38%,transparent 73%);filter:blur(25px);animation:ribbon-gleam 6s ease-in-out infinite alternate}
+.oman-ribbon-showcase img{display:block;width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 0 12px #ffd37b80) drop-shadow(0 0 28px #f2b45742);animation:ribbon-float 9s ease-in-out infinite}
+.screen:not(#homeScreen)::after{background-image:url("/oman-flag-ribbon.svg?v=60"),radial-gradient(circle at 50% 5%,rgba(24,11,75,.3),transparent 38%);background-position:right 3% top 5%,center;background-size:min(43vw,340px) auto,cover;background-repeat:no-repeat;opacity:.28}
+@keyframes ribbon-float{0%,100%{transform:perspective(900px) rotateY(-5deg) rotate(-2deg) translateY(0)}50%{transform:perspective(900px) rotateY(6deg) rotate(1deg) translateY(-7px)}}
+@keyframes ribbon-gleam{to{opacity:.62;transform:scale(1.12)}}
 .profile-edit-card{display:flex;align-items:center;gap:20px;padding:22px;margin:12px 0 22px;border-radius:22px;background:#11163dcf;border:1px solid #daa9647c;box-shadow:0 0 26px #dcb25a20}
 .editable-photo{width:106px;height:106px;min-width:106px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:#101c3d;border:2px solid #e5b661;box-shadow:0 0 22px #e3b26266;font-size:48px}
 .editable-photo img,.editable-photo .omani-portrait{width:100%;height:100%;object-fit:cover}
@@ -30,5 +30,5 @@
 .public-player-head{display:flex;align-items:center;gap:16px;margin:24px 0}
 .public-player-head h2{margin:4px 0}
 .strengths>div{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #fff3;padding:10px 0}
-@media(max-width:690px){.omani-flag-orbit{left:9px;top:82px;width:48px;height:48px}.omani-flag-orbit span{font-size:27px}.activity-rankings{grid-template-columns:1fr}.profile-edit-card{align-items:flex-start;flex-direction:column}.editable-photo{width:88px;height:88px;min-width:88px}}
-@media(prefers-reduced-motion:reduce){.omani-flag-orbit,.omani-flag-orbit::before,.omani-flag-orbit::after,.omani-flag-orbit span{animation:none}}
+@media(max-width:690px){.oman-ribbon-showcase{width:min(92vw,480px);height:clamp(115px,31vw,165px);margin:0 auto -4px}.screen:not(#homeScreen)::after{background-size:57vw auto,cover;opacity:.2}.activity-rankings{grid-template-columns:1fr}.profile-edit-card{align-items:flex-start;flex-direction:column}.editable-photo{width:88px;height:88px;min-width:88px}}
+@media(prefers-reduced-motion:reduce){.oman-ribbon-showcase img,.oman-ribbon-showcase::before{animation:none}}
