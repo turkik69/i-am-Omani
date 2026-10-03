@@ -5,11 +5,12 @@
   "main": "baloot-bootstrap.js",
   "scripts": {
     "start": "node baloot-bootstrap.js",
-    "dev": "nodemon baloot-bootstrap.js",
-    "check": "node --check server.js && node --check baloot-server.js && node --check baloot-bootstrap.js && node --check uno-server.js && node --check card-games-server.js && node --check public/card-games.js"
+    "dev": "node --watch baloot-bootstrap.js",
+    "check": "node --check server.js && node --check baloot-server.js && node --check baloot-bootstrap.js && node --check uno-server.js && node --check card-games-server.js && node --check public/card-games.js && node --check public/uno.js && node --check public/game-catalog.js",
+    "test:games": "node uno-smoke.js && node baloot-smoke.js && node card-games-smoke.js && node practice-smoke.js"
   },
   "engines": {
-    "node": ">=20 <23"
+    "node": ">=22 <23"
   },
   "keywords": [
     "oman",
@@ -25,10 +26,7 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.21.2",
-    "firebase-admin": "^13.10.0",
+    "firebase-admin": "^14.5.0",
     "socket.io": "^4.8.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
   }
 }
