@@ -8,9 +8,38 @@
   let active = !document.hidden;
   let playVersion = 0;
   let playPending = false;
+  let audioContext = null;
+  let musicGain = null;
+  const backgroundLevel = () => document.querySelector('.screen.active')?.id === 'questionScreen' ? .003 : .008;
+
+  function connectQuietAudio() {
+    if (musicGain) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    try {
+      const source = context.createMediaElementSource(audio);
+      const gain = context.createGain();
+      gain.gain.value = backgroundLevel();
+      source.connect(gain);
+      gain.connect(context.destination);
+      audioContext = context;
+      musicGain = gain;
+      // iOS ignores media-element volume; the GainNode controls its real output.
+      audio.volume = 1;
+    } catch (error) {
+      context.close().catch(() => {});
+      console.warn('Omani music gain:', error);
+    }
+  }
 
   function updateVolume() {
-    audio.volume = document.querySelector('.screen.active')?.id === 'questionScreen' ? .008 : .025;
+    const level = backgroundLevel();
+    if (musicGain && audioContext) {
+      musicGain.gain.setTargetAtTime(level, audioContext.currentTime, .12);
+    } else {
+      audio.volume = level;
+    }
   }
   function updateButton() {
     if (!button) return;
@@ -30,6 +59,8 @@
   }
   function play() {
     if (!enabled || !active || document.hidden || !audio.paused || playPending) return;
+    connectQuietAudio();
+    if (audioContext?.state === 'suspended') audioContext.resume().catch(error => console.warn('Omani music resume:', error));
     updateVolume();
     const version = ++playVersion;
     playPending = true;
@@ -92,4 +123,9 @@
   });
   updateVolume();
   updateButton();
+  window.OMANI_MUSIC_STATUS = () => ({
+    level: musicGain?.gain.value ?? audio.volume,
+    routedThroughGain: !!musicGain,
+    playing: !audio.paused
+  });
 })();
