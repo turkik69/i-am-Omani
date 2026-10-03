@@ -7,6 +7,7 @@ const DATASETS = {
   omanVision: { category:'رؤية عُمان 2040', question:'إلى أي محور في رؤية عُمان 2040 تنتمي أولوية «{item}»؟', tier:4, official:true },
   omanEvents: { category:'مهرجانات عُمان', question:'في أي محافظة تقام فعالية «{item}»؟', tier:2, official:'events', options:['مسقط','ظفار','جنوب الشرقية','شمال الباطنة','الداخلية','البريمي'] },
   omanDecrees: { category:'المراسيم السلطانية', question:'ما رقم المرسوم السلطاني المتعلق بـ«{item}»؟', tier:4, official:'decrees' },
+  omanMinisters: { category:'الحكومة والوزارات', question:'من يتولى منصب «{item}» في سلطنة عُمان؟', tier:3, official:'ministers' },
   geography: { category:'جغرافيا', question:'ما عاصمة «{item}»؟', query:'?item wdt:P31 wd:Q6256; wdt:P36 ?answer.', tier:2, limit:450 },
   science: { category:'علوم', question:'ما العدد الذري لعنصر «{item}»؟', query:'?item wdt:P31 wd:Q11344; wdt:P1086 ?answer.', numeric:true, tier:3, limit:150 },
   culture: { category:'ثقافة عامة', question:'من مؤلف كتاب «{item}»؟', query:'?item wdt:P31 wd:Q571; wdt:P50 ?answer.', tier:3, limit:650 },
@@ -36,7 +37,7 @@ async function dataset(name) {
   if(old?.pending) return old.pending;
   const spec=DATASETS[key];
   if(spec.official){
-    const pending=(spec.official==='events'?eventFacts():spec.official==='decrees'?decreeFacts():visionFacts()).then(rows=>{cache.set(key,{rows,expires:Date.now()+TTL});return rows;});
+    const pending=(spec.official==='events'?eventFacts():spec.official==='decrees'?decreeFacts():spec.official==='ministers'?ministerFacts():visionFacts()).then(rows=>{cache.set(key,{rows,expires:Date.now()+TTL});return rows;});
     cache.set(key,{pending});try{return await pending;}catch(error){cache.delete(key);throw error;}
   }
   const label=spec.numeric ? '?item rdfs:label ?itemLabel. FILTER(LANG(?itemLabel)="ar")' : '?item rdfs:label ?itemLabel. ?answer rdfs:label ?answerLabel. FILTER(LANG(?itemLabel)="ar" && LANG(?answerLabel)="ar")';
@@ -114,10 +115,36 @@ async function decreeFacts(){
   ];
   return rows.slice(0,60);
 }
+async function ministerFacts(){
+  const url='https://www.fm.gov.om/ar/about-oman/government/ministers-profiles/';
+  const response=await fetch(url,{headers:{'User-Agent':'IAmOmaniGame/1.0 (https://github.com/turkik69/i-am-Omani)'},signal:AbortSignal.timeout(5000)});
+  if(!response.ok)throw Error(`Oman ministers ${response.status}`);
+  const page=(await response.text()).replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi,' ').replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;|\u00a0/g,' ').replace(/\s+/g,' ');
+  const pairs=[
+    ['وزير الخارجية','السيد بدر بن حمد بن حمود البوسعيدي'],
+    ['وزير الداخلية','السيد حمود بن فيصل بن سعيد البوسعيدي'],
+    ['وزير المالية','سلطان بن سالم بن سعيد الحبسي'],
+    ['وزيرة التعليم','الدكتورة مديحة بنت أحمد بن ناصر الشيبانية'],
+    ['وزير الاقتصاد','الدكتور خميس بن سيف بن حمود الجابري'],
+    ['وزير الثقافة والرياضة والشباب','السيد سعود بن هلال بن حمد البوسعيدي'],
+    ['وزير العدل والشؤون القانونية','الدكتور عبد الله بن محمد بن سعيد السعيدي'],
+    ['وزير الإعلام','الدكتور عبد الله بن ناصر بن خليفة الحراصي'],
+    ['وزير الإسكان والتخطيط العمراني','الدكتور خلفان بن سعيد بن مبارك الشعيلي'],
+    ['وزير النقل والاتصالات وتقنية المعلومات','المهندس سعيد بن حمود بن سعيد المعولي'],
+    ['وزير العمل','الدكتور محاد بن سعيد بن علي باعوين'],
+    ['وزير الصحة','الدكتور هلال بن علي بن هلال السبتي']
+  ];
+  const rows=pairs.flatMap(([item,answer],i)=>{
+    const pos=page.indexOf(answer), role=pos>=0?page.indexOf(item,pos):-1;
+    return role>pos&&role-pos<600?[{id:`minister-${i+1}`,item,answer,source:url}]:[];
+  });
+  if(rows.length<4)throw Error('Official minister names could not be verified');
+  return rows;
+}
 
 async function onlineQuestions({category='mixed',difficulty='متوسط',count=8,exclude=[]}={}) {
   const hard=['متقدم','نخبة'].includes(difficulty);
-  const names=category==='oman' ? (difficulty==='سهل'?['oman','omanEvents']:['oman','omanYears','omanRulers','omanVision','omanEvents','omanSports',...(hard?['omanDecrees']:[])])
+  const names=category==='oman' ? (difficulty==='سهل'?['oman','omanEvents']:['oman','omanYears','omanRulers','omanVision','omanEvents','omanMinisters','omanSports',...(hard?['omanDecrees']:[])])
     :category==='sports'&&hard?['sports','omanSports']
     :category==='mixed' ? (hard?['omanYears','omanRulers','omanVision','omanSports','science','culture','geography']:['oman','geography','science','culture','sports'])
     :[DATASETS[category] ? category : 'geography'];
