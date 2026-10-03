@@ -41,7 +41,7 @@
         <button class="auth-link" type="button" id="verifySignOut">تسجيل الخروج</button>
       </div>
       <div id="authStatus" class="auth-status" role="status" aria-live="polite"></div>
-      <div class="auth-note">سيُستخدم بريدك لتأكيد الحساب واسترجاعه، ولن يظهر للاعبين.</div>
+      <div class="auth-note">سيُستخدم بريدك لتأكيد الحساب واسترجاعه، ولن يظهر للاعبين. <a href="/account-deletion.html">طريقة حذف الحساب</a></div>
     </div>`;
   document.body.appendChild(gate);
 
