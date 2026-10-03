@@ -155,18 +155,26 @@ async function verifiedAccount(token) {
   const ref = getFirestore(firebaseAdmin).collection('users').doc(identity.uid);
   const snap = await ref.get();
   if (!snap.exists) throw new Error('الملف الشخصي غير موجود');
-  return { uid: identity.uid, ref, data: snap.data() };
+  const data=snap.data();
+  if(Object.prototype.hasOwnProperty.call(data,'phone')){
+    await ref.update({phone:FieldValue.delete()});delete data.phone;
+  }
+  return { uid: identity.uid, ref, data };
 }
 global.__IAM_OMANI_VERIFY_ACCOUNT__ = verifiedAccount;
 function publicAccount(uid, data) {
   const stats = data.publicStats || {};
+  // Public rank comes only from quiz results awarded by the server.
+  // Personal progress is editable from the client and must never grant rank.
+  const rankedXp=Math.max(0,Number(stats.totalScore)||0);
+  const rankedLevel=Math.max(1,Math.min(8,1+[500,1500,3500,7000,12000,20000,35000].filter(x=>rankedXp>=x).length));
   const categories = stats.categories || {};
   const strengths = Object.entries(categories)
     .sort((a,b) => (b[1].correct || 0) - (a[1].correct || 0))
     .slice(0, 5).map(([name, value]) => ({name, correct:value.correct || 0, answered:value.answered || 0}));
   return { uid, username:data.username, nickname:data.nickname || '', name:data.nickname || data.username,
     avatar:data.avatar || 'OM1', hasPhoto:!!data.photoData,
-    level:Math.max(1,Number(data.level)||1), xp:Math.max(0,Number(data.xp)||0),
+    level:rankedLevel, xp:rankedXp,
     stats:{games:stats.games||0,wins:stats.wins||0,correct:stats.correct||0,
       totalScore:stats.totalScore||0,bestScore:stats.bestScore||0,lastPlayedAt:stats.lastPlayedAt||null}, strengths };
 }
@@ -215,8 +223,7 @@ app.put('/api/profile/progress', async (req,res) => {
     })):[];
     progress.lastName=clean(a.data.nickname||a.data.username,28);
     progress.lastAvatar=clean(input.lastAvatar,12);
-    const level=Math.max(1,Math.min(8,1+[500,1500,3500,7000,12000,20000,35000].filter(x=>progress.xp>=x).length));
-    await a.ref.set({progress,xp:progress.xp,level,badges:progress.badges},{merge:true});
+    await a.ref.set({progress},{merge:true});
     res.json({ok:true});
   }catch(error){res.status(401).json({error:error.message});}
 });
@@ -544,9 +551,11 @@ io.on('connection', socket => {
     ack({ok:true, code, hostToken, room:publicRoom(room)}); emitRoom(room);
   });
 
-  socket.on('host:reconnect', ({code,hostToken}={}, ack=()=>{}) => {
+  socket.on('host:reconnect', async ({code,hostToken,idToken}={}, ack=()=>{}) => {
     const room=getRoom(code);
     if(!room || room.hostToken!==hostToken) return ack({ok:false,error:'تعذر استعادة جلسة المضيف'});
+    let account;try{account=await verifiedAccount(idToken)}catch{return ack({ok:false,error:'تحقق من حسابك أولًا'})}
+    if(room.hostUid!==account.uid)return ack({ok:false,error:'هذا المجلس تابع لحساب آخر'});
     clearTimeout(room.hostDisconnectTimer);
     room.hostDisconnectTimer=null;
     room.hostSocketId=socket.id; socket.join(room.code); socket.data.roomCode=room.code; socket.data.role='host';
@@ -583,10 +592,13 @@ io.on('connection', socket => {
     ack({ok:true}); emitRoom(room);
   });
 
-  socket.on('player:reconnect',({code,reconnectToken}={},ack=()=>{})=>{
+  socket.on('player:reconnect',async ({code,reconnectToken,idToken}={},ack=()=>{})=>{
     const room=getRoom(code),entry=room&&[...room.players.entries()].find(([,p])=>p.reconnectToken===reconnectToken);
     if(!entry)return ack({ok:false,error:'انتهت جلسة اللاعب'});
-    const [oldId,p]=entry;clearTimeout(p.leaveTimer);p.leaveTimer=null;
+    let account;try{account=await verifiedAccount(idToken)}catch{return ack({ok:false,error:'تحقق من حسابك أولًا'})}
+    const [oldId,p]=entry;
+    if(p.uid!==account.uid)return ack({ok:false,error:'هذا المقعد تابع لحساب آخر'});
+    clearTimeout(p.leaveTimer);p.leaveTimer=null;
     room.players.delete(oldId);room.players.set(socket.id,p);
     if(room.answers.has(oldId)){room.answers.set(socket.id,room.answers.get(oldId));room.answers.delete(oldId)}
     p.id=socket.id;socket.join(room.code);socket.data.roomCode=room.code;socket.data.role='player';
