@@ -7,7 +7,7 @@
     "start": "node baloot-bootstrap.js",
     "dev": "node --watch baloot-bootstrap.js",
     "check": "node --check server.js && node --check baloot-server.js && node --check baloot-bootstrap.js && node --check uno-server.js && node --check card-games-server.js && node --check public/card-games.js && node --check public/uno.js && node --check public/game-catalog.js",
-    "test:games": "node uno-smoke.js && node baloot-smoke.js && node card-games-smoke.js && node practice-smoke.js",
+    "test:games": "node quiz-auth-smoke.js && node uno-smoke.js && node baloot-smoke.js && node card-games-smoke.js && node practice-smoke.js",
     "test:deps": "node dependency-smoke.js"
   },
   "engines": {
