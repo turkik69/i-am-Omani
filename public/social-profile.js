@@ -37,7 +37,7 @@
     const hero=body.querySelector('.profile-hero-card');
     (hero||body).insertAdjacentHTML(hero?'afterend':'afterbegin',`
       <div id="profileEditCard" class="profile-edit-card">
-        <div class="profile-edit-intro"><div id="editablePhoto" class="editable-photo">🇴🇲</div><div><span class="profile-kicker">بطاقتي الشخصية</span><h2>صورتك ولقبك</h2><p>اختر الطريقة التي يعرفك بها اللاعبون في كل مجلس.</p></div></div>
+        <div class="profile-edit-intro"><div id="editablePhoto" class="editable-photo">${window.avatarHTML?.('OM1')||'👤'}</div><div><span class="profile-kicker">بطاقتي الشخصية</span><h2>صورتك ولقبك</h2><p>اختر الطريقة التي يعرفك بها اللاعبون في كل مجلس.</p></div></div>
         <div class="profile-edit-content">
           <div class="profile-current-name">الاسم الظاهر: <b id="profilePublicName">ملفي الشخصي</b></div><small>بريدك ورقم هاتفك لا يظهران للاعبين.</small>
           <label>لقبي في اللعبة <input id="profileNickname" maxlength="28" placeholder="اتركه فارغًا لاستخدام اسم المستخدم"></label>
