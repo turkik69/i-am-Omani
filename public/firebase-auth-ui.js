@@ -23,7 +23,6 @@
       </form>
       <form id="registerForm" class="auth-form">
         <label>اسم المستخدم</label><input id="regUsername" autocomplete="username" maxlength="24" required>
-        <label>رقم الهاتف</label><input id="regPhone" inputmode="tel" autocomplete="tel" placeholder="+968 ..." required>
         <label>البريد الإلكتروني</label><input id="regEmail" type="email" autocomplete="email" required>
         <label>الرمز السري</label><input id="regPassword" type="password" autocomplete="new-password" minlength="8" required>
         <button class="auth-submit" type="submit">إنشاء الحساب وإرسال رسالة التأكيد</button>
@@ -100,16 +99,15 @@
     e.preventDefault();
     try{
       const f=state.firebase;if(!f) throw new Error('Firebase غير مربوط بعد');
-      const username=$('#regUsername').value.trim().toLowerCase(), email=$('#regEmail').value.trim().toLowerCase(), phone=$('#regPhone').value.trim();
+      const username=$('#regUsername').value.trim().toLowerCase(), email=$('#regEmail').value.trim().toLowerCase();
       if(!/^[a-z0-9_]{3,24}$/.test(username))throw new Error('اسم المستخدم من 3 إلى 24 حرفًا إنجليزيًا أو رقمًا أو _');
-      if(!/^\+?[0-9\s-]{7,20}$/.test(phone))throw new Error('رقم الهاتف غير صالح');
       const cred=await f.authMod.createUserWithEmailAndPassword(f.auth,email,$('#regPassword').value);
       try{
         await f.dbMod.runTransaction(f.db,async transaction=>{
           const nameRef=f.dbMod.doc(f.db,'usernames',username);
           if((await transaction.get(nameRef)).exists())throw new Error('اسم المستخدم مستخدم بالفعل');
           transaction.set(nameRef,{uid:cred.user.uid});
-          transaction.set(f.dbMod.doc(f.db,'users',cred.user.uid),{username,email,phone,xp:0,level:1,badges:[],createdAt:f.dbMod.serverTimestamp()});
+          transaction.set(f.dbMod.doc(f.db,'users',cred.user.uid),{username,email,createdAt:f.dbMod.serverTimestamp()});
         });
       }catch(error){await f.authMod.deleteUser(cred.user).catch(()=>{});throw error;}
       await f.authMod.sendEmailVerification(cred.user);
