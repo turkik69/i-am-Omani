@@ -1,7 +1,7 @@
 (() => {
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
   const socket=window.io?io():null;
-  let hostToken='',roomCode='',playerId='',tableId='',balootRoom=null,balootTable=null,balootAvatar='OM1';
+  let hostToken='',roomCode='',playerId='',tableId='',balootRoom=null,balootTable=null,balootAvatar='OM1',pendingCardMotion=null;
   const SESSION_KEY='iamOmaniBalootSession';
   let savedSession=null;
   try{savedSession=JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch{}
@@ -73,7 +73,7 @@
     }
     body().innerHTML=`<div class="baloot-panel"><div class="baloot-landmark" data-wilayat-landmark></div><h3>${esc(balootRoom?.title||'البلوت')} • ${t.table}</h3>${balootRoom?.practice?'<p>تدريب عبر الإنترنت • النتائج خارج التصنيف</p>':''}<div class="baloot-score"><span>فريق 1: ${t.teamScore[0]} بنط</span><span>فريق 2: ${t.teamScore[1]} بنط</span></div><p>النمط: <b>${t.variant==='sun'?'صن':'حكم'}</b> ${t.trump?`• الحكم ${t.trump}`:''} • المشتري: ${esc(t.players[t.buyer]?.name||'—')}</p>${t.finished?`<p>قيد الجولة: ${t.resultScore?.join(' – ')||'—'}</p>`:''}<div class="baloot-play-area"><div class="baloot-seat-grid">${t.players.map(p=>{const relative=(p.seat-t.seat+4)%4,pos=['south','west','north','east'][relative];return `<div class="baloot-seat ${pos} ${p.seat===t.turn?'active':''}"><b>${esc(p.name)}${p.seat===t.seat?' (أنت)':''}</b><span class="baloot-card-back">${p.cards} 🂠</span><small>فريق ${p.seat%2+1}</small></div>`}).join('')}<div class="baloot-trick-v2">${(t.tricks||[]).map(x=>`<div class="baloot-played">${playingCard(x.card,'disabled')}<small>${esc(t.players[x.seat]?.name||'')}</small></div>`).join('')}</div></div></div><p class="baloot-hand-label">أوراقك</p><div class="baloot-hand">${buttons}</div><div class="baloot-wait">${t.finished?'انتهت الجولة':t.turn===t.seat?'دورك الآن':'بانتظار دورك…'}</div></div>`;
     applyWilayatTheme(balootRoom?.wilayat||'مسقط');
-    $$('[data-card]').forEach(b=>b.onclick=()=>socket.emit('baloot:play',{code:roomCode,table:t.table,playerId,cardId:b.dataset.card},res=>{if(!res?.ok)say(res?.error||'لا يمكن لعب هذه الورقة');else sound('card-play')}));
+    $$('[data-card]').forEach(b=>b.onclick=()=>{pendingCardMotion={id:b.dataset.card,from:window.CardMotion?.rect(b),card:b.cloneNode(true)};socket.emit('baloot:play',{code:roomCode,table:t.table,playerId,cardId:b.dataset.card},res=>{if(!res?.ok){pendingCardMotion=null;say(res.error||'لا يمكن لعب هذه الورقة')}})});
   }
 
   const entries=document.createElement('div');entries.className='game-switcher';entries.innerHTML='<h3>الورقة • البلوت</h3><div class="game-options"><button class="game-choice" data-baloot-host><img src="/baloot-icon.svg?v=37" alt=""><span><b>أنشئ مجلس البلوت</b><small>صن وحكم، أربعة لاعبين في كل طاولة</small></span></button><button class="game-choice" data-baloot-join><span class="mini-icon">🃏</span><span><b>انضم إلى مجلس البلوت</b><small>ادخل برمز البطولة</small></span></button></div>';document.querySelector('#homeScreen .mode-grid')?.after(entries);entries.querySelector('[data-baloot-host]').onclick=createScreen;entries.querySelector('[data-baloot-join]').onclick=joinScreen;
@@ -86,7 +86,20 @@
   socket?.on('baloot:approved',d=>{sound('join');roomCode=d.code;playerId=d.playerId;balootRoom=d.room;remember({code:roomCode,reconnectToken:d.reconnectToken});body().innerHTML='<div class="baloot-panel"><div class="baloot-wait">تم قبولك. بانتظار المشرف لبدء الجولة وتوزيع الطاولات.</div></div>';});
   socket?.on('baloot:rejected',()=>{say('تم رفض طلب الانضمام');joinScreen()});
   socket?.on('baloot:choose-trump',d=>{tableId=d.table;const pick=prompt(`اختر الحكم: ${d.suits.join(' ')}`,d.suits[0]);if(pick)socket.emit('baloot:trump',{code:roomCode,table:tableId,playerId,suit:pick},res=>{if(!res?.ok)say('تعذر اختيار الحكم');else sound('trump')});});
-  socket?.on('baloot:table',t=>{const prev=balootTable;if(!prev||prev.table!==t.table||prev.round!==t.round)sound('card-deal');else if((t.teamScore?.[0]||0)+(t.teamScore?.[1]||0)>(prev.teamScore?.[0]||0)+(prev.teamScore?.[1]||0))sound('trick');else if((t.tricks?.length||0)>(prev.tricks?.length||0)&&t.turn!==t.seat)sound('card-play');balootTable=t;tableId=t.table;tableScreen()});
+  socket?.on('baloot:table',t=>{
+    const prev=balootTable,visible=!layer.classList.contains('hidden');
+    const newPlay=prev?.table===t.table&&t.tricks?.length>prev.tricks?.length;
+    const last=newPlay?t.tricks.at(-1):null;
+    const local=last&&pendingCardMotion?.id===last.card.id;
+    const source=visible&&last?(local?pendingCardMotion.from:window.CardMotion?.rect(body().querySelector('.baloot-seat.'+['south','west','north','east'][(last.seat-t.seat+4)%4]))):null;
+    if(!prev||prev.table!==t.table||prev.round!==t.round)sound('card-deal');
+    else if((t.teamScore?.[0]||0)+(t.teamScore?.[1]||0)>(prev.teamScore?.[0]||0)+(prev.teamScore?.[1]||0))sound('trick');
+    balootTable=t;tableId=t.table;tableScreen();
+    if(!visible)return;
+    if(!prev||prev.table!==t.table||prev.round!==t.round||prev.stage==='bidding'&&t.stage==='playing'){window.CardMotion?.deal(body().querySelector('.baloot-hand'));return;}
+    if(last){const target=body().querySelector('.baloot-trick-v2 .baloot-played:last-child .baloot-playing-card');window.CardMotion?.fly(source,target,local?pendingCardMotion.card:target,'throw');window.CardMotion?.sound('throw');pendingCardMotion=null;}
+    else if(t.hand.length>prev.hand.length){window.CardMotion?.deal(body().querySelector('.baloot-hand'));window.CardMotion?.sound('draw');}
+  });
   socket?.on('baloot:round-finished',d=>{sound('round-end');open();body().innerHTML=`<div class="baloot-panel"><h3>انتهت الجولة ${esc(d.round)}</h3><div class="baloot-players">${d.leaderboard.map(p=>`<div class="baloot-person"><b>${p.rank}. ${esc(p.name)}</b><b>${p.score} نقطة</b></div>`).join('')}</div>${hostToken?'<div class="baloot-actions"><button id="bNext" class="baloot-btn">جولة جديدة</button></div>':''}</div>`;if(hostToken)$('#bNext').onclick=()=>socket.emit('baloot:next-round',{code:roomCode,hostToken},()=>hostLobby());});
   socket?.on('connect',reconnect);
   window.addEventListener('iam-omani-auth',reconnect);
