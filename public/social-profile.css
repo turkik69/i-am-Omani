@@ -18,6 +18,7 @@
 .activity-row{display:flex;justify-content:space-between;gap:6px;padding:8px 0;border-top:1px solid #fff2;font-size:13px}
 .activity-row b{white-space:nowrap;color:#8fe6f7}
 .player-dialog{max-width:460px;width:calc(100% - 24px);color:#fff;background:#10163c;border:1px solid #dab763;border-radius:22px;padding:24px;box-shadow:0 0 55px #dcab5980}
+.photo-crop-controls{display:grid;gap:10px;color:#d5e7ef;font-size:13px}.photo-crop-controls[hidden]{display:none}.photo-crop-controls canvas{width:220px;height:220px;max-width:100%;border-radius:50%;border:2px solid #e5b661;touch-action:none;cursor:grab;justify-self:center}.photo-crop-controls canvas:active{cursor:grabbing}.photo-crop-controls label{display:grid;gap:5px}.photo-crop-controls input{width:100%}
 .player-dialog::backdrop{background:#02051acf;backdrop-filter:blur(5px)}
 .player-dialog-close{float:left;border:0;background:transparent;color:white;font-size:26px;cursor:pointer}
 .public-player-head{display:flex;align-items:center;gap:16px;margin:24px 0}
