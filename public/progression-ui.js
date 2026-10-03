@@ -139,8 +139,9 @@
       <div class="profile-stat-grid"><div><b>${profile.games}</b><span>مسابقة</span></div><div><b>${profile.wins}</b><span>فوز</span></div><div><b>${profile.correct}</b><span>إجابة صحيحة</span></div><div><b>${profile.fastest}</b><span>أسرع إجابة</span></div><div><b>${profile.maxStreak}</b><span>أفضل سلسلة</span></div><div><b>${profile.perfect}</b><span>مسابقة كاملة</span></div></div>
       <div class="profile-section"><h3>🏅 الشارات</h3><div class="badge-grid">${profile.badges.length?profile.badges.map(b=>`<div class="achievement-badge"><span>${b.icon}</span><b>${b.name}</b></div>`).join(''):'<div class="empty-state">ابدأ اللعب لفتح أول شارة.</div>'}</div></div>
       <div class="profile-section"><h3>📊 تخصصاتك</h3><div class="specialty-list">${cats.length?cats.map(([id,v])=>`<div><span>${CATEGORIES.find(c=>c.id===id)?.icon||'🎯'}</span><b>${categoryName(id)}</b><i><em style="width:${Math.min(100,(v.correct||0)*3)}%"></em></i><strong>${v.correct||0}</strong></div>`).join(''):'<div class="empty-state">ستظهر هنا المجالات الأقوى لديك.</div>'}</div></div>
-      <div class="profile-section daily-card"><h3>🌅 تحديات اليوم</h3>${dailyRows()}</div>${cloudUser?'<button id="profileSignOut" class="secondary-btn">تسجيل الخروج</button>':''}`;
+      <div class="profile-section daily-card"><h3>🌅 تحديات اليوم</h3>${dailyRows()}</div>${cloudUser?'<div class="profile-account-actions"><button id="profileSignOut" class="secondary-btn">تسجيل الخروج</button><button id="profileDeleteAccount" class="secondary-btn">حذف الحساب وبياناته</button></div>':''}`;
     if(cloudUser)$('#profileSignOut').onclick=()=>cloudFirebase.authMod.signOut(cloudFirebase.auth);
+    if(cloudUser)$('#profileDeleteAccount').onclick=()=>window.IAM_OMANI_DELETE_ACCOUNT?.();
     window.IAM_OMANI_SYNC_PROFILE_PHOTO?.();
   }
   function dailyRows(){ensureDaily();const d=profile.daily;return [
