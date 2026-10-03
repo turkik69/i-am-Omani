@@ -6,7 +6,7 @@
   const label=c=>valueNames[c.value]||c.value;
   const glyph=c=>({skip:'⊘',reverse:'⇄',draw2:'+2',wild:'✦',draw4:'+4'})[c.value]||c.value;
   const layer=document.createElement('div');layer.className='uno-layer hidden';layer.innerHTML='<div class="uno-shell"><header><h2><img src="/uno-icon.svg?v=72" alt="">أونو • أنا عُماني</h2><button id="unoClose" aria-label="إغلاق">✕</button></header><div id="unoBody"></div></div>';document.body.appendChild(layer);
-  const body=()=>$('#unoBody');let session=null,view=null,declared=false;
+  const body=()=>$('#unoBody');let session=null,view=null,declared=false,pendingMotion=null;
   try{session=JSON.parse(localStorage.getItem('iamOmaniUnoSession')||'null')}catch{}
   const open=()=>layer.classList.remove('hidden'),close=()=>layer.classList.add('hidden');$('#unoClose').onclick=close;
   function save(d){session=d;localStorage.setItem('iamOmaniUnoSession',JSON.stringify(d))}
@@ -32,10 +32,23 @@
     $('#unoDraw')?.addEventListener('click',()=>emit('uno:draw'));$('#unoKeep')?.addEventListener('click',()=>emit('uno:keep'));
     $('#unoCall')?.addEventListener('click',()=>{if(s.hand.length===2){declared=true;say('سيتم إعلان أونو عند لعب الورقة التالية')}else emit('uno:call')});
     $('#unoCatch')?.addEventListener('click',()=>emit('uno:catch'));$('#unoAccept')?.addEventListener('click',()=>emit('uno:penalty',{challenge:false}));$('#unoChallenge')?.addEventListener('click',()=>emit('uno:penalty',{challenge:true}));
-    body().querySelectorAll('[data-card]').forEach(el=>el.onclick=()=>{const c=s.hand.find(x=>x.id===Number(el.dataset.card));if(!c)return;const play=color=>emit('uno:play',{cardId:c.id,color,uno:declared},r=>{if(r?.ok){declared=false;window.GameSFX?.play('card-play')}});if(c.color==='wild'){const picker=$('#unoColorPicker');picker.innerHTML=colors(c);picker.querySelectorAll('[data-color]').forEach(btn=>btn.onclick=()=>play(btn.dataset.color))}else play()});
+    body().querySelectorAll('[data-card]').forEach(el=>el.onclick=()=>{const c=s.hand.find(x=>x.id===Number(el.dataset.card));if(!c)return;const play=color=>{pendingMotion={id:c.id,from:window.CardMotion?.rect(el),card:el.cloneNode(true)};emit('uno:play',{cardId:c.id,color,uno:declared},r=>{if(r?.ok)declared=false;else pendingMotion=null})};if(c.color==='wild'){const picker=$('#unoColorPicker');picker.innerHTML=colors(c);picker.querySelectorAll('[data-color]').forEach(btn=>btn.onclick=()=>play(btn.dataset.color))}else play()});
   }
   document.addEventListener('click',e=>{if(e.target.closest('#unoEntry'))entry()});
-  socket.on('uno:state',s=>{if(session?.code===s.code)render(s)});
+  socket.on('uno:state',s=>{
+    if(session?.code!==s.code)return;
+    const prev=view,visible=!layer.classList.contains('hidden');
+    const from=visible&&prev?.status==='playing'&&prev.top?.id!==s.top?.id
+      ?pendingMotion?.id===s.top?.id?pendingMotion.from:window.CardMotion?.rect(body().querySelectorAll('.uno-seat')[prev.turn])
+      :null;
+    const playedCard=pendingMotion?.id===s.top?.id?pendingMotion.card:null;
+    render(s);
+    if(!visible||s.status!=='playing')return;
+    if(!prev||prev.status!=='playing'||prev.round!==s.round){window.CardMotion?.deal(body().querySelector('.uno-hand'));window.CardMotion?.sound('draw');return;}
+    if(prev.top?.id!==s.top?.id){const target=body().querySelector('.uno-center .uno-card');window.CardMotion?.fly(from,target,playedCard||target,'throw');window.CardMotion?.sound('throw');pendingMotion=null;return;}
+    if(s.hand.length>prev.hand.length){const target=body().querySelector('.uno-hand [data-card]:last-child');window.CardMotion?.fly(body().querySelector('.uno-pile'),target,target,'draw');window.CardMotion?.sound('draw');}
+    else if(s.players.some((p,i)=>p.count>prev.players[i]?.count)){window.CardMotion?.sound('draw');}
+  });
   socket.on('connect',restore);
   window.addEventListener('iam-omani-auth',restore);
   window.IAM_OMANI_UNO={open:entry};
