@@ -122,7 +122,7 @@ app.get('/api/questions', async (req,res) => {
     const exclude=String(req.query.exclude||'').slice(0,2400).split(',').filter(Boolean);
     const difficulty=String(req.query.difficulty||'متوسط').slice(0,12);
     const questions=await onlineQuestions({category,difficulty,count,exclude});
-    res.json({questions,source:'Wikidata',updatedAt:new Date().toISOString()});
+    res.json({questions,source:'Wikidata + Omani references',updatedAt:new Date().toISOString()});
   } catch(error) {
     console.error('Online questions unavailable:',error.message);
     res.status(503).json({error:'تعذر تحميل الأسئلة عبر الإنترنت الآن. حاول مجددًا بعد قليل.'});
