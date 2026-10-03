@@ -156,7 +156,7 @@ function publicAccount(uid, data) {
     avatar:data.avatar || 'OM1', hasPhoto:!!data.photoData,
     level:Math.max(1,Number(data.level)||1), xp:Math.max(0,Number(data.xp)||0),
     stats:{games:stats.games||0,wins:stats.wins||0,correct:stats.correct||0,
-      totalScore:stats.totalScore||0,bestScore:stats.bestScore||0}, strengths };
+      totalScore:stats.totalScore||0,bestScore:stats.bestScore||0,lastPlayedAt:stats.lastPlayedAt||null}, strengths };
 }
 const authToken = req => (req.get('authorization') || '').replace(/^Bearer\s+/i,'');
 app.get('/api/profile/me', async (req,res) => {
@@ -381,6 +381,7 @@ function finishQuiz(room) {
           'publicStats.correct':admin.firestore.FieldValue.increment(p.correct),
           'publicStats.totalScore':admin.firestore.FieldValue.increment(p.score),
           'publicStats.bestScore':admin.firestore.FieldValue.increment(0),
+          'publicStats.lastPlayedAt':now,
           ...increments
         }).then(async()=>{if(p.score)await admin.firestore().runTransaction(async tx=>{
           const ref=admin.firestore().collection('users').doc(p.uid),snap=await tx.get(ref);
@@ -602,6 +603,7 @@ io.on('connection', socket => {
           io.to(room.code).emit('room:closed',{message:'أُغلق المجلس لغياب مشرفه'});
           rooms.delete(room.code);
           broadcastCouncils();
+          io.emit('activity:update',activityRanking());
         },5*60*1000);
         room.hostDisconnectTimer.unref?.();
       }
