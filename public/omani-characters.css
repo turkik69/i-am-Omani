@@ -25,3 +25,25 @@
 #musicBtn.music-on{border-color:rgba(48,224,255,.85);box-shadow:0 0 18px rgba(48,224,255,.3)}
 
 @media(max-width:620px){#avatars .avatar{min-height:94px!important}#avatars .avatar small{font-size:9px}.winner>span .omani-portrait{width:50px;height:50px}}
+
+/* Full-length cultural figures sit quietly behind the game content. */
+#homeScreen,#hostCreateScreen,#joinScreen,#displayJoinScreen,#hostLobbyScreen,#playerLobbyScreen,#questionScreen,#resultScreen,#finalScreen,#displayScreen,.baloot-panel,.uno-intro{position:relative;isolation:isolate}
+.omani-character.heritage-figure{position:absolute;z-index:0;width:clamp(150px,21vw,250px);height:clamp(235px,32vw,385px);bottom:0;opacity:.24;pointer-events:none;user-select:none;filter:drop-shadow(0 0 16px rgba(255,190,84,.3)) drop-shadow(0 0 24px rgba(31,184,255,.16))}
+.omani-character.heritage-figure>img{position:relative;z-index:1;display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;border:0;border-radius:0;background:none}
+.omani-character.heritage-figure::before{content:"";position:absolute;z-index:0;width:110%;aspect-ratio:1;left:50%;top:43%;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(245,195,98,.8);background:radial-gradient(circle,rgba(43,153,217,.19),transparent 66%);box-shadow:0 0 30px rgba(250,194,91,.35),inset 0 0 24px rgba(27,171,236,.24)}
+#homeScreen>.heritage-figure.mussar-khanjar,#hostLobbyScreen>.heritage-figure.mussar-khanjar,#questionScreen>.heritage-figure.mussar-khanjar,#finalScreen>.heritage-figure.mussar-khanjar{left:-18px}
+#joinScreen>.heritage-figure.traditional-woman,#playerLobbyScreen>.heritage-figure.traditional-woman,#resultScreen>.heritage-figure.traditional-woman,#finalScreen>.heritage-figure.traditional-woman{right:-18px}
+#hostCreateScreen>.heritage-figure.palm-weaver,#displayJoinScreen>.heritage-figure.palm-weaver,#displayScreen>.heritage-figure.traditional-woman{left:-18px}
+#questionScreen>.heritage-figure,#resultScreen>.heritage-figure{opacity:.14;width:155px;height:250px}
+#finalScreen>.heritage-figure{opacity:.2;width:180px;height:290px}
+.baloot-panel>.heritage-figure.palm-weaver{right:-30px;bottom:-12px;opacity:.13;width:205px;height:330px}
+.uno-intro>.heritage-figure.mussar-khanjar{right:-25px;bottom:-8px;opacity:.17;width:155px;height:255px}
+@media(max-width:620px){
+  .omani-character.heritage-figure{width:116px;height:190px;opacity:.2}
+  #homeScreen>.heritage-figure.mussar-khanjar,#hostLobbyScreen>.heritage-figure.mussar-khanjar,#questionScreen>.heritage-figure.mussar-khanjar,#finalScreen>.heritage-figure.mussar-khanjar{left:-20px}
+  #joinScreen>.heritage-figure.traditional-woman,#playerLobbyScreen>.heritage-figure.traditional-woman,#resultScreen>.heritage-figure.traditional-woman,#finalScreen>.heritage-figure.traditional-woman{right:-20px}
+  #questionScreen>.heritage-figure,#resultScreen>.heritage-figure{width:100px;height:164px;opacity:.12}
+  #finalScreen>.heritage-figure{width:108px;height:178px;opacity:.16}
+  .baloot-panel>.heritage-figure.palm-weaver{width:125px;height:205px;opacity:.12}
+  .uno-intro>.heritage-figure.mussar-khanjar{width:112px;height:180px;opacity:.14}
+}
