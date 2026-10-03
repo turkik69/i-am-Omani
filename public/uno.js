@@ -9,11 +9,17 @@
   try{session=JSON.parse(localStorage.getItem('iamOmaniUnoSession')||'null')}catch{}
   const open=()=>layer.classList.remove('hidden'),close=()=>layer.classList.add('hidden');$('#unoClose').onclick=close;
   function save(d){session=d;localStorage.setItem('iamOmaniUnoSession',JSON.stringify(d))}
+  async function restore(){
+    const user=window.IAmOmaniFirebase?.user;
+    if(!session?.token||!user||!socket.connected)return;
+    let idToken;try{idToken=await user.getIdToken()}catch{return}
+    socket.emit('uno:reconnect',{...session,idToken},r=>{if(!r?.ok){session=null;localStorage.removeItem('iamOmaniUnoSession')}});
+  }
   function say(message){const toast=$('#toast');if(toast){toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),3500)}}
   function emit(event,data,done=()=>{}){socket.emit(event,{...data,code:session?.code,token:session?.token},r=>{if(!r?.ok)say(r?.error||'تعذر تنفيذ الحركة');done(r)})}
   function entry(){open();if(view && session && view.code===session.code){render(view);return}body().innerHTML=`<div class="uno-intro"><p>اللعب الكلاسيكي من لاعبين إلى عشرة: طابق اللون أو الرقم، واستخدم ورقات الحركة. ارفع رصيدك إلى 500 نقطة.</p><p class="join-identity">الاسم من ملفك الشخصي: ${escape(window.IAmOmaniFirebase?.profile?.nickname||window.IAmOmaniFirebase?.profile?.username||"سجّل الدخول")}</p><div class="uno-entry"><button id="unoCreate">إنشاء غرفة</button><label>رمز الغرفة<input id="unoCode" inputmode="numeric" maxlength="6" placeholder="000000"></label><button id="unoJoin">الانضمام</button></div></div>`;
-    $('#unoCreate').onclick=async()=>{const user=window.IAmOmaniFirebase?.user;if(!user)return say('سجّل الدخول أولًا');socket.emit('uno:create',{idToken:await user.getIdToken()},r=>{if(!r?.ok)return say(r?.error||'تعذر الإنشاء');save(r);socket.emit('uno:reconnect',session);open()});};
-    $('#unoJoin').onclick=async()=>{const user=window.IAmOmaniFirebase?.user;if(!user)return say('سجّل الدخول أولًا');socket.emit('uno:join',{code:$('#unoCode').value.trim(),idToken:await user.getIdToken()},r=>{if(!r?.ok)return say(r?.error||'تعذر الانضمام');save(r);socket.emit('uno:reconnect',session);open()});};
+    $('#unoCreate').onclick=async()=>{const user=window.IAmOmaniFirebase?.user;if(!user)return say('سجّل الدخول أولًا');socket.emit('uno:create',{idToken:await user.getIdToken()},r=>{if(!r?.ok)return say(r?.error||'تعذر الإنشاء');save(r);restore();open()});};
+    $('#unoJoin').onclick=async()=>{const user=window.IAmOmaniFirebase?.user;if(!user)return say('سجّل الدخول أولًا');socket.emit('uno:join',{code:$('#unoCode').value.trim(),idToken:await user.getIdToken()},r=>{if(!r?.ok)return say(r?.error||'تعذر الانضمام');save(r);restore();open()});};
   }
   function cardHTML(c,attrs=''){return `<button class="uno-card uno-${escape(c.color)}" ${attrs}><b>${escape(label(c))}</b><small>${colorNames[c.color]}</small></button>`}
   function colors(card){return card.color==='wild'?`<div class="uno-colors" role="group" aria-label="اختر اللون">${Object.keys(colorNames).filter(x=>x!=='wild').map(c=>`<button data-color="${c}" class="uno-color-${c}" aria-label="${colorNames[c]}">${colorNames[c]}</button>`).join('')}</div>`:''}
@@ -28,7 +34,7 @@
   }
   document.addEventListener('click',e=>{if(e.target.closest('#unoEntry'))entry()});
   socket.on('uno:state',s=>{if(session?.code===s.code)render(s)});
-  socket.on('connect',()=>{if(session?.token)socket.emit('uno:reconnect',session,r=>{if(!r?.ok){session=null;localStorage.removeItem('iamOmaniUnoSession')}})});
+  socket.on('connect',restore);
+  window.addEventListener('iam-omani-auth',restore);
   window.IAM_OMANI_UNO={open:entry};
 })();
-
