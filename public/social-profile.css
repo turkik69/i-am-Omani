@@ -1,0 +1,34 @@
+.omani-flag-orbit{position:fixed;z-index:24;left:16px;top:76px;width:72px;height:72px;border-radius:50%;display:grid;place-items:center;pointer-events:none;background:radial-gradient(circle,#10204e 20%,#071027 65%,transparent 70%);box-shadow:0 0 0 1px #f2c66a99,0 0 20px #ffd07466,0 0 52px #e62e5270;animation:flag-glow 5s ease-in-out infinite}
+.omani-flag-orbit::before,.omani-flag-orbit::after{content:'';position:absolute;inset:-7px;border:1px solid #ffd2708c;border-radius:50%;box-shadow:0 0 13px #ffce79;animation:flag-ring 9s linear infinite}
+.omani-flag-orbit::after{inset:-14px;border-color:#e433594d;animation-direction:reverse}
+.omani-flag-orbit span{font-size:40px;filter:drop-shadow(0 3px 8px #0008);animation:flag-wave 5s ease-in-out infinite}
+@keyframes flag-glow{50%{box-shadow:0 0 0 1px #f2c66acc,0 0 28px #ffd074aa,0 0 66px #e62e5280}}
+@keyframes flag-ring{to{transform:rotate(360deg)}}
+@keyframes flag-wave{50%{transform:perspective(100px) rotateY(12deg) rotate(-4deg)}}
+.profile-edit-card{display:flex;align-items:center;gap:20px;padding:22px;margin:12px 0 22px;border-radius:22px;background:#11163dcf;border:1px solid #daa9647c;box-shadow:0 0 26px #dcb25a20}
+.editable-photo{width:106px;height:106px;min-width:106px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:#101c3d;border:2px solid #e5b661;box-shadow:0 0 22px #e3b26266;font-size:48px}
+.editable-photo img,.editable-photo .omani-portrait{width:100%;height:100%;object-fit:cover}
+.profile-edit-content{flex:1;min-width:0;display:grid;gap:9px}
+.profile-edit-content small{color:#c7c5d8}
+.profile-edit-content input:not([type=file]){display:block;width:100%;padding:12px;border-radius:12px;border:1px solid #765fc7;background:#080c29;color:white;margin-top:7px;font:inherit}
+.photo-upload{cursor:pointer;color:#e9d6a6}
+.photo-upload input{display:block;width:100%;max-width:260px;margin-top:5px;font-size:12px}
+.profile-edit-actions{display:flex;gap:8px;flex-wrap:wrap}
+.profile-edit-actions button{width:auto;min-width:120px;padding:10px}
+.join-identity{border:1px solid #4fd5ee6b;border-radius:12px;padding:12px;color:#d9faff;background:#0c2242}
+[data-player-uid]:not([data-player-uid=""]){cursor:pointer;text-decoration:underline dotted #e9c179;text-underline-offset:4px}
+.activity-panel{margin:24px auto;max-width:1100px;background:#090e2dd9;border:1px solid #e7bb6180;border-radius:22px;padding:20px;box-shadow:0 0 28px #d6a74921}
+.activity-panel>p{color:#ccc}
+.activity-rankings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.activity-column{padding:14px;border-radius:16px;background:#171344;border:1px solid #6a4cac}
+.activity-column h3{margin:0 0 12px;color:#f5d38d}
+.activity-row{display:flex;justify-content:space-between;gap:6px;padding:8px 0;border-top:1px solid #fff2;font-size:13px}
+.activity-row b{white-space:nowrap;color:#8fe6f7}
+.player-dialog{max-width:460px;width:calc(100% - 24px);color:#fff;background:#10163c;border:1px solid #dab763;border-radius:22px;padding:24px;box-shadow:0 0 55px #dcab5980}
+.player-dialog::backdrop{background:#02051acf;backdrop-filter:blur(5px)}
+.player-dialog-close{float:left;border:0;background:transparent;color:white;font-size:26px;cursor:pointer}
+.public-player-head{display:flex;align-items:center;gap:16px;margin:24px 0}
+.public-player-head h2{margin:4px 0}
+.strengths>div{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #fff3;padding:10px 0}
+@media(max-width:690px){.omani-flag-orbit{left:9px;top:82px;width:48px;height:48px}.omani-flag-orbit span{font-size:27px}.activity-rankings{grid-template-columns:1fr}.profile-edit-card{align-items:flex-start;flex-direction:column}.editable-photo{width:88px;height:88px;min-width:88px}}
+@media(prefers-reduced-motion:reduce){.omani-flag-orbit,.omani-flag-orbit::before,.omani-flag-orbit::after,.omani-flag-orbit span{animation:none}}
