@@ -5,7 +5,7 @@ const DATASETS = {
   geography: { category:'جغرافيا', question:'ما عاصمة «{item}»؟', query:'?item wdt:P31 wd:Q6256; wdt:P36 ?answer.', limit:450 },
   science: { category:'علوم', question:'ما العدد الذري لعنصر «{item}»؟', query:'?item wdt:P31 wd:Q11344; wdt:P1086 ?answer.', numeric:true, limit:150 },
   culture: { category:'ثقافة عامة', question:'من مؤلف كتاب «{item}»؟', query:'?item wdt:P31 wd:Q571; wdt:P50 ?answer.', limit:650 },
-  sports: { category:'رياضة', question:'في أي رياضة اشتهر «{item}»؟', query:'?item wdt:P106 wd:Q2066131; wdt:P641 ?answer.', limit:550 },
+  sports: { category:'رياضة', question:'ما جنسية لاعب كرة القدم «{item}»؟', query:'?item wdt:P106 wd:Q937857; wdt:P27 ?answer.', limit:650 },
   social: { category:'مجتمع وتراث', question:'تتبع «{item}» أي منطقة إدارية في عُمان؟', query:'?item wdt:P17 wd:Q842; wdt:P131 ?answer.', limit:450 }
 };
 const cache = new Map();
