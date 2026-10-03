@@ -146,6 +146,7 @@ async function verifiedAccount(token) {
   if (!snap.exists) throw new Error('الملف الشخصي غير موجود');
   return { uid: identity.uid, ref, data: snap.data() };
 }
+global.__IAM_OMANI_VERIFY_ACCOUNT__ = verifiedAccount;
 function publicAccount(uid, data) {
   const stats = data.publicStats || {};
   const categories = stats.categories || {};
@@ -555,7 +556,7 @@ io.on('connection', socket => {
     if(room.players.size<1) return ack({ok:false,error:'يلزم لاعب واحد على الأقل'});
     rejectAllPending(room);
     room.currentQuestionIndex=0; room.persisted=false;
-    for(const p of room.players.values()){p.score=0;p.correct=0;}
+    for(const p of room.players.values()){p.score=0;p.correct=0;p.categories={};}
     ack({ok:true}); sendQuestion(room);
   });
 
