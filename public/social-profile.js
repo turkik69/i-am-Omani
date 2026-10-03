@@ -12,6 +12,19 @@
     const hero=$('#profileHeroAvatar');if(hero)hero.innerHTML=picture;
   }
   window.IAM_OMANI_SYNC_PROFILE_PHOTO=syncPhoto;
+  window.IAM_OMANI_DELETE_ACCOUNT=async()=>{
+    const user=auth();
+    if(!user)return;
+    if(!confirm('سيُحذف حسابك وصورتك ولقبك وتقدّمك نهائيًا. هل تريد المتابعة؟'))return;
+    if(prompt('للتأكيد، اكتب كلمة حذف الحساب')?.trim()!=='حذف الحساب')return;
+    try{
+      await api('/api/profile/me',{method:'DELETE',body:JSON.stringify({confirmation:'DELETE'})});
+      localStorage.removeItem('iamOmaniProgress:'+user.uid);
+      localStorage.removeItem('quizHost');localStorage.removeItem('quizPlayer');
+      await window.IAmOmaniFirebase.firebase.authMod.signOut(window.IAmOmaniFirebase.firebase.auth);
+      location.assign('/');
+    }catch(error){alert(error.message||'تعذر حذف الحساب');}
+  };
   async function api(url,options={}) {
     const user=auth();if(!user)throw new Error('سجل الدخول أولًا');
     const response=await fetch(url,{...options,headers:{'content-type':'application/json',Authorization:`Bearer ${await user.getIdToken()}`,...options.headers}});
