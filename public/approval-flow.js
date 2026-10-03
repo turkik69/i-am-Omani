@@ -132,13 +132,17 @@
   refreshCouncils?.addEventListener('click', requestCouncils);
   socket.on('councils:update', renderCouncils);
 
-  createButton.onclick = () => {
+  createButton.onclick = async () => {
     const title = quizTitle.value.trim();
     const wilayat = hostWilaya.value.trim();
     const village = hostMajlis.value === '__other__' ? hostMajlisOther.value.trim() : hostMajlis.value.trim();
     if (!wilayat) return toast('اختر الولاية أولًا');
     if (!village) return toast('اختر المجلس أو القرية');
-    socket.emit('host:create', { title, wilayat, village, category: document.querySelector('#competitionCategory .selected')?.dataset.cat || 'mixed', difficulty: document.querySelector('#competitionDifficulty')?.value || 'متوسط', mode: document.querySelector('#competitionMode')?.value || 'عادية' }, res => {
+    const user=window.IAmOmaniFirebase?.user;
+    if(!user)return toast('سجل الدخول لإنشاء مجلس');
+    let idToken;
+    try{idToken=await user.getIdToken();}catch{return toast('تعذر التحقق من الحساب');}
+    socket.emit('host:create', { idToken,title, wilayat, village, category: document.querySelector('#competitionCategory .selected')?.dataset.cat || 'mixed', difficulty: document.querySelector('#competitionDifficulty')?.value || 'متوسط', mode: document.querySelector('#competitionMode')?.value || 'عادية' }, res => {
       if (!res.ok) return toast(res.error || 'تعذر إنشاء المسابقة');
       setRole('host');
       state.code = res.code;
