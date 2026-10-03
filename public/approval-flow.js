@@ -154,12 +154,14 @@
 
   const joinButton = document.querySelector('#joinRoomBtn');
   joinButton.textContent = '🛡️ إرسال طلب الانضمام';
-  joinButton.onclick = () => {
+  joinButton.onclick = async () => {
     const code = document.querySelector('#joinCode').value.trim();
-    const name = document.querySelector('#playerName').value.trim();
     if (!code) return toast('اختر مجلسًا أو أدخل رمز المسابقة');
-    if (!name) return toast('اكتب اسمك');
-    socket.emit('player:requestJoin', {code,name,avatar:state.avatar}, res => {
+    const user=window.IAmOmaniFirebase?.user;
+    if(!user)return toast('سجل الدخول لإرسال طلب الانضمام');
+    let idToken;
+    try{idToken=await user.getIdToken();}catch{return toast('تعذر التحقق من الحساب');}
+    socket.emit('player:requestJoin', {code,idToken,avatar:state.avatar}, res => {
       if (!res.ok) return toast(res.error || 'تعذر إرسال الطلب');
       state.code = code;
       approvalRoomName.textContent = res.room?.roomIdentity || 'المجلس المختار';
@@ -189,7 +191,7 @@
     localStorage.setItem('quizPlayer',JSON.stringify({code:state.code,reconnectToken:res.reconnectToken}));
     setRole('player');
     renderRoom(res.room);
-    document.querySelector('#myAvatar').innerHTML = avatarHTML(state.avatar);
+    document.querySelector('#myAvatar').innerHTML = window.playerAvatarHTML?.(res.player)||avatarHTML(state.avatar);
     document.querySelector('#myName').textContent = `${res.player?.name || ''} — تم قبولك في المجلس`;
     document.querySelector('#playerCode').textContent = state.code || '------';
     show('playerLobby');
@@ -216,8 +218,8 @@
     }
     pendingRequests.innerHTML = items.map(r => `
       <div class="pending-card">
-        <div class="pending-avatar">${avatarHTML(r.avatar)}</div>
-        <div class="pending-info"><strong>${esc(r.name)}</strong><small>بانتظار موافقتك</small></div>
+        <div class="pending-avatar">${window.playerAvatarHTML?.(r)||avatarHTML(r.avatar)}</div>
+        <div class="pending-info"><strong data-player-uid="${esc(r.uid||'')}">${esc(r.name)}</strong><small>بانتظار موافقتك</small></div>
         <div class="pending-actions">
           <button type="button" class="approve-btn" data-approve="${esc(r.id)}">قبول</button>
           <button type="button" class="reject-btn" data-reject="${esc(r.id)}">رفض</button>
