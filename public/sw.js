@@ -1,6 +1,6 @@
-const CACHE = 'iam-omani-v67';
+const CACHE = 'iam-omani-v68';
 const CORE = [
-  '/', '/index.html', '/styles.css?v=28', '/app.js?v=66',
+  '/', '/index.html', '/styles.css?v=28', '/app.js?v=68',
   '/manifest.json?v=30', '/icon-180.png?v=30', '/icon-192.png?v=30',
   '/icon-512.png?v=30', '/oman-premium.css?v=6',
   '/oman-home-v2.css?v=30', '/oman-reference-v29.css?v=45',
@@ -8,14 +8,14 @@ const CORE = [
   '/oman-identity.js?v=45', '/oman-music.js?v=33', '/oman-audio-v2.js?v=62',
   '/omani-traditional-loop.mp3?v=35',
   '/oman-villages.js?v=45', '/approval-flow.css', '/approval-flow.js?v=64', '/approval-sync.js?v=40',
-  '/village-directory-ui.js?v=1', '/progression-ui.js?v=66', '/progression-ui.css?v=66',
+  '/village-directory-ui.js?v=1', '/progression-ui.js?v=68', '/progression-ui.css?v=66',
   '/online-practice.js?v=66', '/online-practice.css?v=66', '/game-catalog.js?v=59', '/game-catalog.css?v=52', '/game-sfx.js?v=40', '/game-enhancements.js?v=52', '/uno.js?v=59', '/uno.css?v=45', '/card-games.js?v=59', '/card-games.css?v=49',
   '/omani-characters.css?v=57', '/omani-characters.js?v=57',
   '/characters/heritage-mussar-khanjar.js?v=57', '/characters/heritage-traditional-woman.js?v=57', '/characters/heritage-palm-weaver.js?v=57',
   '/characters/omani-portrait-8.js?v=56', '/characters/omani-portrait-9.js?v=56', '/characters/omani-portrait-10.js?v=56', '/characters/omani-portrait-11.js?v=56', '/omani-characters-ref.b64?v=38',
   '/omani-characters.png?v=40', '/omani-heritage-characters.png?v=40',
   '/omani-traditional.mp3?v=40',
-  '/baloot-icon.svg?v=37', '/firebase-auth-ui.css?v=32', '/firebase-auth-ui.js?v=32', '/social-profile.js?v=67', '/social-profile.css?v=66'
+  '/baloot-icon.svg?v=37', '/firebase-auth-ui.css?v=32', '/firebase-auth-ui.js?v=68', '/social-profile.js?v=68', '/social-profile.css?v=68'
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)));
