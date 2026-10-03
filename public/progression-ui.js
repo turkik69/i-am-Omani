@@ -121,10 +121,15 @@
     const {user,firebase,profile:account}=event.detail;
     cloudUser=user;cloudFirebase=user?firebase:null;
     if(user){
-      profile={...profileDefault(),...(account?.progress||{}),lastName:account?.username||profile.lastName};
+      profile={...profileDefault(),...(account?.progress||{}),lastName:account?.nickname||account?.username||profile.lastName};
       localStorage.setItem('iamOmaniProgress',JSON.stringify(profile));
       renderProfile();decorateSelf();
     }
+  });
+  window.addEventListener('iam-omani-profile-updated',event=>{
+    profile.lastName=event.detail?.name||profile.lastName;
+    profile.lastAvatar=event.detail?.hasPhoto?'📷':profile.lastAvatar;
+    save();renderProfile();decorateSelf();
   });
   const levelInfo = xp => {
     let cur=LEVELS[0]; for(const l of LEVELS) if(xp>=l.xp) cur=l;
