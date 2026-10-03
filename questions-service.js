@@ -29,12 +29,15 @@ async function dataset(name) {
     const response=await fetch(url,{headers:{Accept:'application/sparql-results+json','User-Agent':'IAmOmaniGame/1.0 (https://github.com/turkik69/i-am-Omani)'},signal:AbortSignal.timeout(12000)});
     if(!response.ok) throw Error(`Wikidata ${response.status}`);
     const data=await response.json();
-    const rows=(data.results?.bindings||[]).map(b=>({
+    const parsed=(data.results?.bindings||[]).map(b=>({
       id:b.item?.value?.split('/').pop(),
       item:b.itemLabel?.value?.trim(),
       answer:(spec.numeric ? b.answer?.value : b.answerLabel?.value)?.trim(),
       answerId:b.answer?.value?.split('/').pop()
     })).filter(r=>r.id && r.item && r.answer && r.item!==r.answer && r.item.length<85 && r.answer.length<65 && (spec.numeric || /^Q\d+$/.test(r.answerId)));
+    const answersByItem=new Map();
+    for(const row of parsed){const answers=answersByItem.get(row.id)||new Set();answers.add(row.answer);answersByItem.set(row.id,answers);}
+    const rows=parsed.filter(row=>answersByItem.get(row.id).size===1);
     if(rows.length<8 || new Set(rows.map(r=>r.answer)).size<4) throw Error(`Too few online facts for ${key}`);
     cache.set(key,{rows,expires:Date.now()+TTL});
     return rows;
