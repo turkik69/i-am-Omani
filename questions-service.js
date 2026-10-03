@@ -46,6 +46,7 @@ async function dataset(name) {
 async function onlineQuestions({category='mixed',count=8,exclude=[]}={}) {
   const names=category==='mixed' ? ['oman','geography','science','culture','sports'] : [DATASETS[category] ? category : 'geography'];
   const results=await Promise.allSettled(names.map(dataset));
+  results.forEach((result,index)=>{if(result.status==='rejected')console.warn('Live question dataset failed:',names[index],result.reason?.message);});
   const facts=results.flatMap((result,index)=>result.status==='fulfilled' ? result.value.map(row=>({row,spec:DATASETS[names[index]],key:names[index],pool:result.value})) : []);
   if(!facts.length) throw Error('Live question sources unavailable');
   const excluded=new Set(exclude);
