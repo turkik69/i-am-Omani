@@ -69,7 +69,7 @@
         state.user=user||null;
         state.profile=null;
         if(user?.emailVerified){
-          try{const snap=await dbMod.getDoc(dbMod.doc(db,'users',user.uid));state.profile=snap.exists()?snap.data():null;}
+          try{const snap=await dbMod.getDocFromServer(dbMod.doc(db,'users',user.uid));state.profile=snap.exists()?snap.data():null;}
           catch(error){console.error('Profile loading failed',error);showStatus('تعذر تحميل ملفك الشخصي.');}
           gate.classList.add('auth-hidden');
         }else{
