@@ -49,6 +49,8 @@
     button.title = playing ? 'إيقاف الموسيقى العُمانية' : 'تشغيل الموسيقى العُمانية';
     button.setAttribute('aria-label', button.title);
     button.setAttribute('aria-pressed', String(playing));
+    button.dataset.musicLevel = String(musicGain?.gain.value ?? audio.volume);
+    button.dataset.gainRouted = String(!!musicGain);
   }
   function notify(message) {
     const toast = document.querySelector('#toast');
@@ -62,6 +64,10 @@
     connectQuietAudio();
     if (audioContext?.state === 'suspended') audioContext.resume().catch(error => console.warn('Omani music resume:', error));
     updateVolume();
+    if (!musicGain && audio.volume > backgroundLevel() * 2) {
+      notify('تعذر خفض صوت الموسيقى على هذا الجهاز.');
+      return;
+    }
     const version = ++playVersion;
     playPending = true;
     // Keep play() in the user gesture for mobile browsers.
