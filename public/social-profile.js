@@ -6,6 +6,12 @@
   const photo = p => p?.hasPhoto
     ? `<img src="/api/profile/${encodeURIComponent(p.uid)}/photo?v=${Date.now()}" alt="صورة اللاعب">`
     : window.avatarHTML?.(p?.avatar||'OM1')||'🇴🇲';
+  function syncPhoto(){
+    const picture=photo(auth()?(me||window.IAmOmaniFirebase?.profile||{avatar:'OM1'}):{avatar:'OM1'});
+    const icon=$('#profileBtn');if(icon)icon.innerHTML=picture;
+    const hero=$('#profileHeroAvatar');if(hero)hero.innerHTML=picture;
+  }
+  window.IAM_OMANI_SYNC_PROFILE_PHOTO=syncPhoto;
   async function api(url,options={}) {
     const user=auth();if(!user)throw new Error('سجل الدخول أولًا');
     const response=await fetch(url,{...options,headers:{'content-type':'application/json',Authorization:`Bearer ${await user.getIdToken()}`,...options.headers}});
@@ -22,18 +28,20 @@
       const avatar=$('#editablePhoto');if(avatar)avatar.innerHTML=photo(me);
       const summary=$('#profilePublicName');if(summary)summary.textContent=me.name;
       const joinLabel=$('#joinAccountName');if(joinLabel)joinLabel.textContent=`ستدخل باسم: ${me.name}`;
+      syncPhoto();
     } catch(error){const status=$('#profileEditStatus');if(status)status.textContent=error.message;}
   }
   function injectEditor() {
     const body=$('#progressProfileBody');
     if(!body||$('#profileEditCard'))return;
-    body.insertAdjacentHTML('afterbegin',`
+    const hero=body.querySelector('.profile-hero-card');
+    (hero||body).insertAdjacentHTML(hero?'afterend':'afterbegin',`
       <div id="profileEditCard" class="profile-edit-card">
-        <div id="editablePhoto" class="editable-photo">🇴🇲</div>
+        <div class="profile-edit-intro"><div id="editablePhoto" class="editable-photo">🇴🇲</div><div><span class="profile-kicker">بطاقتي الشخصية</span><h2>صورتك ولقبك</h2><p>اختر الطريقة التي يعرفك بها اللاعبون في كل مجلس.</p></div></div>
         <div class="profile-edit-content">
-          <b id="profilePublicName">ملفي الشخصي</b><small>يظهر لقبك للآخرين، ولا يظهر بريدك أو هاتفك.</small>
+          <div class="profile-current-name">الاسم الظاهر: <b id="profilePublicName">ملفي الشخصي</b></div><small>بريدك ورقم هاتفك لا يظهران للاعبين.</small>
           <label>لقبي في اللعبة <input id="profileNickname" maxlength="28" placeholder="اتركه فارغًا لاستخدام اسم المستخدم"></label>
-          <label class="photo-upload">📷 اختر صورة خاصة <input id="profilePhoto" type="file" accept="image/png,image/jpeg,image/webp"></label>
+          <label class="photo-upload">📷 اختر صورة من جهازك <input id="profilePhoto" type="file" accept="image/png,image/jpeg,image/webp"></label>
           <div class="profile-edit-actions"><button id="profileSave" type="button" class="primary-btn small-btn">حفظ الملف</button><button id="profileRemovePhoto" type="button" class="secondary-btn">حذف الصورة</button></div>
           <small id="profileEditStatus" role="status"></small>
         </div>
@@ -63,6 +71,7 @@
         $('#profilePublicName').textContent=me.name;
         $('#editablePhoto').innerHTML=photo(me);
         window.IAmOmaniFirebase.profile={...(window.IAmOmaniFirebase.profile||{}),...me};
+        syncPhoto();
         window.dispatchEvent(new CustomEvent('iam-omani-profile-updated',{detail:me}));
       }catch(error){$('#profileEditStatus').textContent=error.message;}finally{button.disabled=false;}
     };
@@ -102,8 +111,8 @@
     fetch('/api/activity').then(r=>r.json()).then(renderActivity).catch(()=>{});
   }
   window.socket?.on('activity:update',renderActivity);
-  window.addEventListener('iam-omani-auth',()=>refresh());
-  window.addEventListener('iam-omani-profile-updated',e=>{const label=$('#joinAccountName');if(label)label.textContent=`ستدخل باسم: ${e.detail.name}`;});
+  window.addEventListener('iam-omani-auth',()=>{me=null;syncPhoto();refresh();});
+  window.addEventListener('iam-omani-profile-updated',e=>{const label=$('#joinAccountName');if(label)label.textContent=`ستدخل باسم: ${e.detail.name}`;syncPhoto();});
   const observer=new MutationObserver(injectEditor);
   observer.observe(document.body,{childList:true,subtree:true});
   injectJoinIdentity();injectActivity();injectEditor();
