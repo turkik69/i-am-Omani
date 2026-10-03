@@ -120,7 +120,8 @@ app.get('/api/questions', async (req,res) => {
     const category=String(req.query.category||'mixed').slice(0,25);
     const count=Math.min(12,Math.max(4,Number(req.query.count)||8));
     const exclude=String(req.query.exclude||'').slice(0,2400).split(',').filter(Boolean);
-    const questions=await onlineQuestions({category,count,exclude});
+    const difficulty=String(req.query.difficulty||'متوسط').slice(0,12);
+    const questions=await onlineQuestions({category,difficulty,count,exclude});
     res.json({questions,source:'Wikidata',updatedAt:new Date().toISOString()});
   } catch(error) {
     console.error('Online questions unavailable:',error.message);
@@ -567,7 +568,7 @@ io.on('connection', socket => {
     if(!room.customQuestions){
       room.loadingQuestions=true;
       try {
-        room.questions=await onlineQuestions({category:room.questionCategory,count:room.questionMode==='سريعة'?6:10});
+        room.questions=await onlineQuestions({category:room.questionCategory,difficulty:room.questionDifficulty,count:room.questionMode==='سريعة'?6:10});
         room.questions=room.questions.map(q=>({...q,difficulty:room.questionDifficulty,time:room.questionMode==='سريعة'?10:room.questionDifficulty==='نخبة'?12:15}));
       } catch(error) {
         console.error('Could not start online quiz:',error.message);
