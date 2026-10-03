@@ -144,10 +144,15 @@ async function ministerFacts(){
 
 async function onlineQuestions({category='mixed',difficulty='متوسط',count=8,exclude=[]}={}) {
   const hard=['متقدم','نخبة'].includes(difficulty);
-  const names=category==='oman' ? (difficulty==='سهل'?['oman','omanEvents']:['oman','omanYears','omanRulers','omanVision','omanEvents','omanMinisters','omanSports',...(hard?['omanDecrees']:[])])
-    :category==='sports'&&hard?['sports','omanSports']
-    :category==='mixed' ? (hard?['omanYears','omanRulers','omanVision','omanSports','science','culture','geography']:['oman','geography','science','culture','sports'])
-    :[DATASETS[category] ? category : 'geography'];
+  const omanPool=difficulty==='سهل'
+    ? ['oman','omanEvents','omanVision']
+    : ['oman','omanYears','omanRulers','omanVision','omanEvents','omanMinisters','omanSports',...(hard?['omanDecrees']:[])];
+  const categories={
+    oman:omanPool, mixed:omanPool, geography:['oman'],
+    sports:['omanSports'], culture:['oman','omanVision','omanEvents','omanMinisters'],
+    science:['omanYears','omanVision'], social:['oman','omanEvents','omanVision']
+  };
+  const names=categories[category]||omanPool;
   const results=await Promise.allSettled(names.map(dataset));
   results.forEach((result,index)=>{if(result.status==='rejected')console.warn('Live question dataset failed:',names[index],result.reason?.message);});
   if(!results.some((result,index)=>result.status==='fulfilled'&&!DATASETS[names[index]].official))throw Error('Live Wikidata facts unavailable');
