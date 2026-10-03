@@ -5,6 +5,7 @@ const fs = require('fs');
 const { randomUUID } = require('crypto');
 const { Server } = require('socket.io');
 const admin = require('firebase-admin');
+const { onlineQuestions } = require('./questions-service');
 
 const app = express();
 const server = http.createServer(app);
@@ -113,14 +114,19 @@ function saveStats() {
   catch (e) { console.error('stats save failed', e.message); }
 }
 
-const DEFAULT_QUESTIONS = [
-  { id: 1, question: 'كم عدد محافظات سلطنة عُمان؟', options: ['9','10','11','12'], correct: 2, category: 'عُمان', difficulty: 'متوسط', time: 15 },
-  { id: 2, question: 'ما أكبر دولة في العالم من حيث المساحة؟', options: ['كندا','الصين','روسيا','الولايات المتحدة'], correct: 2, category: 'جغرافيا', difficulty: 'سهل', time: 15 },
-  { id: 3, question: 'ما الكوكب المعروف بالكوكب الأحمر؟', options: ['الزهرة','المريخ','عطارد','المشتري'], correct: 1, category: 'علوم', difficulty: 'سهل', time: 12 },
-  { id: 4, question: 'من كتب رواية الحرب والسلام؟', options: ['تولستوي','دوستويفسكي','تشيخوف','بوشكين'], correct: 0, category: 'أدب', difficulty: 'متوسط', time: 15 },
-  { id: 5, question: 'في أي عام سقط جدار برلين؟', options: ['1987','1988','1989','1990'], correct: 2, category: 'تاريخ', difficulty: 'متوسط', time: 15 },
-  { id: 6, question: 'ما أكبر حيوان حي على الأرض؟', options: ['الفيل','الحوت الأزرق','الزرافة','فرس النهر'], correct: 1, category: 'طبيعة', difficulty: 'سهل', time: 12 }
-];
+app.get('/api/questions', async (req,res) => {
+  res.set('Cache-Control','no-store');
+  try {
+    const category=String(req.query.category||'mixed').slice(0,25);
+    const count=Math.min(12,Math.max(4,Number(req.query.count)||8));
+    const exclude=String(req.query.exclude||'').slice(0,2400).split(',').filter(Boolean);
+    const questions=await onlineQuestions({category,count,exclude});
+    res.json({questions,source:'Wikidata',updatedAt:new Date().toISOString()});
+  } catch(error) {
+    console.error('Online questions unavailable:',error.message);
+    res.status(503).json({error:'تعذر تحميل الأسئلة عبر الإنترنت الآن. حاول مجددًا بعد قليل.'});
+  }
+});
 
 const OMAN_LOCATIONS = require('./config/oman-locations.json');
 
@@ -454,7 +460,10 @@ io.on('connection', socket => {
     const hostToken = randomUUID();
     const room = {
       code, title, roomIdentity, location, hostToken, hostSocketId:socket.id,
-      status:'lobby', questions:DEFAULT_QUESTIONS.map(q=>({...q, options:[...q.options]})),
+      status:'lobby', questions:[], customQuestions:false,
+      questionCategory:['oman','sports','culture','geography','science','social','mixed'].includes(payload.category)?payload.category:'mixed',
+      questionMode:['سريعة','عادية','بطولة','إقصائية'].includes(payload.mode)?payload.mode:'عادية',
+      questionDifficulty:['سهل','متوسط','متقدم','نخبة'].includes(payload.difficulty)?payload.difficulty:'متوسط',
       currentQuestionIndex:0, players:new Map(), pending:new Map(), answers:new Map(), timer:null, resultTimer:null,
       startedAt:null, persisted:false
     };
@@ -546,14 +555,26 @@ io.on('connection', socket => {
     })).filter(q=>q.question&&q.options.length>=2&&q.correct>=0&&q.correct<q.options.length);
 
     if(!cleaned.length) return ack({ok:false,error:'لم يتم العثور على أسئلة صالحة'});
-    room.questions=cleaned; ack({ok:true,count:cleaned.length}); emitRoom(room);
+    room.questions=cleaned; room.customQuestions=true; ack({ok:true,count:cleaned.length}); emitRoom(room);
   });
 
-  socket.on('host:start', (_,ack=()=>{}) => {
+  socket.on('host:start', async (_,ack=()=>{}) => {
     const room=getRoom(socket.data.roomCode);
     if(!isHost(socket,room)) return ack({ok:false,error:'غير مصرح'});
     if(room.status!=='lobby') return ack({ok:false,error:'المسابقة قيد التشغيل'});
     if(room.players.size<1) return ack({ok:false,error:'يلزم لاعب واحد على الأقل'});
+    if(room.loadingQuestions) return ack({ok:false,error:'يُحمّل الأسئلة الآن'});
+    if(!room.customQuestions){
+      room.loadingQuestions=true;
+      try {
+        room.questions=await onlineQuestions({category:room.questionCategory,count:room.questionMode==='سريعة'?6:10});
+        room.questions=room.questions.map(q=>({...q,difficulty:room.questionDifficulty,time:room.questionMode==='سريعة'?10:room.questionDifficulty==='نخبة'?12:15}));
+      } catch(error) {
+        console.error('Could not start online quiz:',error.message);
+        return ack({ok:false,error:'تعذر جلب أسئلة جديدة عبر الإنترنت. حاول مجددًا بعد قليل.'});
+      } finally {room.loadingQuestions=false;}
+    }
+    if(room.status!=='lobby' || !isHost(socket,room)) return ack({ok:false,error:'انتهت صلاحية المجلس'});
     rejectAllPending(room);
     room.currentQuestionIndex=0; room.persisted=false;
     for(const p of room.players.values()){p.score=0;p.correct=0;p.categories={};}
