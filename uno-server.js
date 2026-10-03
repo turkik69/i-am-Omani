@@ -13,10 +13,18 @@ module.exports=function registerUno(io){
   const lobby=r=>({code:r.code,status:r.status,practice:!!r.practice,hostId:r.hostId,players:r.players.map(p=>({id:p.id,uid:p.uid,name:p.name,bot:!!p.bot,count:p.hand.length,score:p.score})),turn:r.turn,direction:r.direction,color:r.color,top:r.discard.at(-1)||null,pending:r.pending?{type:r.pending.type,target:r.pending.target}:null,uno:r.unoOpportunity,round:r.round,winner:r.winner||null});
   function emit(r){for(const p of r.players)if(p.socket)io.to(p.socket).emit('uno:state',{...lobby(r),selfId:p.id,hand:p.hand,drawnId:r.drawnId&&r.players[r.turn]?.id===p.id?r.drawnId:null});scheduleBot(r)}
   function scheduleBot(r){
-    if(!r.practice||r.status!=='playing'||r.botTimer||!r.players[r.turn]?.bot)return;
+    if(!r.practice||r.status!=='playing'||r.botTimer)return;
+    const pendingVictim=r.pending&&r.players.find(x=>x.id===r.pending.target);
+    if(r.pending?!pendingVictim?.bot:!r.players[r.turn]?.bot)return;
     r.botTimer=setTimeout(()=>{r.botTimer=null;if(rooms.get(r.code)!==r||r.status!=='playing')return;
+      if(r.pending){const victim=r.players.find(x=>x.id===r.pending.target);
+        if(!victim?.bot)return;
+        const pending=r.pending,attacker=r.players.find(x=>x.id===pending.attacker);
+        draw(r,victim,4);r.pending=null;r.unoOpportunity=null;r.turn=next(r,2);
+        if(pending.finisher&&!pending.illegal)finish(r,attacker);else emit(r);
+        return;
+      }
       const p=r.players[r.turn];if(!p?.bot)return;
-      if(r.pending?.target===p.id){draw(r,p,4);r.pending=null;r.turn=next(r,2);emit(r);return;}
       let options=p.hand.filter(c=>match(r,c));if(r.drawnId)options=options.filter(c=>c.id===r.drawnId);
       const card=options.find(c=>c.color!=='wild')||options[0];
       if(!card){if(r.drawnId){advance(r);return}r.unoOpportunity=null;draw(r,p,1);const drawn=p.hand.at(-1);if(drawn&&match(r,drawn)){r.drawnId=drawn.id;emit(r)}else advance(r);return;}
