@@ -8,6 +8,8 @@ const admin = require('firebase-admin');
 const { onlineQuestions } = require('./questions-service');
 
 const app = express();
+// Render terminates HTTPS at its proxy; use the client IP for login throttling.
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const io = new Server(server, { transports: ['websocket', 'polling'] });
 
@@ -215,6 +217,41 @@ app.put('/api/profile/progress', async (req,res) => {
     await a.ref.set({progress,xp:progress.xp,level,badges:progress.badges},{merge:true});
     res.json({ok:true});
   }catch(error){res.status(401).json({error:error.message});}
+});
+app.delete('/api/profile/me', async (req,res) => {
+  res.set('Cache-Control','no-store');
+  try {
+    if(req.body?.confirmation!=='DELETE')return res.status(400).json({error:'أكّد رغبتك في حذف الحساب'});
+    const token=authToken(req),identity=await admin.auth().verifyIdToken(token);
+    if(Date.now()/1000-identity.auth_time>15*60)
+      return res.status(403).json({error:'سجل الدخول مرة أخرى ثم أعد طلب الحذف'});
+    const account=await verifiedAccount(token);
+    const username=account.data.username;
+    await admin.firestore().runTransaction(async tx=>{
+      const nameRef=username?admin.firestore().collection('usernames').doc(username):null;
+      const nameDoc=nameRef?await tx.get(nameRef):null;
+      if(nameDoc?.data()?.uid===account.uid)tx.delete(nameRef);
+      tx.delete(account.ref);
+    });
+    await admin.auth().deleteUser(account.uid);
+    delete persistent.players[account.uid];
+    for(const game of persistent.games)if(game.winnerUid===account.uid){
+      game.winner='لاعب محذوف';delete game.winnerUid;
+    }
+    saveStats();
+    for(const room of rooms.values()){
+      for(const [id,p] of room.players)if(p.uid===account.uid){
+        room.players.delete(id);room.answers.delete(id);
+        io.sockets.sockets.get(id)?.disconnect(true);
+      }
+      for(const [id,p] of room.pending)if(p.uid===account.uid)room.pending.delete(id);
+      emitRoom(room);
+    }
+    res.json({ok:true});
+  }catch(error){
+    console.error('Account deletion failed:',error.message);
+    res.status(503).json({error:'تعذر حذف الحساب الآن. حاول مجددًا أو تواصل مع الدعم'});
+  }
 });
 app.get('/api/profile/:uid/photo', async (req,res) => {
   try {
@@ -427,7 +464,7 @@ function finishQuiz(room) {
     persistent.games.unshift({
       id:randomUUID(), room:room.code, title:room.title, roomIdentity:room.roomIdentity,
       wilayat:room.location?.wilayat || null, village:room.location?.village || null,
-      date:now, players:board.length, winner:board[0]?.name || null
+      date:now, players:board.length, winner:board[0]?.name || null,winnerUid:board[0]?.uid||null
     });
     persistent.games = persistent.games.slice(0,100);
     room.persisted = true;
@@ -475,7 +512,13 @@ io.on('connection', socket => {
 
   socket.on('councils:list', (ack=()=>{}) => ack({ok:true,councils:activeCouncils()}));
 
-  socket.on('host:create', (payload={}, ack=()=>{}) => {
+  socket.on('host:create', async (payload={}, ack=()=>{}) => {
+    let account;
+    try { account=await verifiedAccount(payload.idToken); }
+    catch(error){return ack({ok:false,error:error.message});}
+    if(rooms.size>=200)return ack({ok:false,error:'بلغ عدد المجالس المفتوحة الحد المؤقت، حاول لاحقًا'});
+    if([...rooms.values()].some(r=>r.hostUid===account.uid&&r.status!=='finished'))
+      return ack({ok:false,error:'لديك مجلس نشط بالفعل'});
     let code; do { code = roomCode(); } while (rooms.has(code));
     const customTitle = sanitizeName(payload.title);
     const location = findLocation(payload.wilayat, payload.village);
@@ -487,7 +530,7 @@ io.on('connection', socket => {
     const title = customTitle ? `${roomIdentity} | ${customTitle}` : roomIdentity;
     const hostToken = randomUUID();
     const room = {
-      code, title, roomIdentity, location, hostToken, hostSocketId:socket.id,
+      code, title, roomIdentity, location, hostToken, hostSocketId:socket.id, hostUid:account.uid,
       status:'lobby', questions:[], customQuestions:false,
       questionCategory:['oman','sports','culture','geography','science','social','mixed'].includes(payload.category)?payload.category:'mixed',
       questionMode:['سريعة','عادية','بطولة','إقصائية'].includes(payload.mode)?payload.mode:'عادية',
@@ -669,7 +712,21 @@ io.on('connection', socket => {
 });
 
 app.get('/api/health', (req,res)=>res.json({ok:true,rooms:rooms.size,time:new Date().toISOString()}));
-app.get('/api/leaderboard', (req,res)=>res.json(Object.values(persistent.players).sort((a,b)=>b.totalScore-a.totalScore).slice(0,50)));
+app.get('/api/leaderboard', async (req,res)=>{
+  res.set('Cache-Control','no-store');
+  if(firebaseAdmin){
+    try {
+      const snapshot=await admin.firestore().collection('users')
+        .orderBy('publicStats.totalScore','desc').limit(50).get();
+      return res.json(snapshot.docs.map(doc=>{
+        const account=publicAccount(doc.id,doc.data());
+        return {uid:account.uid,name:account.nickname||account.username,avatar:account.avatar,
+          hasPhoto:account.hasPhoto,...account.stats};
+      }));
+    }catch(error){console.error('Leaderboard unavailable:',error.message);}
+  }
+  res.json(Object.values(persistent.players).sort((a,b)=>b.totalScore-a.totalScore).slice(0,50));
+});
 app.get('/api/activity', (req,res)=>res.json(activityRanking()));
 app.get('/api/oman-locations', (req,res)=>res.json(OMAN_LOCATIONS));
 app.get('/api/active-councils', (req,res)=>res.json(activeCouncils()));
