@@ -45,4 +45,11 @@
   document.documentElement.dataset.omaniCharacters = 'heritage';
   decorate();
   new MutationObserver(decorate).observe(document.body, { subtree:true, childList:true });
+
+  if (!document.querySelector('script[data-host-owner-guard]')) {
+    const guard = document.createElement('script');
+    guard.src = '/host-owner-guard.js?v=73';
+    guard.dataset.hostOwnerGuard = '1';
+    document.body.appendChild(guard);
+  }
 })();
