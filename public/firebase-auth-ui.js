@@ -55,6 +55,7 @@
     if(code.includes('too-many-requests')) return 'تم طلب رسائل كثيرة خلال وقت قصير. انتظر قليلًا ثم حاول مجددًا.';
     if(code.includes('invalid-email')) return 'صيغة البريد الإلكتروني غير صحيحة.';
     if(code.includes('email-already-in-use')) return 'هذا البريد مسجل مسبقًا. جرّب تسجيل الدخول بدل إنشاء حساب جديد.';
+    if(code.includes('permission-denied')) return 'تعذر إكمال إنشاء الحساب بسبب صلاحيات قاعدة البيانات. تم تصحيح هذا الخلل، حدّث الصفحة وحاول مرة أخرى.';
     if(code.includes('network-request-failed')) return 'تعذر الاتصال بخدمة البريد. تحقق من الإنترنت ثم أعد المحاولة.';
     if(code.includes('user-token-expired')||code.includes('requires-recent-login')) return 'انتهت جلسة الحساب. سجل الدخول من جديد ثم أعد المحاولة.';
     return err?.message||'حدث خطأ غير متوقع';
@@ -136,7 +137,7 @@
           const nameRef=f.dbMod.doc(f.db,'usernames',username);
           if((await transaction.get(nameRef)).exists())throw new Error('اسم المستخدم مستخدم بالفعل');
           transaction.set(nameRef,{uid:cred.user.uid});
-          transaction.set(f.dbMod.doc(f.db,'users',cred.user.uid),{username,email,createdAt:f.dbMod.serverTimestamp()});
+          transaction.set(f.dbMod.doc(f.db,'users',cred.user.uid),{username,email,phone:'',xp:0,level:1,badges:[],createdAt:f.dbMod.serverTimestamp()});
         });
       }catch(error){await f.authMod.deleteUser(cred.user).catch(()=>{});throw error;}
       $('#regPassword').value='';showPane('verifyPane');
