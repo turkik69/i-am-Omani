@@ -1,9 +1,10 @@
 (() => {
   const KEY = 'iamOmaniTrackMusic';
   const button = document.querySelector('#musicBtn');
-  const audio = new Audio('/omani-traditional.mp3?v=44');
+  const audio = new Audio('/omani-traditional.mp3?v=75');
   audio.loop = true;
   audio.preload = 'metadata';
+  audio.playsInline = true;
   let enabled = localStorage.getItem(KEY) !== 'off';
   let active = !document.hidden;
   let playVersion = 0;
@@ -25,7 +26,6 @@
       gain.connect(context.destination);
       audioContext = context;
       musicGain = gain;
-      // iOS ignores media-element volume; the GainNode controls its real output.
       audio.volume = 1;
     } catch (error) {
       context.close().catch(() => {});
@@ -35,7 +35,7 @@
 
   function updateVolume() {
     const level = backgroundLevel();
-    if (musicGain && audioContext) {
+    if (musicGain && audioContext && audioContext.state !== 'closed') {
       musicGain.gain.setTargetAtTime(level, audioContext.currentTime, .12);
     } else {
       audio.volume = level;
@@ -70,10 +70,9 @@
     }
     const version = ++playVersion;
     playPending = true;
-    // Keep play() in the user gesture for mobile browsers.
     audio.play().then(() => {
       playPending = false;
-      if (version !== playVersion || !active || document.hidden || !enabled) audio.pause();
+      if (version !== playVersion || !active || document.hidden || !enabled) stop(false);
       updateButton();
     }).catch(error => {
       playPending = false;
@@ -84,20 +83,27 @@
     });
   }
 
-  function stop() {
+  function stop(reset=true) {
     playVersion++;
     playPending = false;
-    audio.pause();
-    try { audio.currentTime = 0; } catch { /* Media may not have loaded yet. */ }
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+    try { audio.pause(); } catch {}
+    if (reset) { try { audio.currentTime = 0; } catch {} }
+    if (audioContext?.state === 'running') audioContext.suspend().catch(() => {});
+    if ('mediaSession' in navigator) {
+      try { navigator.mediaSession.playbackState = 'none'; } catch {}
+    }
     updateButton();
+  }
+  function hardStop() {
+    active = false;
+    stop(true);
   }
 
   button?.addEventListener('click', event => {
     event.stopPropagation();
     if (enabled && !audio.paused) {
       enabled = false;
-      stop();
+      stop(true);
     } else {
       enabled = true;
       active = true;
@@ -107,31 +113,30 @@
     updateButton();
   });
   document.addEventListener('pointerdown', event => {
-    if (active && enabled && audio.paused && !event.target.closest?.('#musicBtn')) {
-      play();
-    }
+    if (active && enabled && audio.paused && !event.target.closest?.('#musicBtn')) play();
   }, { passive: true });
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { active = false; stop(); }
+    if (document.hidden) hardStop();
     else { active = true; updateButton(); }
   });
-  window.addEventListener('pagehide', () => { active = false; stop(); });
-  window.addEventListener('beforeunload', () => { active = false; stop(); });
+  window.addEventListener('pagehide', hardStop, {capture:true});
+  window.addEventListener('beforeunload', hardStop, {capture:true});
+  window.addEventListener('blur', () => { if (document.hidden) hardStop(); });
   window.addEventListener('pageshow', () => { active = !document.hidden; updateButton(); });
-  document.addEventListener('freeze', () => { active = false; stop(); });
+  document.addEventListener('freeze', hardStop);
   audio.addEventListener('playing', () => {
-    if (!active || document.hidden || !enabled) stop();
+    if (!active || document.hidden || !enabled) hardStop();
     else updateButton();
   });
   audio.addEventListener('pause', updateButton);
-  new MutationObserver(updateVolume).observe(document.querySelector('main'), {
-    subtree: true, attributes: true, attributeFilter: ['class']
-  });
+  const main=document.querySelector('main');
+  if(main)new MutationObserver(updateVolume).observe(main,{subtree:true,attributes:true,attributeFilter:['class']});
+  if ('mediaSession' in navigator) {
+    try { navigator.mediaSession.setActionHandler('stop', hardStop); } catch {}
+    try { navigator.mediaSession.setActionHandler('pause', () => stop(false)); } catch {}
+  }
   updateVolume();
   updateButton();
-  window.OMANI_MUSIC_STATUS = () => ({
-    level: musicGain?.gain.value ?? audio.volume,
-    routedThroughGain: !!musicGain,
-    playing: !audio.paused
-  });
+  window.OMANI_MUSIC_STOP = hardStop;
+  window.OMANI_MUSIC_STATUS = () => ({level:musicGain?.gain.value ?? audio.volume,routedThroughGain:!!musicGain,playing:!audio.paused});
 })();
