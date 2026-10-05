@@ -16,8 +16,8 @@
     return null;
   }
 
-  function hostIsActive() {
-    return q('#hostLobbyScreen')?.classList.contains('active') || window.state?.role === 'host';
+  function hostLobbyVisible() {
+    return !!q('#hostLobbyScreen')?.classList.contains('active');
   }
 
   function renderPending(items) {
@@ -70,7 +70,9 @@
   }
 
   function syncPending() {
-    if (syncing || !hostIsActive() || !window.socket?.connected) return;
+    // Pending-player sync is a lobby-only concern. Polling host:reconnect while questions are
+    // running caused repeated question restoration/timer restarts on the host phone.
+    if (syncing || !hostLobbyVisible() || !window.socket?.connected) return;
     const saved = hostSession();
     if (!saved) return;
     syncing = true;
@@ -97,7 +99,8 @@
     if (e.target.closest?.('[data-open="hostCreate"],#createRoomBtn,.host-card')) setTimeout(syncPending, 450);
   }, true);
 
-  setInterval(syncPending, 2500);
+  // A slow lobby-only refresh is enough; live requests also arrive through host:pending.
+  setInterval(() => { if (hostLobbyVisible()) syncPending(); }, 15000);
   setTimeout(syncPending, 500);
 
   // Live quiz watchdog: recover missed result/question events after brief iPhone/network drops.
@@ -106,7 +109,7 @@
   let hostRevealTimer = null;
 
   async function recoverQuizState() {
-    if (!window.socket?.connected || Date.now() - lastRecovery < 1200) return;
+    if (!window.socket?.connected || Date.now() - lastRecovery < 2500) return;
     const user = window.IAmOmaniFirebase?.user;
     if (!user) return;
     let idToken;
@@ -163,6 +166,6 @@
   });
 
   setInterval(() => {
-    if (q('#questionScreen')?.classList.contains('active') && quizDeadline && Date.now() > quizDeadline + 2200) recoverQuizState();
-  }, 2000);
+    if (q('#questionScreen')?.classList.contains('active') && quizDeadline && Date.now() > quizDeadline + 3000) recoverQuizState();
+  }, 3000);
 })();
