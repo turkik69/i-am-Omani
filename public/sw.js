@@ -1,4 +1,4 @@
-const CACHE = 'iam-omani-v75';
+const CACHE = 'iam-omani-v76';
 const CORE = [
   '/', '/index.html', '/styles.css?v=28', '/app.js?v=71',
   '/manifest.json?v=30', '/icon-180.png?v=30', '/icon-192.png?v=30',
@@ -7,10 +7,10 @@ const CORE = [
   '/oman-night-scene.webp?v=29', '/landmarks/sahwa.webp?v=75', '/landmarks/municipality.webp?v=75', '/landmarks/opera.webp?v=75', '/landmarks/riyam.webp?v=75',
   '/oman-identity.js?v=75', '/oman-music.js?v=33', '/oman-audio-v2.js?v=75',
   '/omani-traditional-loop.mp3?v=35',
-  '/oman-villages.js?v=45', '/approval-flow.css', '/approval-flow.js?v=69', '/approval-sync.js?v=75',
+  '/oman-villages.js?v=45', '/approval-flow.css', '/approval-flow.js?v=69', '/approval-sync.js?v=76',
   '/village-directory-ui.js?v=1', '/progression-ui.js?v=69', '/progression-ui.css?v=66',
   '/online-practice.js?v=66', '/online-practice.css?v=66', '/card-motion.js?v=73', '/game-catalog.js?v=73', '/game-catalog.css?v=52', '/game-sfx.js?v=40', '/game-enhancements.js?v=73', '/uno.js?v=73', '/uno.css?v=45', '/card-games.js?v=73', '/card-games.css?v=49',
-  '/omani-characters.css?v=57', '/omani-characters.js?v=57',
+  '/omani-characters.css?v=57', '/omani-characters.js?v=76',
   '/characters/heritage-mussar-khanjar.js?v=57', '/characters/heritage-traditional-woman.js?v=57', '/characters/heritage-palm-weaver.js?v=57',
   '/characters/omani-portrait-8.js?v=56', '/characters/omani-portrait-9.js?v=56', '/characters/omani-portrait-10.js?v=56', '/characters/omani-portrait-11.js?v=56', '/omani-characters-ref.b64?v=38',
   '/omani-characters.png?v=40', '/omani-heritage-characters.png?v=40',
@@ -33,7 +33,6 @@ self.addEventListener('fetch', event => {
       url.pathname.startsWith('/socket.io') || url.pathname.startsWith('/api/')) return;
   if (event.request.mode === 'navigate') {
     event.respondWith((async () => {
-      const cached=await caches.match('/index.html');
       const refresh=fetch(event.request,{cache:'no-store'}).then(async response=>{
         if(response.ok && response.headers.get('content-type')?.includes('text/html')){
           const body=await response.clone().text();
@@ -44,9 +43,16 @@ self.addEventListener('fetch', event => {
         }
         return response;
       });
-      if(cached){event.waitUntil(refresh.catch(()=>{}));return cached;}
-      return refresh;
+      try{return await refresh;}catch{return (await caches.match('/index.html'))||Response.error();}
     })());
+    return;
+  }
+  const critical=['/app.js','/approval-sync.js','/approval-flow.js','/omani-characters.js','/oman-audio-v2.js','/game-enhancements.js'].includes(url.pathname);
+  if(critical){
+    event.respondWith(fetch(event.request,{cache:'no-store'}).then(response=>{
+      if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));}
+      return response;
+    }).catch(()=>caches.match(event.request)));
     return;
   }
   event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request, {cache: 'no-store'}).then(response => {
