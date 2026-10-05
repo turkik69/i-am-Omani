@@ -4,7 +4,7 @@
   let syncing = false;
 
   function esc(v='') {
-    return String(v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    return String(v).replace(/[&<>'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
   }
 
   function hostSession() {
@@ -99,4 +99,70 @@
 
   setInterval(syncPending, 2500);
   setTimeout(syncPending, 500);
+
+  // Live quiz watchdog: recover missed result/question events after brief iPhone/network drops.
+  let quizDeadline = 0;
+  let lastRecovery = 0;
+  let hostRevealTimer = null;
+
+  async function recoverQuizState() {
+    if (!window.socket?.connected || Date.now() - lastRecovery < 1200) return;
+    const user = window.IAmOmaniFirebase?.user;
+    if (!user) return;
+    let idToken;
+    try { idToken = await user.getIdToken(); } catch { return; }
+    lastRecovery = Date.now();
+
+    try {
+      const host = JSON.parse(localStorage.getItem('quizHost') || 'null');
+      if (host?.code && host?.hostToken) {
+        socket.emit('host:reconnect', { ...host, idToken }, () => {});
+        return;
+      }
+    } catch {}
+
+    try {
+      const player = JSON.parse(localStorage.getItem('quizPlayer') || 'null');
+      if (player?.code && player?.reconnectToken) {
+        socket.emit('player:reconnect', { ...player, idToken }, () => {});
+      }
+    } catch {}
+  }
+
+  socket.on('quiz:question', data => {
+    quizDeadline = Number(data?.startedAt || Date.now()) + Number(data?.timeLimit || 0);
+    clearTimeout(hostRevealTimer);
+    const host = hostSession();
+    if (host && quizDeadline > Date.now()) {
+      hostRevealTimer = setTimeout(() => {
+        if (q('#questionScreen')?.classList.contains('active') && socket.connected) socket.emit('host:reveal');
+      }, Math.max(500, quizDeadline - Date.now() + 900));
+    }
+  });
+
+  socket.on('quiz:progress', data => {
+    if (data?.total > 0 && data.answered >= data.total && hostSession()) {
+      clearTimeout(hostRevealTimer);
+      hostRevealTimer = setTimeout(() => {
+        if (q('#questionScreen')?.classList.contains('active') && socket.connected) socket.emit('host:reveal');
+      }, 650);
+    }
+  });
+
+  socket.on('room:update', room => {
+    if (!room) return;
+    const onQuestion = q('#questionScreen')?.classList.contains('active');
+    if (room.status === 'result' && onQuestion) setTimeout(recoverQuizState, 180);
+    if (room.status === 'question' && quizDeadline && Date.now() > quizDeadline + 1800 && onQuestion) setTimeout(recoverQuizState, 120);
+  });
+
+  socket.on('connect', () => {
+    if (q('#questionScreen')?.classList.contains('active') || q('#resultScreen')?.classList.contains('active')) {
+      setTimeout(recoverQuizState, 250);
+    }
+  });
+
+  setInterval(() => {
+    if (q('#questionScreen')?.classList.contains('active') && quizDeadline && Date.now() > quizDeadline + 2200) recoverQuizState();
+  }, 2000);
 })();
