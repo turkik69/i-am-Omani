@@ -12,7 +12,9 @@
       const saved = JSON.parse(localStorage.getItem('quizHost') || 'null');
       if (saved?.code && saved?.hostToken) return saved;
     } catch {}
-    if (window.state?.code && window.state?.hostToken) return { code: state.code, hostToken: state.hostToken };
+    try {
+      if (typeof state !== 'undefined' && state?.code && state?.hostToken) return { code: state.code, hostToken: state.hostToken };
+    } catch {}
     return null;
   }
 
@@ -70,8 +72,6 @@
   }
 
   function syncPending() {
-    // Pending-player sync is a lobby-only concern. Polling host:reconnect while questions are
-    // running caused repeated question restoration/timer restarts on the host phone.
     if (syncing || !hostLobbyVisible() || !window.socket?.connected) return;
     const saved = hostSession();
     if (!saved) return;
@@ -80,12 +80,12 @@
       syncing = false;
       if (!res?.ok) return;
       try {
-        if (window.state) {
+        if (typeof state !== 'undefined') {
           state.code = saved.code;
           state.hostToken = saved.hostToken;
           state.role = 'host';
         }
-        if (res.room && typeof window.renderRoom === 'function') renderRoom(res.room);
+        if (res.room && typeof renderRoom === 'function') renderRoom(res.room);
       } catch {}
       renderPending(res.pending || []);
     });
@@ -98,12 +98,10 @@
   document.addEventListener('click', e => {
     if (e.target.closest?.('[data-open="hostCreate"],#createRoomBtn,.host-card')) setTimeout(syncPending, 450);
   }, true);
-
-  // A slow lobby-only refresh is enough; live requests also arrive through host:pending.
   setInterval(() => { if (hostLobbyVisible()) syncPending(); }, 15000);
   setTimeout(syncPending, 500);
 
-  // Live quiz watchdog: recover missed result/question events after brief iPhone/network drops.
+  // Live quiz watchdog.
   let quizDeadline = 0;
   let lastRecovery = 0;
   let hostRevealTimer = null;
@@ -126,9 +124,7 @@
 
     try {
       const player = JSON.parse(localStorage.getItem('quizPlayer') || 'null');
-      if (player?.code && player?.reconnectToken) {
-        socket.emit('player:reconnect', { ...player, idToken }, () => {});
-      }
+      if (player?.code && player?.reconnectToken) socket.emit('player:reconnect', { ...player, idToken }, () => {});
     } catch {}
   }
 
@@ -160,12 +156,137 @@
   });
 
   socket.on('connect', () => {
-    if (q('#questionScreen')?.classList.contains('active') || q('#resultScreen')?.classList.contains('active')) {
-      setTimeout(recoverQuizState, 250);
-    }
+    if (q('#questionScreen')?.classList.contains('active') || q('#resultScreen')?.classList.contains('active')) setTimeout(recoverQuizState, 250);
   });
 
   setInterval(() => {
     if (q('#questionScreen')?.classList.contains('active') && quizDeadline && Date.now() > quizDeadline + 3000) recoverQuizState();
   }, 3000);
+
+  // Host-as-player bridge: the host keeps control on the main socket and competes through
+  // a lightweight second socket using the same verified account. No server game logic changes.
+  let participantSocket = null;
+  let participantReady = false;
+  let participantJoinInFlight = false;
+  let participantCode = null;
+  const PARTICIPANT_KEY = 'quizHostParticipant';
+
+  function participantSaved() {
+    try { return JSON.parse(sessionStorage.getItem(PARTICIPANT_KEY) || localStorage.getItem(PARTICIPANT_KEY) || 'null'); }
+    catch { return null; }
+  }
+  function saveParticipant(data) {
+    try { sessionStorage.setItem(PARTICIPANT_KEY, JSON.stringify(data)); localStorage.setItem(PARTICIPANT_KEY, JSON.stringify(data)); } catch {}
+  }
+  function clearParticipant() {
+    participantReady = false; participantJoinInFlight = false; participantCode = null;
+    try { sessionStorage.removeItem(PARTICIPANT_KEY); localStorage.removeItem(PARTICIPANT_KEY); } catch {}
+    try { participantSocket?.disconnect(); } catch {}
+    participantSocket = null;
+  }
+
+  async function getIdToken() {
+    try { return await window.IAmOmaniFirebase?.user?.getIdToken(); } catch { return null; }
+  }
+
+  async function ensureHostParticipant() {
+    const host = hostSession();
+    const user = window.IAmOmaniFirebase?.user;
+    if (!host?.code || !user || participantJoinInFlight || participantReady) return;
+    participantCode = host.code;
+    participantJoinInFlight = true;
+
+    if (!participantSocket) {
+      participantSocket = io({ transports:['websocket','polling'], forceNew:true, reconnection:true });
+      participantSocket.on('join:approved', payload => {
+        participantReady = true;
+        participantJoinInFlight = false;
+        const reconnectToken = payload?.reconnectToken;
+        if (reconnectToken) saveParticipant({ code: participantCode, reconnectToken });
+        try { if (payload?.room && typeof renderRoom === 'function') renderRoom(payload.room); } catch {}
+      });
+      participantSocket.on('disconnect', () => { participantReady = false; });
+      participantSocket.on('connect', async () => {
+        const saved = participantSaved();
+        const token = await getIdToken();
+        if (!token || !participantCode) return;
+        if (saved?.code === participantCode && saved?.reconnectToken) {
+          participantSocket.emit('player:reconnect', { code:participantCode, reconnectToken:saved.reconnectToken, idToken:token }, res => {
+            participantJoinInFlight = false;
+            if (res?.ok) {
+              participantReady = true;
+              try { if (res.room && typeof renderRoom === 'function') renderRoom(res.room); } catch {}
+            } else {
+              try { sessionStorage.removeItem(PARTICIPANT_KEY); localStorage.removeItem(PARTICIPANT_KEY); } catch {}
+              requestParticipantJoin();
+            }
+          });
+        } else requestParticipantJoin();
+      });
+    } else if (participantSocket.connected) requestParticipantJoin();
+  }
+
+  async function requestParticipantJoin() {
+    const host = hostSession();
+    if (!participantSocket?.connected || !host?.code) { participantJoinInFlight = false; return; }
+    const idToken = await getIdToken();
+    if (!idToken) { participantJoinInFlight = false; return; }
+    participantJoinInFlight = true;
+    participantSocket.emit('player:requestJoin', { code:host.code, idToken, avatar:window.OMANI_AVATAR?.() || 'OM1' }, res => {
+      if (!res?.ok) {
+        participantJoinInFlight = false;
+        if (!/موجود في المجلس|قيد الانتظار/.test(res?.error || '')) setTimeout(ensureHostParticipant, 1200);
+      }
+    });
+  }
+
+  // Automatically approve only the host's own shadow-seat request.
+  socket.on('host:pending', items => {
+    const userUid = window.IAmOmaniFirebase?.user?.uid;
+    if (!userUid || !participantSocket || participantReady) return;
+    const mine = (Array.isArray(items) ? items : []).find(item => item?.uid === userUid);
+    if (!mine) return;
+    socket.emit('host:approveJoin', { requestId: mine.id }, res => {
+      if (!res?.ok) participantJoinInFlight = false;
+    });
+  });
+
+  // Host lobby/room updates are enough to create the host's participant seat once.
+  socket.on('room:update', room => {
+    const host = hostSession();
+    if (!host || room?.code !== host.code) return;
+    if (room.status === 'lobby') {
+      const uid = window.IAmOmaniFirebase?.user?.uid;
+      const alreadyListed = uid && room.players?.some?.(p => p.uid === uid);
+      if (alreadyListed) participantReady = true;
+      else if (!participantReady) setTimeout(ensureHostParticipant, 120);
+    }
+  });
+
+  // Let the host answer from the same screen while preserving host controls.
+  function bindHostAnswerButtons() {
+    if (!hostSession() || !participantReady) return;
+    const buttons = [...document.querySelectorAll('#answers .answer-btn')];
+    buttons.forEach((button, index) => {
+      button.onclick = () => {
+        if (!participantReady || !participantSocket?.connected || button.disabled) return;
+        buttons.forEach(x => { x.disabled = true; });
+        button.classList.add('chosen');
+        try { if (typeof state !== 'undefined') state.lastAnswer = index; } catch {}
+        try { window.GameSFX?.play?.('quiz-answer'); } catch {}
+        participantSocket.emit('player:answer', { answer:index }, res => {
+          if (res?.ok) {
+            try { toast('تم تثبيت إجابتك ⚡'); } catch {}
+          } else {
+            buttons.forEach(x => { x.disabled = false; });
+          }
+        });
+      };
+    });
+  }
+  socket.on('quiz:question', () => setTimeout(bindHostAnswerButtons, 0));
+
+  socket.on('room:closed', clearParticipant);
+  window.addEventListener('beforeunload', () => { try { participantSocket?.disconnect(); } catch {} });
+  setTimeout(ensureHostParticipant, 900);
 })();
