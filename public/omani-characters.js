@@ -22,7 +22,7 @@
     host.appendChild(figure(type));
   }
 
-  function decorate() {
+  function decorateStatic() {
     add('#homeScreen', 'mussar-khanjar');
     add('#hostCreateScreen', 'palm-weaver');
     add('#joinScreen', 'traditional-woman');
@@ -34,21 +34,39 @@
     add('#finalScreen', 'mussar-khanjar');
     add('#finalScreen', 'traditional-woman');
     add('#displayScreen', 'traditional-woman');
-    qa('.baloot-panel').forEach(panel => {
+  }
+
+  function decorateCardGames(root=document) {
+    root.querySelectorAll?.('.baloot-panel').forEach(panel => {
       if (!panel.querySelector(':scope > .omani-character.palm-weaver') && art['palm-weaver']) panel.appendChild(figure('palm-weaver'));
     });
-    qa('.uno-intro').forEach(panel => {
+    root.querySelectorAll?.('.uno-intro').forEach(panel => {
       if (!panel.querySelector(':scope > .omani-character.mussar-khanjar') && art['mussar-khanjar']) panel.appendChild(figure('mussar-khanjar'));
     });
   }
 
   document.documentElement.dataset.omaniCharacters = 'heritage';
-  decorate();
-  new MutationObserver(decorate).observe(document.body, { subtree:true, childList:true });
+  decorateStatic();
+  decorateCardGames();
+
+  // Important: do not observe the entire live quiz DOM. The timer/progress text changes many
+  // times per second on iPhone and a subtree MutationObserver here used to rescan the whole app,
+  // causing sustained CPU usage, heat and eventual UI freezes. Card-game decorations are added
+  // only when those screens are opened/created.
+  document.addEventListener('click', event => {
+    if (event.target.closest?.('[data-game="baloot"],[data-game="uno"],.baloot-card,.uno-card')) {
+      setTimeout(() => decorateCardGames(), 0);
+      setTimeout(() => decorateCardGames(), 250);
+    }
+  }, { passive:true });
+
+  window.addEventListener('iam-omani-card-game-opened', event => {
+    decorateCardGames(event.detail?.root || document);
+  });
 
   if (!document.querySelector('script[data-host-owner-guard]')) {
     const guard = document.createElement('script');
-    guard.src = '/host-owner-guard.js?v=73';
+    guard.src = '/host-owner-guard.js?v=76';
     guard.dataset.hostOwnerGuard = '1';
     document.body.appendChild(guard);
   }
