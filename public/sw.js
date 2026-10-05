@@ -1,4 +1,4 @@
-const CACHE = 'iam-omani-v73';
+const CACHE = 'iam-omani-v74';
 const CORE = [
   '/', '/index.html', '/styles.css?v=28', '/app.js?v=71',
   '/manifest.json?v=30', '/icon-180.png?v=30', '/icon-192.png?v=30',
@@ -15,7 +15,7 @@ const CORE = [
   '/characters/omani-portrait-8.js?v=56', '/characters/omani-portrait-9.js?v=56', '/characters/omani-portrait-10.js?v=56', '/characters/omani-portrait-11.js?v=56', '/omani-characters-ref.b64?v=38',
   '/omani-characters.png?v=40', '/omani-heritage-characters.png?v=40',
   '/omani-traditional.mp3?v=40',
-  '/baloot-icon.svg?v=37', '/uno-icon.svg?v=72', '/uno-premium.css?v=72', '/baloot-table-v2.css?v=72', '/firebase-auth-ui.css?v=32', '/firebase-auth-ui.js?v=71', '/social-profile.js?v=69', '/social-profile.css?v=68'
+  '/baloot-icon.svg?v=37', '/uno-icon.svg?v=72', '/uno-premium.css?v=72', '/baloot-table-v2.css?v=72', '/firebase-auth-ui.css?v=32', '/firebase-auth-ui.js?v=74', '/social-profile.js?v=69', '/social-profile.css?v=68'
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)));
