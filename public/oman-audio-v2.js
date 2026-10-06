@@ -11,13 +11,16 @@
   let playPending = false;
   let audioContext = null;
   let musicGain = null;
-  const backgroundLevel = () => document.querySelector('.screen.active')?.id === 'questionScreen' ? .003 : .008;
+  // Keep the soundtrack modest during questions, but a little louder than before.
+  const backgroundLevel = () => document.querySelector('.screen.active')?.id === 'questionScreen' ? .0045 : .012;
 
   function connectQuietAudio() {
     if (musicGain) return;
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
-    const context = new AudioContextClass();
+    let context;
+    try { context = new AudioContextClass({ latencyHint: 'playback' }); }
+    catch { context = new AudioContextClass(); }
     try {
       const source = context.createMediaElementSource(audio);
       const gain = context.createGain();
@@ -129,8 +132,14 @@
     else updateButton();
   });
   audio.addEventListener('pause', updateButton);
-  const main=document.querySelector('main');
-  if(main)new MutationObserver(updateVolume).observe(main,{subtree:true,attributes:true,attributeFilter:['class']});
+
+  // Observe only screen switches instead of every class mutation in the whole app.
+  // This keeps the same behaviour while cutting unnecessary work on phones.
+  const volumeObserver = new MutationObserver(updateVolume);
+  document.querySelectorAll('.screen').forEach(screen => {
+    volumeObserver.observe(screen, { attributes:true, attributeFilter:['class'] });
+  });
+
   if ('mediaSession' in navigator) {
     try { navigator.mediaSession.setActionHandler('stop', hardStop); } catch {}
     try { navigator.mediaSession.setActionHandler('pause', () => stop(false)); } catch {}
