@@ -8,6 +8,7 @@
   let cumulative=new Map();
   let lastBoard=[];
   let advancing=false;
+  let trackedCode=null;
 
   function esc(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
   function load(){
@@ -109,6 +110,7 @@
   };
 
   socket.on('quiz:question',q=>{
+    if(trackedCode!==window.state?.code){trackedCode=window.state?.code||null;cumulative.clear();}
     load();
     const tag=document.querySelector('#difficulty');
     if(tag&&config.total>1)tag.textContent=`${q.difficulty||difficultyFor(config.current)} • المستوى ${config.current}/${config.total}`;
@@ -117,10 +119,9 @@
   socket.on('quiz:finished',board=>{
     load();
     addBoard(board);
+    renderCumulative();
     if(window.state?.role==='host'&&config.total>1&&config.current<config.total){
       setTimeout(showBreak,120);
-    }else if(config.total>1){
-      renderCumulative();
     }
   });
 
