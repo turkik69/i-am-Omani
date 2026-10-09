@@ -21,6 +21,16 @@
       </select>
       <input id="hostMajlisOther" class="hidden" maxlength="50" placeholder="اكتب اسم المجلس أو القرية" />
       <small class="field-note">تتغير قائمة القرى تلقائيًا حسب الولاية، ويمكن اختيار «أخرى» إذا لم يظهر الاسم.</small>
+      <label>عدد مستويات المسابقة</label>
+      <select id="competitionLevels" class="oman-select">
+        <option value="1">مستوى واحد</option>
+        <option value="2">مستويان</option>
+        <option value="3" selected>3 مستويات</option>
+        <option value="4">4 مستويات</option>
+        <option value="5">5 مستويات</option>
+        <option value="6">6 مستويات</option>
+      </select>
+      <small class="field-note">بعد كل مستوى يقرر المشرف الاستمرار، وتزداد صعوبة الأسئلة تلقائيًا.</small>
     </div>
   `);
 
@@ -142,11 +152,16 @@
     if(!user)return toast('سجل الدخول لإنشاء مجلس');
     let idToken;
     try{idToken=await user.getIdToken();}catch{return toast('تعذر التحقق من الحساب');}
-    socket.emit('host:create', { idToken,title, wilayat, village, category: document.querySelector('#competitionCategory .selected')?.dataset.cat || 'mixed', difficulty: document.querySelector('#competitionDifficulty')?.value || 'متوسط', mode: document.querySelector('#competitionMode')?.value || 'عادية' }, res => {
+    const category=document.querySelector('#competitionCategory .selected')?.dataset.cat || 'mixed';
+    const difficulty=document.querySelector('#competitionDifficulty')?.value || 'متوسط';
+    const mode=document.querySelector('#competitionMode')?.value || 'عادية';
+    const levels=Math.min(6,Math.max(1,Number(document.querySelector('#competitionLevels')?.value)||3));
+    socket.emit('host:create', { idToken,title, wilayat, village, category, difficulty, mode }, res => {
       if (!res.ok) return toast(res.error || 'تعذر إنشاء المسابقة');
       setRole('host');
       state.code = res.code;
       state.hostToken = res.hostToken;
+      window.IAM_OMANI_LEVELS?.configure({total:levels,current:1,base:difficulty,category,mode});
       localStorage.removeItem('quizPlayer');
       sessionStorage.removeItem('quizPlayer');
       sessionStorage.setItem('quizHost',JSON.stringify({code:res.code,hostToken:res.hostToken}));
